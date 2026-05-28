@@ -679,6 +679,30 @@ function formatDateTime(date: Date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
+function formatDigitalTime(date: Date) {
+  const pad = (value: number) => String(value).padStart(2, '0')
+  const hour = date.getHours() % 12 || 12
+  return `${pad(hour)}:${pad(date.getMinutes())}`
+}
+
+function formatDigitalSecond(date: Date) {
+  return String(date.getSeconds()).padStart(2, '0')
+}
+
+function formatMeridiem(date: Date) {
+  return date.getHours() >= 12 ? 'PM' : 'AM'
+}
+
+function formatDayCode(date: Date) {
+  const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+  return `${date.getFullYear()} ${days[date.getDay()]}`
+}
+
+function formatDateCode(date: Date) {
+  const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+  return `${months[date.getMonth()]} ${date.getDate()}-${String(date.getFullYear()).slice(2)}`
+}
+
 function ownerDetail(owner: string, directory: Record<string, string>) {
   return directory[owner] ?? owner
 }
@@ -1295,12 +1319,28 @@ function App() {
             <h1>集团目标拆解与经营对齐看板</h1>
             <p>华哥定战略｜李锦宁承接拆解｜各公司一级对接｜重大事项形成决策包上报</p>
           </div>
+          <div className="status-console" aria-label="系统状态台">
+            <div className="digital-display digital-time" title={formatDateTime(now)}>
+              <span>{formatMeridiem(now)}</span>
+              <strong>{formatDigitalTime(now)}</strong>
+              <em>{formatDigitalSecond(now)}</em>
+            </div>
+            <div className="digital-stack">
+              <div>
+                <div className="digital-display mini">{formatDayCode(now)}</div>
+                <span>Day</span>
+              </div>
+              <div>
+                <div className="digital-display mini">{formatDateCode(now)}</div>
+                <span>Date</span>
+              </div>
+            </div>
+          </div>
           <div className="top-actions">
-            <span className="badge-dark">📅 {formatDateTime(now)}</span>
             <span className={`badge-dark ${connection.state === 'fallback' ? 'badge-orange' : 'badge-green'}`}>● {connection.message}</span>
-            <span className="badge-dark badge-blue">AI 分析中</span>
-            <span className="badge-dark" title={connection.apiBaseUrl}>数据源：{connection.state === 'cloud' ? 'Cloudflare D1' : connection.state === 'loading' ? '连接中' : '本地缓存'}</span>
-            <span className="badge-dark">服务对象：集团总助 李锦宁⌄</span>
+            <span className="badge-dark badge-blue">AI</span>
+            <span className="badge-dark" title={connection.apiBaseUrl}>{connection.state === 'cloud' ? 'Cloudflare D1' : connection.state === 'loading' ? '连接中' : '本地缓存'}</span>
+            <span className="badge-dark">李锦宁</span>
           </div>
         </header>
 
