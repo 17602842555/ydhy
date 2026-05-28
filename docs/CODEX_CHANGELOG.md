@@ -27,6 +27,9 @@
 - Added `/api/people` and `/api/people/contacts/:id` for people graph, primary contacts, module responsibilities, reporting lines, handover events, and audited contact ownership changes.
 - Added `/api/risks/:id` for audited risk status changes and evidence-bound, idempotent decision-package creation from source risks.
 - Added `/api/commercial-system` and `/api/commercial-system/work-orders/:id` for the broader commercial system map, master data, approvals, work orders, integrations, report packs, client targets, policies, and audited commercial work-order status updates.
+- Restyled the web dashboard to match the supplied digital-clock reference: light gray neumorphic shell, raised soft controls, black digital displays, cyan LCD-style numerals, and matching KPI/status treatment.
+- Added a top status console with live digital time, day, date, Cloudflare D1 linkage, and operator status while preserving the existing backend-driven dashboard data.
+- Fixed production service worker registration to respect Vite `BASE_URL`, preventing GitHub Pages subpath deployments from requesting `/sw.js` at the domain root.
 - Reworked the web app into a multi-module management console covering 总览, 系统全景, 目标金字塔, 子公司监管, 数据导入, 组织人物, 主数据, 品牌经营, 财税合规, 供应链, 审批工单, 集成中心, 风险预警, 决策包, 经营报告, 系统设置, 软件端, and 审计日志.
 - Added role-switch validation UI so PMO, owner, finance, and boss sessions expose allowed actions, disabled buttons, and server-side 403 behavior.
 - Extended the PostgreSQL target schema and deterministic seed SQL for operating modules, goal branches, person profiles, contacts, module responsibilities, reporting lines, handover events, brand progress, operating tasks, risk items, decision packages, supply costs, tax cards, commercial modules, master data records, approval flows, commercial work orders, integration connectors, report packs, client targets, and system policies.
@@ -48,6 +51,10 @@
 - Isolated API contract check now verifies people/contact mutation, task audit, commercial-system payload, work-order audit, risk escalation, decision-package idempotency, and finance/owner 403 boundaries.
 - `npm run check` now includes the PostgreSQL schema gate, PostgreSQL seed check, migration dry-run, isolated API contract check, Web build, and API self-check.
 - Browser QA: `http://127.0.0.1:5173/` loaded with API online, dirty import preview returned raw errors, validated batch `BATCH-20260528-004` was created and published, KPI/table/audit state refreshed.
+- Browser QA: `http://127.0.0.1:5173/` rendered the neumorphic digital UI, showed `后端联动` and `Cloudflare D1`, kept 6 KPI cards and 12 contact rows, and had no console warnings/errors.
+- Browser interaction QA: clicked `JOSMAN目标金字塔`, confirmed 5 branch cards, 2 target rows for `集团增长分支`, active navigation state, and no horizontal overflow.
+- Playwright mobile smoke: 390x844 viewport rendered the new digital UI with no horizontal overflow and no console/page errors.
+- GitHub Pages QA: `https://17602842555.github.io/ydhy/?v=a1067ae` rendered the new digital UI, showed Cloudflare D1 backend linkage, kept 6 KPI cards and 12 contact rows, and had no console/page errors.
 - Playwright real CSV QA: uploaded `子公司监管导入-对象仓储CSV.csv`, created validated batch `BATCH-20260528-004`, stored source bytes with `objectKey`, published the batch, downloaded the source through `GET /api/imports/:id/source-file`, and verified the downloaded SHA-256 matched the original file.
 - Duplicate file QA: re-importing the same SHA-256 returned `409 duplicate_import`.
 - Playwright mobile smoke: 390x844 viewport, no horizontal overflow, no console/page errors.
