@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
+import { BarChart3, CircleDot, ClipboardCheck, LayoutGrid, PackageCheck, ReceiptText, ShieldAlert, Triangle } from 'lucide-react'
 import './App.css'
+import { SubcompanySupervisionPage } from './SubcompanySupervisionPage'
+import { TaskCalendarEntryPage } from './TaskCalendarEntryPage'
 
 type ViewKey = 'overview' | 'pyramid' | 'brand' | 'tax' | 'supply' | 'org' | 'risk' | 'decision'
 type TaskStatus = '待办' | '进行中' | '已完成'
@@ -101,16 +104,20 @@ type BranchTarget = {
   actions: BranchAction[][]
 }
 
-const NAV_ITEMS: Array<{ key: ViewKey; label: string; icon: string }> = [
-  { key: 'overview', label: '总览', icon: '▦' },
-  { key: 'pyramid', label: 'JOSMAN目标金字塔', icon: '△' },
-  { key: 'brand', label: '品牌经营', icon: '◫' },
-  { key: 'tax', label: '财税合规', icon: '▤' },
-  { key: 'supply', label: '供应链', icon: '◇' },
-  { key: 'org', label: '组织协同', icon: '◎' },
-  { key: 'risk', label: '风险预警', icon: '⚠' },
-  { key: 'decision', label: '决策包', icon: '☑' },
+const NAV_ITEMS: Array<{ key: ViewKey; label: string; icon: ReactNode }> = [
+  { key: 'overview', label: '总览', icon: <LayoutGrid /> },
+  { key: 'pyramid', label: 'JOSMAN目标金字塔', icon: <Triangle /> },
+  { key: 'brand', label: '品牌经营', icon: <BarChart3 /> },
+  { key: 'tax', label: '财税合规', icon: <ReceiptText /> },
+  { key: 'supply', label: '供应链', icon: <PackageCheck /> },
+  { key: 'org', label: '组织协同', icon: <CircleDot /> },
+  { key: 'risk', label: '风险预警', icon: <ShieldAlert /> },
+  { key: 'decision', label: '决策包', icon: <ClipboardCheck /> },
 ]
+
+const SUBCOMPANY_BRANCH_NAME = '子公司监管分支'
+const SUBCOMPANY_TARGET_NAME = '子公司监管目标'
+const SUBCOMPANY_SUPERVISION_URL = `${import.meta.env.BASE_URL}subcompany-supervision/index.html`
 
 const ROSTER_MAP = {
   brandOwners: '赵宜主：李锦宁；最家西子：负责人待确认；花木轻妍：负责人待确认；控驻：负责人待确认；元气甸甸：梁燕红',
@@ -856,11 +863,13 @@ function BranchDetailPanel({
   goalGroups,
   branchTargets,
   ownerDirectory,
+  onOpenSubcompany,
 }: {
   groupName: string
   goalGroups: readonly GoalGroup[]
   branchTargets: readonly BranchTarget[]
   ownerDirectory: Record<string, string>
+  onOpenSubcompany: () => void
 }) {
   const group = goalGroups.find((item) => item.name === groupName) ?? goalGroups[0]
   const targets = branchTargets.filter((target) => target.group === group.name)
@@ -877,11 +886,16 @@ function BranchDetailPanel({
 
       <div className="branch-target-list">
         {targets.map((target) => (
-          <article className="branch-target-row" key={target.title}>
+          <article className={`branch-target-row ${target.title === SUBCOMPANY_TARGET_NAME ? 'has-drilldown' : ''}`} key={target.title}>
             <aside className="branch-target-rail">
               <span>{target.code}</span>
               <strong>{target.title}</strong>
               <em>系统</em>
+              {target.title === SUBCOMPANY_TARGET_NAME ? (
+                <button className="branch-drill-button" type="button" onClick={onOpenSubcompany}>
+                  打开三级页面
+                </button>
+              ) : null}
             </aside>
             <div className="branch-target-grid">
               {target.children.map((child, index) => (
@@ -1161,8 +1175,17 @@ function App() {
   const [contactKeyword, setContactKeyword] = useState('')
   const [taskStatus, setTaskStatus] = useState<TaskStatus>('待办')
   const [taskOverrides, setTaskOverrides] = useState<Record<string, TaskStatus>>({})
+  const [subcompanyDrilldownOpen, setSubcompanyDrilldownOpen] = useState(false)
+  const [taskCalendarEntryOpen, setTaskCalendarEntryOpen] = useState(false)
+  const [hashRoute, setHashRoute] = useState(() => window.location.hash.startsWith('#/task-calendar') ? 'task-calendar' : '')
   const [toast, setToast] = useState('')
   const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const syncHashRoute = () => setHashRoute(window.location.hash.startsWith('#/task-calendar') ? 'task-calendar' : '')
+    window.addEventListener('hashchange', syncHashRoute)
+    return () => window.removeEventListener('hashchange', syncHashRoute)
+  }, [])
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000)
@@ -1223,16 +1246,34 @@ function App() {
   const showRulesPanel = activeView === 'decision'
   const viewCopy = VIEW_COPY[activeView]
   const detailGroupName = selectedGoalGroup || goalGroups[0]?.name || ''
+  const showSubcompanyPage = activeView === 'pyramid' && detailGroupName === SUBCOMPANY_BRANCH_NAME && subcompanyDrilldownOpen
+  const showTaskCalendarEntryPage = showSubcompanyPage && taskCalendarEntryOpen
 
   function activateView(view: ViewKey) {
     setActiveView(view)
-    if (view !== 'pyramid') setSelectedGoalGroup('')
+    if (view !== 'pyramid') {
+      setSelectedGoalGroup('')
+      setSubcompanyDrilldownOpen(false)
+      setTaskCalendarEntryOpen(false)
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function selectGoalGroup(group: string) {
     setActiveView('pyramid')
     setSelectedGoalGroup(group)
+    if (group !== SUBCOMPANY_BRANCH_NAME) {
+      setSubcompanyDrilldownOpen(false)
+      setTaskCalendarEntryOpen(false)
+    }
+  }
+
+  function openSubcompanyDrilldown() {
+    setActiveView('pyramid')
+    setSelectedGoalGroup(SUBCOMPANY_BRANCH_NAME)
+    setSubcompanyDrilldownOpen(true)
+    setTaskCalendarEntryOpen(false)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function handleTaskToggle(name: string, checked: boolean) {
@@ -1262,8 +1303,18 @@ function App() {
     }
   }
 
+  if (hashRoute === 'task-calendar') {
+    return (
+      <TaskCalendarEntryPage
+        apiBaseUrl={getApiBaseUrl()}
+        standalone
+        onSaved={() => setToast('填报数据已同步')}
+      />
+    )
+  }
+
   return (
-    <div className="app">
+    <div className={`app ${showSubcompanyPage ? 'subcompany-shell' : ''}`}>
       <aside className="sidebar">
         <div className="brand-logo">
           <div className="logo-mark" />
@@ -1313,8 +1364,35 @@ function App() {
         </div>
       </aside>
 
-      <main className={`main ${activeView === 'overview' ? 'overview-main' : ''}`}>
-        <header className="topbar" id="overview">
+      <main className={`main ${activeView === 'overview' && !showSubcompanyPage ? 'overview-main' : ''} ${showSubcompanyPage ? 'subcompany-main' : ''}`}>
+        {showTaskCalendarEntryPage ? (
+          <TaskCalendarEntryPage
+            apiBaseUrl={getApiBaseUrl()}
+            onBack={() => {
+              setTaskCalendarEntryOpen(false)
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+            onSaved={() => setToast('填报数据已同步')}
+          />
+        ) : showSubcompanyPage ? (
+          <SubcompanySupervisionPage
+            sourceUrl={SUBCOMPANY_SUPERVISION_URL}
+            apiBaseUrl={getApiBaseUrl()}
+            onBack={() => {
+              setSubcompanyDrilldownOpen(false)
+              setTaskCalendarEntryOpen(false)
+              setActiveView('pyramid')
+              setSelectedGoalGroup(SUBCOMPANY_BRANCH_NAME)
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+            onOpenEntry={() => {
+              const basePath = import.meta.env.BASE_URL || '/'
+              window.open(`${window.location.origin}${basePath}#/task-calendar`, '_blank', 'noopener,noreferrer')
+            }}
+          />
+        ) : (
+          <>
+            <header className="topbar" id="overview">
           <div className="title-block">
             <h1>集团目标拆解与经营对齐看板</h1>
             <p>华哥定战略｜李锦宁承接拆解｜各公司一级对接｜重大事项形成决策包上报</p>
@@ -1342,7 +1420,7 @@ function App() {
             <span className="badge-dark" title={connection.apiBaseUrl}>{connection.state === 'cloud' ? 'Cloudflare D1' : connection.state === 'loading' ? '连接中' : '本地缓存'}</span>
             <span className="badge-dark">李锦宁</span>
           </div>
-        </header>
+            </header>
 
         {activeView !== 'overview' ? (
           <section className="view-heading">
@@ -1361,7 +1439,15 @@ function App() {
           </section>
         ) : null}
 
-        {activeView === 'pyramid' ? <BranchDetailPanel groupName={detailGroupName} goalGroups={goalGroups} branchTargets={branchTargets} ownerDirectory={ownerDirectory} /> : null}
+        {activeView === 'pyramid' ? (
+          <BranchDetailPanel
+            groupName={detailGroupName}
+            goalGroups={goalGroups}
+            branchTargets={branchTargets}
+            ownerDirectory={ownerDirectory}
+            onOpenSubcompany={openSubcompanyDrilldown}
+          />
+        ) : null}
 
         {showBrandPanel || showTaskPanel || showRiskPanel ? (
           <section className={`grid three-col section-anchor ${[showBrandPanel, showTaskPanel, showRiskPanel].filter(Boolean).length === 1 ? 'single-view' : ''}`} id="brand">
@@ -1380,6 +1466,8 @@ function App() {
 
         {showDecisionPanel ? <DecisionPanel data={data} tasks={tasks} onCopy={copyDecisionPackage} /> : null}
         {showRulesPanel ? <RulesPanel /> : null}
+          </>
+        )}
       </main>
 
       <div className={`toast ${toast ? 'show' : ''}`}>{toast || '已完成'}</div>

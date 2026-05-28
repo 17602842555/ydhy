@@ -65,12 +65,14 @@ export function actorFromUser(data, user) {
 
 export function publicUser(data, user) {
   const role = data.roles?.find((entry) => entry.id === user.roleCode);
+  const subsidiary = user.subsidiaryId ? data.subsidiaries?.find((entry) => entry.id === user.subsidiaryId) : null;
   return {
     id: user.id,
     displayName: user.displayName,
     roleCode: user.roleCode,
     roleName: role?.name ?? user.roleCode,
     subsidiaryId: user.subsidiaryId ?? null,
+    companyName: subsidiary?.name ?? null,
   };
 }
 

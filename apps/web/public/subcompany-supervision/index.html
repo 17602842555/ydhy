@@ -1,0 +1,523 @@
+﻿<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>2026年5月子公司目标完成看板</title><style>
+:root{color-scheme:dark;--bg:#050505;--panel:#fff;--ink:#111;--muted:#6b7280;--line:#e5e7eb;--good:#059669;--warn:#d97706;--bad:#dc2626;--zero:#52525b;}*{box-sizing:border-box} body{margin:0;background:var(--bg);color:#f8fafc;font-family:Inter,"Microsoft YaHei",Arial,sans-serif;letter-spacing:0}.header{position:sticky;top:0;z-index:10;background:rgba(5,5,5,.92);backdrop-filter:blur(16px);border-bottom:1px solid #262626;padding:20px 28px;display:flex;justify-content:space-between;gap:20px;align-items:end}h1{margin:0;font-size:28px;line-height:1.15}.subtitle{margin:8px 0 0;color:#a1a1aa;font-size:14px}.nav{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.nav a{color:#111;background:#fff;border-radius:6px;padding:8px 10px;text-decoration:none;font-size:12px;font-weight:700}main{padding:24px;max-width:1760px;margin:0 auto}.hero-grid{display:grid;grid-template-columns:repeat(7,minmax(180px,1fr));gap:14px;margin-bottom:18px}.hero-card,.rank,.company-card{background:var(--panel);color:var(--ink);border-radius:8px;border:1px solid #d4d4d8;box-shadow:0 18px 55px rgba(255,255,255,.08)}.hero-card{padding:18px;min-height:126px}.hero-card span,.metrics span,.eyebrow{display:block;color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase}.hero-card b{display:block;font-size:30px;margin-top:8px}.hero-card small{display:block;color:#6b7280;margin-top:8px;line-height:1.45}.rank{padding:18px;margin-bottom:18px}.section-title{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:12px}.section-title h2{margin:0;font-size:20px}.section-title p{margin:0;color:var(--muted);font-size:13px}.kanban{display:grid;grid-template-columns:repeat(3,minmax(340px,1fr));gap:16px}.company-card{padding:16px;display:flex;flex-direction:column;gap:14px}.card-head{display:flex;justify-content:space-between;align-items:start;gap:16px}.card-head h2{margin:4px 0 0;font-size:22px}.score{font-size:34px;font-weight:900;line-height:1}.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.metrics div{border:1px solid var(--line);border-radius:7px;padding:10px;min-width:0}.metrics b{font-size:16px;display:block;margin-top:4px}.summary-box,.edit-module{border:1px solid var(--line);border-radius:7px;padding:12px}.summary-box{background:#f7f7f8}.summary-box h3{margin:0 0 8px;font-size:14px}.summary-box p{margin:0;color:#374151;font-size:13px;line-height:1.65}.bars{display:grid;gap:8px}.bars label{font-size:12px;color:#374151;display:flex;justify-content:space-between;gap:12px}.bars i{height:9px;background:#e5e7eb;border-radius:999px;overflow:hidden;display:block}.bars em{height:100%;display:block;background:#111;border-radius:999px}.good .score,.good h2{color:var(--good)}.warn .score,.warn h2{color:var(--warn)}.bad .score,.bad h2,.zero .score,.zero h2{color:var(--bad)}.empty .score,.empty h2{color:var(--zero)}.good .bars em{background:var(--good)}.warn .bars em{background:var(--warn)}.bad .bars em,.zero .bars em{background:var(--bad)}.empty .bars em{background:var(--zero)}.edit-module{background:#fff}.edit-module summary{cursor:pointer;font-weight:900;font-size:15px;display:flex;justify-content:space-between;gap:12px;align-items:center}.edit-module summary em{font-style:normal;color:#6b7280;font-size:12px}.edit-body{padding-top:12px}.fill-hint{color:#6b7280;font-size:13px;line-height:1.6;margin:0 0 10px}.reference-box{border:1px solid #e5e7eb;background:#f8fafc;border-radius:7px;padding:10px;margin-bottom:10px;color:#374151;font-size:12px;line-height:1.6}.reference-box ul{margin:6px 0 0;padding-left:18px}.reference-box b{color:#111}.triad-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.fill-field,label{font-size:13px;font-weight:800;color:#111}.fill-field label,.edit-body>label{display:block;margin-bottom:6px}textarea{width:100%;min-height:128px;resize:vertical;border:1px solid #cbd5e1;border-radius:7px;padding:10px;font-family:inherit;font-size:13px;line-height:1.55;color:#111;background:#fff}textarea:focus{outline:2px solid #111;outline-offset:1px}.share-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.share-tools button{border:1px solid #d1d5db;background:#111;color:#fff;border-radius:6px;padding:7px 10px;font-size:12px;font-weight:700;cursor:pointer}.share-tools button.secondary{background:#fff;color:#111}.table-wrap{overflow:auto;margin-top:10px;max-height:420px;border:1px solid var(--line);border-radius:7px}table{width:100%;border-collapse:collapse;font-size:12px;background:#fff;color:#111}th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:right;white-space:nowrap}th:first-child,td:first-child,th:last-child,td:last-child{text-align:left}thead th{position:sticky;top:0;background:#f4f4f5;z-index:1}.rank .table-wrap{max-height:none}tr.good td:first-child{border-left:4px solid var(--good)}tr.warn td:first-child{border-left:4px solid var(--warn)}tr.bad td:first-child,tr.zero td:first-child{border-left:4px solid var(--bad)}tr.empty td:first-child{border-left:4px solid var(--zero)}.daily-details{border-top:1px solid var(--line);padding-top:10px}.daily-details summary{cursor:pointer;font-weight:800;font-size:13px}.note{color:#d4d4d8;background:#111;border:1px solid #333;border-radius:8px;padding:14px;margin:18px 0;font-size:13px;line-height:1.7}.toast{position:fixed;right:20px;bottom:20px;background:#111;color:#fff;border:1px solid #333;border-radius:8px;padding:10px 12px;font-size:13px;z-index:99;opacity:0;transform:translateY(8px);transition:.18s}.toast.show{opacity:1;transform:translateY(0)}.footer{color:#a1a1aa;text-align:center;padding:28px;font-size:12px}@media(max-width:1400px){.hero-grid{grid-template-columns:repeat(4,1fr)}}@media(max-width:1180px){.kanban{grid-template-columns:repeat(2,minmax(320px,1fr))}.hero-grid{grid-template-columns:repeat(2,1fr)}.header{align-items:start;flex-direction:column}.nav{justify-content:flex-start}}@media(max-width:760px){main{padding:14px}.kanban{grid-template-columns:1fr}.hero-grid{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}.triad-grid{grid-template-columns:1fr}h1{font-size:22px}}
+.daily-action-control{border:1px solid var(--line);border-radius:7px;padding:12px;background:#f8fafc;display:flex;align-items:center;justify-content:space-between;gap:12px}.daily-action-control label{font-size:14px;font-weight:900;color:#111}.daily-action-control select{border:1px solid #cbd5e1;border-radius:6px;padding:8px 10px;background:#fff;color:#111;font:inherit;font-weight:800;min-width:150px}.date-badge{color:#6b7280;font-size:12px;font-weight:800}.daily-action-control{border:1px solid #d1d5db;border-radius:8px;padding:14px 16px;background:#f8fafc;display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:2px}.daily-date-main{display:flex;flex-direction:column;gap:4px}.daily-date-title{font-size:16px;font-weight:900;color:#111}.daily-date-label{color:#6b7280;font-size:12px;font-weight:800}.daily-action-control select{border:1px solid #cbd5e1;border-radius:6px;padding:9px 12px;background:#fff;color:#111;font:inherit;font-weight:900;min-width:160px}</style></head><body><header class="header"><div><h1>2026年5月子公司目标完成看板</h1><p class="subtitle">黑底白模块 / 数据来源：涌动花鱼任务管理页面经营数据 / 当前日期：2026-05-26 / 距6月按6天估算 / 已重新调取更新</p></div><nav class="nav"><a href="#赵宜主">赵宜主</a><a href="#空锦界">空锦界</a><a href="#无虑传媒">无虑传媒</a><a href="#元气甸甸">元气甸甸</a><a href="#谷春雨">谷春雨</a><a href="#杭州控驻">杭州控驻</a><a href="#深圳赫拉">深圳赫拉</a><a href="#广州竹蜻蜓">广州竹蜻蜓</a><a href="#风起云涌">风起云涌</a><a href="#不拘一格">不拘一格</a><a href="#逆戟鲸">逆戟鲸</a></nav></header><form name="subsidiary-cycle-report" method="POST" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input type="hidden" name="form-name" value="subsidiary-cycle-report">
+  <input name="bot-field">
+  <input name="company">
+  <input name="date">
+  <textarea name="action"></textarea>
+  <textarea name="hypothesis"></textarea>
+  <textarea name="execute"></textarea>
+  <textarea name="verify"></textarea>
+</form><main><section class="hero-grid"><div class="hero-card"><span>集团月目标</span><b>4019万</b></div><div class="hero-card"><span>集团月完成</span><b>3274.6万</b></div><div class="hero-card"><span>集团完成率</span><b>81.5%</b></div><div class="hero-card"><span>集团缺口</span><b>744.4万</b></div><div class="hero-card"><span>预计完成率</span><b>90.6%</b><small>按近7天日均继续6天</small></div><div class="hero-card"><span>风险完成率</span><b>86.4%</b><small>按近3天日均继续6天</small></div><div class="hero-card"><span>达标日均需求</span><b>124.1万</b><small>剩余6天每天至少完成</small></div></section><section class="rank"><div class="section-title"><h2>监督排行</h2><p>按预计完成率从低到高排序，同时显示月度、3天与一周监督结果</p></div><div class="table-wrap"><table><thead><tr><th>子公司</th><th>月目标</th><th>月完成</th><th>月完成率</th><th>预计完成率</th><th>3天完成率</th><th>周完成率</th><th>月缺口</th></tr></thead><tbody><tr class="empty"><td>深圳赫拉</td><td>0</td><td>0</td><td>0%</td><td>目标待定</td><td>0%</td><td>0%</td><td>0</td></tr><tr class="good"><td>广州竹蜻蜓</td><td>0</td><td>3,801.22</td><td>100%</td><td>目标待定</td><td>0%</td><td>0%</td><td>-3,801.22</td></tr><tr class="bad"><td>逆戟鲸</td><td>300万</td><td>125.8万</td><td>42%</td><td>47.1%</td><td>22.1%</td><td>22.8%</td><td>174.2万</td></tr><tr class="bad"><td>杭州控驻</td><td>45.00万</td><td>23.00万</td><td>51%</td><td>62.1%</td><td>25.3%</td><td>56.8%</td><td>22.00万</td></tr><tr class="bad"><td>空锦界</td><td>100万</td><td>72.70万</td><td>73%</td><td>88.5%</td><td>65.4%</td><td>76.9%</td><td>27.30万</td></tr><tr class="warn"><td>赵宜主</td><td>3000万</td><td>2469.9万</td><td>82%</td><td>91%</td><td>34.7%</td><td>82%</td><td>530.1万</td></tr><tr class="warn"><td>风起云涌</td><td>50.00万</td><td>44.20万</td><td>88%</td><td>93.3%</td><td>0%</td><td>25.4%</td><td>5.80万</td></tr><tr class="good"><td>谷春雨</td><td>100万</td><td>104.6万</td><td>105%</td><td>114.4%</td><td>0%</td><td>50.7%</td><td>-4.60万</td></tr><tr class="good"><td>无虑传媒</td><td>400万</td><td>411.4万</td><td>103%</td><td>114.9%</td><td>45.3%</td><td>86.8%</td><td>-11.40万</td></tr><tr class="warn"><td>元气甸甸</td><td>20.00万</td><td>16.80万</td><td>84%</td><td>140.9%</td><td>3.9%</td><td>293.7%</td><td>3.20万</td></tr><tr class="good"><td>不拘一格</td><td>4.00万</td><td>5.80万</td><td>144%</td><td>150.8%</td><td>0%</td><td>30.2%</td><td>-1.80万</td></tr></tbody></table></div></section><div class="note">这两个填写模块已改为按天填写：先选择日期，再展开每日关键动作和每日假设-执行-验证。每一天都会单独保存、复制、下载和提交。</div><section class="kanban"><section class="company-card warn" id="赵宜主" data-company="赵宜主">
+    <div class="card-head"><div><p class="eyebrow">子公司</p><h2>赵宜主</h2></div><div class="score">82%</div></div>
+    <div class="metrics"><div><span>月目标</span><b>3000万</b></div><div><span>月完成</span><b>2469.9万</b></div><div><span>预计完成率</span><b>91%</b></div><div><span>3天完成率</span><b>34.7%</b></div><div><span>周完成率</span><b>82%</b></div></div>
+    <div class="summary-box"><h3>总结</h3><p>月目标3000万，当前完成2469.9万，完成率82%，预计完成率约91%。整体仍是集团最大营收主力，但最近3天完成率只有34.7%，明显低于周度82%的节奏，短期出现断档。后续重点不是证明能力，而是恢复高峰期节奏，尤其要盯抖音主力店、官方旗舰店、营养膳食旗舰店等核心渠道。</p></div>
+    <div class="bars"><label>月度进度 <span>2469.9万 / 3000万</span></label><i><em style="width:82%"></em></i><label>预计完成率 <span>2729.2万 / 3000万</span></label><i><em style="width:90.97433579999999%"></em></i><label>3天监督 <span>缺口 140.4万</span></label><i><em style="width:34.7%"></em></i><label>周监督 <span>缺口 66.45万</span></label><i><em style="width:82%"></em></i></div>
+    <details class="edit-module action-module" data-company="赵宜主">
+      <summary><span>每日关键动作（子公司填写）</span><em>点击展开填写</em></summary>
+      <div class="edit-body">
+        <p class="fill-hint">以3天为一个周期填写真实经营动作，不填同步数据：这3天哪一天做了什么动作、投了什么资源、找了谁、改了什么货盘/价格/素材/排期，导致卖好或没卖好。</p>
+
+        <label>关键动作</label>
+        <textarea data-field="action" placeholder="例：本轮3天内，5月20日追加达人A排期并调整主推套装价格；5月21日投放素材换成520数据证明版本；5月22日直播间上新组合装，验证转化是否提升。"></textarea>
+      </div>
+    </details>
+    <details class="edit-module hev-module" data-company="赵宜主">
+      <summary><span>每日假设-执行-验证（子公司填写）</span><em>点击展开填写/复制</em></summary>
+      <div class="edit-body">
+        <div class="share-tools"><button type="button" data-submit>提交本公司填写</button><button type="button" data-copy>复制给子公司填写</button><button type="button" class="secondary" data-download>下载填写模板</button><button type="button" class="secondary" data-clear>清空本公司填写</button></div>
+        <div class="triad-grid">
+          <div class="fill-field"><label>假设</label><textarea data-field="hypothesis" placeholder="请填写：基于最近3天数据，你们认为影响目标达成的核心原因/机会是什么？"></textarea></div>
+          <div class="fill-field"><label>执行</label><textarea data-field="execute" placeholder="请填写：下一个3天周期具体做什么，负责人是谁，每天做到哪一步？"></textarea></div>
+          <div class="fill-field"><label>验证</label><textarea data-field="verify" placeholder="请填写：3天后用什么指标验证动作有效，例如成交额、排期数、投放ROI、直播场次、短视频数量。"></textarea></div>
+        </div>
+      </div>
+    </details>
+    <details class="daily-details"><summary>展开本月每日明细</summary><div class="table-wrap"><table><thead><tr><th>日期</th><th>目标</th><th>完成</th><th>完成率</th><th>缺口</th><th>口径</th></tr></thead><tbody><tr class="warn"><td>1</td><td>18.00万</td><td>17.31万</td><td>96.2%</td><td>6,875</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>2</td><td>18.00万</td><td>17.58万</td><td>97.7%</td><td>4,184.99</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>3</td><td>20.00万</td><td>19.61万</td><td>98.1%</td><td>3,859.27</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>4</td><td>17.00万</td><td>16.51万</td><td>97.1%</td><td>4,853.6</td><td>当日总体营业额目标</td></tr><tr class="good"><td>5</td><td>100万</td><td>107.3万</td><td>107.3%</td><td>-7.30万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>6</td><td>91.00万</td><td>91.67万</td><td>100.7%</td><td>-6,747.93</td><td>当日总体营业额目标</td></tr><tr class="good"><td>7</td><td>103万</td><td>106.2万</td><td>103.2%</td><td>-3.25万</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>8</td><td>37.00万</td><td>36.63万</td><td>99%</td><td>3,662.56</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>9</td><td>100万</td><td>95.73万</td><td>95.7%</td><td>4.27万</td><td>当日总体营业额目标</td></tr><tr class="bad"><td>10</td><td>100万</td><td>72.48万</td><td>72.5%</td><td>27.52万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>11</td><td>100万</td><td>101.9万</td><td>101.9%</td><td>-1.88万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>12</td><td>20.00万</td><td>22.04万</td><td>110.2%</td><td>-2.04万</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>13</td><td>20.00万</td><td>16.50万</td><td>82.5%</td><td>3.50万</td><td>当日总体营业额目标</td></tr><tr class="bad"><td>14</td><td>20.00万</td><td>15.93万</td><td>79.7%</td><td>4.07万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>15</td><td>400万</td><td>481.6万</td><td>120.4%</td><td>-81.60万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>16</td><td>300万</td><td>320.3万</td><td>106.8%</td><td>-20.33万</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>17</td><td>250万</td><td>247.6万</td><td>99%</td><td>2.44万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>18</td><td>200万</td><td>215.6万</td><td>107.8%</td><td>-15.57万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>19</td><td>150万</td><td>164.9万</td><td>109.9%</td><td>-14.90万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>20</td><td>100万</td><td>184.1万</td><td>184.1%</td><td>-84.13万</td><td>当日总体营业额目标</td></tr><tr class="bad"><td>21</td><td>18.00万</td><td>14.04万</td><td>78%</td><td>3.96万</td><td>当日总体营业额目标</td></tr><tr class="bad"><td>22</td><td>18.00万</td><td>13.42万</td><td>74.5%</td><td>4.58万</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>23</td><td>18.00万</td><td>16.36万</td><td>90.9%</td><td>1.64万</td><td>当日总体营业额目标</td></tr><tr class="bad"><td>24</td><td>100万</td><td>73.28万</td><td>73.3%</td><td>26.72万</td><td>当日总体营业额目标</td></tr><tr class="bad"><td>25</td><td>100万</td><td>1.33万</td><td>1.3%</td><td>98.67万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>26</td><td>15.00万</td><td>0</td><td>0%</td><td>15.00万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>27</td><td>200万</td><td>0</td><td>0%</td><td>200万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>28</td><td>180万</td><td>0</td><td>0%</td><td>180万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>29</td><td>16.00万</td><td>0</td><td>0%</td><td>16.00万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>30</td><td>140万</td><td>0</td><td>0%</td><td>140万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>31</td><td>120万</td><td>0</td><td>0%</td><td>120万</td><td>当日总体营业额目标</td></tr></tbody></table></div></details>
+  </section>
+<section class="company-card bad" id="空锦界" data-company="空锦界">
+    <div class="card-head"><div><p class="eyebrow">子公司</p><h2>空锦界</h2></div><div class="score">73%</div></div>
+    <div class="metrics"><div><span>月目标</span><b>100万</b></div><div><span>月完成</span><b>72.70万</b></div><div><span>预计完成率</span><b>88.5%</b></div><div><span>3天完成率</span><b>65.4%</b></div><div><span>周完成率</span><b>76.9%</b></div></div>
+    <div class="summary-box"><h3>总结</h3><p>月目标100万，当前完成72.7万，完成率73%，预计完成率约88.5%。月度仍有缺口，但周度完成率76.9%、3天完成率65.4%，说明近期还在跑，只是强度不够。关键要补足后6天日均缺口，同时核准拼多多、天猫、设计预估表等数据口径，避免预估和实际混在一起。</p></div>
+    <div class="bars"><label>月度进度 <span>72.70万 / 100万</span></label><i><em style="width:73%"></em></i><label>预计完成率 <span>88.52万 / 100万</span></label><i><em style="width:88.51767228571428%"></em></i><label>3天监督 <span>缺口 3.81万</span></label><i><em style="width:65.4%"></em></i><label>周监督 <span>缺口 5.55万</span></label><i><em style="width:76.9%"></em></i></div>
+    <details class="edit-module action-module" data-company="空锦界">
+      <summary><span>每日关键动作（子公司填写）</span><em>点击展开填写</em></summary>
+      <div class="edit-body">
+        <p class="fill-hint">以3天为一个周期填写真实经营动作，不填同步数据：这3天哪一天做了什么动作、投了什么资源、找了谁、改了什么货盘/价格/素材/排期，导致卖好或没卖好。</p>
+
+        <label>关键动作</label>
+        <textarea data-field="action" placeholder="例：本轮3天内，5月20日追加达人A排期并调整主推套装价格；5月21日投放素材换成520数据证明版本；5月22日直播间上新组合装，验证转化是否提升。"></textarea>
+      </div>
+    </details>
+    <details class="edit-module hev-module" data-company="空锦界">
+      <summary><span>每日假设-执行-验证（子公司填写）</span><em>点击展开填写/复制</em></summary>
+      <div class="edit-body">
+        <div class="share-tools"><button type="button" data-submit>提交本公司填写</button><button type="button" data-copy>复制给子公司填写</button><button type="button" class="secondary" data-download>下载填写模板</button><button type="button" class="secondary" data-clear>清空本公司填写</button></div>
+        <div class="triad-grid">
+          <div class="fill-field"><label>假设</label><textarea data-field="hypothesis" placeholder="请填写：基于最近3天数据，你们认为影响目标达成的核心原因/机会是什么？"></textarea></div>
+          <div class="fill-field"><label>执行</label><textarea data-field="execute" placeholder="请填写：下一个3天周期具体做什么，负责人是谁，每天做到哪一步？"></textarea></div>
+          <div class="fill-field"><label>验证</label><textarea data-field="verify" placeholder="请填写：3天后用什么指标验证动作有效，例如成交额、排期数、投放ROI、直播场次、短视频数量。"></textarea></div>
+        </div>
+      </div>
+    </details>
+    <details class="daily-details"><summary>展开本月每日明细</summary><div class="table-wrap"><table><thead><tr><th>日期</th><th>目标</th><th>完成</th><th>完成率</th><th>缺口</th><th>口径</th></tr></thead><tbody><tr class="bad"><td>1</td><td>3.00万</td><td>1.49万</td><td>49.5%</td><td>1.51万</td><td>当日总体营业额目标</td></tr><tr class="bad"><td>2</td><td>3.00万</td><td>1.98万</td><td>65.8%</td><td>1.02万</td><td>当日总体营业额目标</td></tr><tr class="bad"><td>3</td><td>3.00万</td><td>2.04万</td><td>68%</td><td>9,600.38</td><td>当日总体营业额目标</td></tr><tr class="bad"><td>4</td><td>3.00万</td><td>1.93万</td><td>64.5%</td><td>1.07万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>5</td><td>3.00万</td><td>3.97万</td><td>132.2%</td><td>-9,664.15</td><td>当日总体营业额目标</td></tr><tr class="good"><td>6</td><td>3.00万</td><td>3.36万</td><td>111.9%</td><td>-3,568.48</td><td>当日总体营业额目标</td></tr><tr class="good"><td>7</td><td>3.00万</td><td>3.85万</td><td>128.5%</td><td>-8,546.04</td><td>当日总体营业额目标</td></tr><tr class="good"><td>8</td><td>3.00万</td><td>3.54万</td><td>118.1%</td><td>-5,439.87</td><td>当日总体营业额目标</td></tr><tr class="good"><td>9</td><td>3.00万</td><td>3.78万</td><td>126.1%</td><td>-7,826.07</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>10</td><td>3.00万</td><td>2.48万</td><td>82.8%</td><td>5,154.47</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>11</td><td>2.00万</td><td>1.96万</td><td>98.1%</td><td>378.41</td><td>月度营业额目标</td></tr><tr class="good"><td>12</td><td>2.00万</td><td>4.14万</td><td>207.2%</td><td>-2.14万</td><td>月度营业额目标</td></tr><tr class="good"><td>13</td><td>2.00万</td><td>2.31万</td><td>115.4%</td><td>-3,089.85</td><td>月度营业额目标</td></tr><tr class="bad"><td>14</td><td>3.00万</td><td>2.29万</td><td>76.4%</td><td>7,079.18</td><td>月度营业额目标</td></tr><tr class="warn"><td>15</td><td>3.00万</td><td>2.80万</td><td>93.4%</td><td>1,969.57</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>16</td><td>3.00万</td><td>2.83万</td><td>94.3%</td><td>1,714.02</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>17</td><td>4.00万</td><td>3.55万</td><td>88.8%</td><td>4,466.56</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>18</td><td>4.00万</td><td>3.81万</td><td>95.3%</td><td>1,873.01</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>19</td><td>4.00万</td><td>3.62万</td><td>90.5%</td><td>3,789.66</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>20</td><td>4.00万</td><td>3.83万</td><td>95.9%</td><td>1,654.57</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>21</td><td>3.00万</td><td>2.59万</td><td>86.3%</td><td>4,118.74</td><td>当日总体营业额目标</td></tr><tr class="bad"><td>22</td><td>3.00万</td><td>2.27万</td><td>75.8%</td><td>7,260.95</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>23</td><td>3.00万</td><td>2.56万</td><td>85.5%</td><td>4,350.12</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>24</td><td>3.00万</td><td>2.74万</td><td>91.4%</td><td>2,590.15</td><td>当日总体营业额目标</td></tr><tr class="good"><td>25</td><td>4.00万</td><td>4.45万</td><td>111.3%</td><td>-4,514.04</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>26</td><td>4.00万</td><td>0</td><td>0%</td><td>4.00万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>27</td><td>4.00万</td><td>0</td><td>0%</td><td>4.00万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>28</td><td>4.00万</td><td>0</td><td>0%</td><td>4.00万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>29</td><td>4.00万</td><td>0</td><td>0%</td><td>4.00万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>30</td><td>4.00万</td><td>0</td><td>0%</td><td>4.00万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>31</td><td>4.00万</td><td>0</td><td>0%</td><td>4.00万</td><td>当日总体营业额目标</td></tr></tbody></table></div></details>
+  </section>
+<section class="company-card good" id="无虑传媒" data-company="无虑传媒">
+    <div class="card-head"><div><p class="eyebrow">子公司</p><h2>无虑传媒</h2></div><div class="score">103%</div></div>
+    <div class="metrics"><div><span>月目标</span><b>400万</b></div><div><span>月完成</span><b>411.4万</b></div><div><span>预计完成率</span><b>114.9%</b></div><div><span>3天完成率</span><b>45.3%</b></div><div><span>周完成率</span><b>86.8%</b></div></div>
+    <div class="summary-box"><h3>总结</h3><p>月目标400万，当前完成411.4万，完成率103%，预计完成率约114.9%，月度已经达成。问题在于最近3天完成率只有45.3%，比周度86.8%明显回落。当前重点不是月度达成，而是防止618前节奏掉下来，尤其要复盘赵宜主直播代运营的高峰场次、排期和投流动作。</p></div>
+    <div class="bars"><label>月度进度 <span>411.4万 / 400万</span></label><i><em style="width:103%"></em></i><label>预计完成率 <span>459.8万 / 400万</span></label><i><em style="width:114.94090492857143%"></em></i><label>3天监督 <span>缺口 12.30万</span></label><i><em style="width:45.3%"></em></i><label>周监督 <span>缺口 8.58万</span></label><i><em style="width:86.8%"></em></i></div>
+    <details class="edit-module action-module" data-company="无虑传媒">
+      <summary><span>每日关键动作（子公司填写）</span><em>点击展开填写</em></summary>
+      <div class="edit-body">
+        <p class="fill-hint">以3天为一个周期填写真实经营动作，不填同步数据：这3天哪一天做了什么动作、投了什么资源、找了谁、改了什么货盘/价格/素材/排期，导致卖好或没卖好。</p>
+
+        <label>关键动作</label>
+        <textarea data-field="action" placeholder="例：本轮3天内，5月20日追加达人A排期并调整主推套装价格；5月21日投放素材换成520数据证明版本；5月22日直播间上新组合装，验证转化是否提升。"></textarea>
+      </div>
+    </details>
+    <details class="edit-module hev-module" data-company="无虑传媒">
+      <summary><span>每日假设-执行-验证（子公司填写）</span><em>点击展开填写/复制</em></summary>
+      <div class="edit-body">
+        <div class="share-tools"><button type="button" data-submit>提交本公司填写</button><button type="button" data-copy>复制给子公司填写</button><button type="button" class="secondary" data-download>下载填写模板</button><button type="button" class="secondary" data-clear>清空本公司填写</button></div>
+        <div class="triad-grid">
+          <div class="fill-field"><label>假设</label><textarea data-field="hypothesis" placeholder="请填写：基于最近3天数据，你们认为影响目标达成的核心原因/机会是什么？"></textarea></div>
+          <div class="fill-field"><label>执行</label><textarea data-field="execute" placeholder="请填写：下一个3天周期具体做什么，负责人是谁，每天做到哪一步？"></textarea></div>
+          <div class="fill-field"><label>验证</label><textarea data-field="verify" placeholder="请填写：3天后用什么指标验证动作有效，例如成交额、排期数、投放ROI、直播场次、短视频数量。"></textarea></div>
+        </div>
+      </div>
+    </details>
+    <details class="daily-details"><summary>展开本月每日明细</summary><div class="table-wrap"><table><thead><tr><th>日期</th><th>目标</th><th>完成</th><th>完成率</th><th>缺口</th><th>口径</th></tr></thead><tbody><tr class="warn"><td>1</td><td>7.50万</td><td>7.36万</td><td>98.1%</td><td>1,447</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>2</td><td>7.50万</td><td>7.06万</td><td>94.2%</td><td>4,364.25</td><td>当日总体营业额目标</td></tr><tr class="good"><td>3</td><td>7.50万</td><td>8.04万</td><td>107.2%</td><td>-5,404.5</td><td>当日总体营业额目标</td></tr><tr class="good"><td>4</td><td>7.50万</td><td>8.44万</td><td>112.5%</td><td>-9,382.5</td><td>当日总体营业额目标</td></tr><tr class="good"><td>5</td><td>7.50万</td><td>9.02万</td><td>120.2%</td><td>-1.52万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>6</td><td>7.50万</td><td>7.71万</td><td>102.8%</td><td>-2,101.5</td><td>当日总体营业额目标</td></tr><tr class="good"><td>7</td><td>7.50万</td><td>8.36万</td><td>111.5%</td><td>-8,631.5</td><td>当日总体营业额目标</td></tr><tr class="good"><td>8</td><td>7.50万</td><td>10.13万</td><td>135.1%</td><td>-2.63万</td><td>当日总体营业额目标</td></tr><tr class="bad"><td>9</td><td>15.00万</td><td>6.43万</td><td>42.8%</td><td>8.57万</td><td>当日总体营业额目标</td></tr><tr class="bad"><td>10</td><td>15.00万</td><td>8.73万</td><td>58.2%</td><td>6.27万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>11</td><td>7.50万</td><td>8.16万</td><td>108.8%</td><td>-6,635.17</td><td>当日总体营业额目标</td></tr><tr class="good"><td>12</td><td>7.50万</td><td>8.04万</td><td>107.3%</td><td>-5,440.92</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>13</td><td>7.50万</td><td>7.14万</td><td>95.2%</td><td>3,565.5</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>14</td><td>7.50万</td><td>6.50万</td><td>86.6%</td><td>1.00万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>15</td><td>50.00万</td><td>88.17万</td><td>176.3%</td><td>-38.17万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>16</td><td>30.00万</td><td>47.50万</td><td>158.3%</td><td>-17.50万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>17</td><td>20.00万</td><td>46.00万</td><td>230%</td><td>-26.00万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>18</td><td>20.00万</td><td>34.20万</td><td>171%</td><td>-14.20万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>19</td><td>20.00万</td><td>28.03万</td><td>140.1%</td><td>-8.03万</td><td>当日总体营业额目标</td></tr><tr class="good"><td>20</td><td>20.00万</td><td>26.99万</td><td>134.9%</td><td>-6.99万</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>21</td><td>7.50万</td><td>6.88万</td><td>91.8%</td><td>6,179</td><td>当日总体营业额目标</td></tr><tr class="warn"><td>22</td><td>7.50万</td><td>6.39万</td><td>85.1%</td><td>1.11万</td><td>当日总体营业额目标</td></tr><tr class="bad"><td>23</td><td>7.50万</td><td>5.97万</td><td>79.6%</td><td>1.53万</td><td>当日总体营业额目标</td></tr><tr class="bad"><td>24</td><td>7.50万</td><td>4.69万</td><td>62.6%</td><td>2.81万</td><td>当日总体营业额目标</td></tr><tr class="bad"><td>25</td><td>7.50万</td><td>5.51万</td><td>73.4%</td><td>1.99万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>26</td><td>7.50万</td><td>0</td><td>0%</td><td>7.50万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>27</td><td>15.00万</td><td>0</td><td>0%</td><td>15.00万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>28</td><td>15.00万</td><td>0</td><td>0%</td><td>15.00万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>29</td><td>15.00万</td><td>0</td><td>0%</td><td>15.00万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>30</td><td>15.00万</td><td>0</td><td>0%</td><td>15.00万</td><td>当日总体营业额目标</td></tr><tr class="zero"><td>31</td><td>15.00万</td><td>0</td><td>0%</td><td>15.00万</td><td>当日总体营业额目标</td></tr></tbody></table></div></details>
+  </section>
+<section class="company-card warn" id="元气甸甸" data-company="元气甸甸">
+    <div class="card-head"><div><p class="eyebrow">子公司</p><h2>元气甸甸</h2></div><div class="score">84%</div></div>
+    <div class="metrics"><div><span>月目标</span><b>20.00万</b></div><div><span>月完成</span><b>16.80万</b></div><div><span>预计完成率</span><b>140.9%</b></div><div><span>3天完成率</span><b>3.9%</b></div><div><span>周完成率</span><b>293.7%</b></div></div>
+    <div class="summary-box"><h3>总结</h3><p>月目标20万，当前完成16.8万，完成率84%，预计完成率约140.9%。周度完成率293.7%，但最近3天只有3.9%，说明周度数据主要靠单日高峰拉动，持续性不足。要让子公司说明5月20日高峰到底来自什么动作，是活动、补录、渠道爆发还是特殊订单，并验证能否复制。</p></div>
+    <div class="bars"><label>月度进度 <span>16.80万 / 20.00万</span></label><i><em style="width:84%"></em></i><label>预计完成率 <span>28.17万 / 20.00万</span></label><i><em style="width:140.85235714285716%"></em></i><label>3天监督 <span>缺口 1.86万</span></label><i><em style="width:3.9%"></em></i><label>周监督 <span>超额 8.75万</span></label><i><em style="width:160%"></em></i></div>
+    <details class="edit-module action-module" data-company="元气甸甸">
+      <summary><span>每日关键动作（子公司填写）</span><em>点击展开填写</em></summary>
+      <div class="edit-body">
+        <p class="fill-hint">以3天为一个周期填写真实经营动作，不填同步数据：这3天哪一天做了什么动作、投了什么资源、找了谁、改了什么货盘/价格/素材/排期，导致卖好或没卖好。</p>
+
+        <label>关键动作</label>
+        <textarea data-field="action" placeholder="例：本轮3天内，5月20日追加达人A排期并调整主推套装价格；5月21日投放素材换成520数据证明版本；5月22日直播间上新组合装，验证转化是否提升。"></textarea>
+      </div>
+    </details>
+    <details class="edit-module hev-module" data-company="元气甸甸">
+      <summary><span>每日假设-执行-验证（子公司填写）</span><em>点击展开填写/复制</em></summary>
+      <div class="edit-body">
+        <div class="share-tools"><button type="button" data-submit>提交本公司填写</button><button type="button" data-copy>复制给子公司填写</button><button type="button" class="secondary" data-download>下载填写模板</button><button type="button" class="secondary" data-clear>清空本公司填写</button></div>
+        <div class="triad-grid">
+          <div class="fill-field"><label>假设</label><textarea data-field="hypothesis" placeholder="请填写：基于最近3天数据，你们认为影响目标达成的核心原因/机会是什么？"></textarea></div>
+          <div class="fill-field"><label>执行</label><textarea data-field="execute" placeholder="请填写：下一个3天周期具体做什么，负责人是谁，每天做到哪一步？"></textarea></div>
+          <div class="fill-field"><label>验证</label><textarea data-field="verify" placeholder="请填写：3天后用什么指标验证动作有效，例如成交额、排期数、投放ROI、直播场次、短视频数量。"></textarea></div>
+        </div>
+      </div>
+    </details>
+    <details class="daily-details"><summary>展开本月每日明细</summary><div class="table-wrap"><table><thead><tr><th>日期</th><th>目标</th><th>完成</th><th>完成率</th><th>缺口</th><th>口径</th></tr></thead><tbody><tr class="zero"><td>1</td><td>6,451.61</td><td>0</td><td>0%</td><td>6,451.61</td><td>月度营业额目标</td></tr><tr class="zero"><td>2</td><td>6,451.61</td><td>0</td><td>0%</td><td>6,451.61</td><td>月度营业额目标</td></tr><tr class="zero"><td>3</td><td>6,451.61</td><td>0</td><td>0%</td><td>6,451.61</td><td>月度营业额目标</td></tr><tr class="zero"><td>4</td><td>6,451.61</td><td>0</td><td>0%</td><td>6,451.61</td><td>月度营业额目标</td></tr><tr class="zero"><td>5</td><td>6,451.61</td><td>0</td><td>0%</td><td>6,451.61</td><td>月度营业额目标</td></tr><tr class="bad"><td>6</td><td>6,451.61</td><td>349.3</td><td>5.4%</td><td>6,102.31</td><td>月度营业额目标</td></tr><tr class="bad"><td>7</td><td>6,451.61</td><td>608</td><td>9.4%</td><td>5,843.61</td><td>月度营业额目标</td></tr><tr class="bad"><td>8</td><td>6,451.61</td><td>208.5</td><td>3.2%</td><td>6,243.11</td><td>月度营业额目标</td></tr><tr class="bad"><td>9</td><td>6,451.61</td><td>49.9</td><td>0.8%</td><td>6,401.71</td><td>月度营业额目标</td></tr><tr class="good"><td>10</td><td>6,451.61</td><td>6,579.9</td><td>102%</td><td>-128.29</td><td>月度营业额目标</td></tr><tr class="bad"><td>11</td><td>6,451.61</td><td>2,129.6</td><td>33%</td><td>4,322.01</td><td>月度营业额目标</td></tr><tr class="bad"><td>12</td><td>6,451.61</td><td>2,113.8</td><td>32.8%</td><td>4,337.81</td><td>月度营业额目标</td></tr><tr class="bad"><td>13</td><td>6,451.61</td><td>648.7</td><td>10.1%</td><td>5,802.91</td><td>月度营业额目标</td></tr><tr class="bad"><td>14</td><td>6,451.61</td><td>1,356.4</td><td>21%</td><td>5,095.21</td><td>月度营业额目标</td></tr><tr class="bad"><td>15</td><td>6,451.61</td><td>1,058.1</td><td>16.4%</td><td>5,393.51</td><td>月度营业额目标</td></tr><tr class="bad"><td>16</td><td>6,451.61</td><td>548</td><td>8.5%</td><td>5,903.61</td><td>月度营业额目标</td></tr><tr class="bad"><td>17</td><td>6,451.61</td><td>299.4</td><td>4.6%</td><td>6,152.21</td><td>月度营业额目标</td></tr><tr class="bad"><td>18</td><td>6,451.61</td><td>258.6</td><td>4%</td><td>6,193.01</td><td>月度营业额目标</td></tr><tr class="bad"><td>19</td><td>6,451.61</td><td>558</td><td>8.6%</td><td>5,893.61</td><td>月度营业额目标</td></tr><tr class="good"><td>20</td><td>6,451.61</td><td>13.09万</td><td>2029.1%</td><td>-12.45万</td><td>月度营业额目标</td></tr><tr class="bad"><td>21</td><td>6,451.61</td><td>199.6</td><td>3.1%</td><td>6,252.01</td><td>月度营业额目标</td></tr><tr class="bad"><td>22</td><td>6,451.61</td><td>598.8</td><td>9.3%</td><td>5,852.81</td><td>月度营业额目标</td></tr><tr class="bad"><td>23</td><td>6,451.61</td><td>199.6</td><td>3.1%</td><td>6,252.01</td><td>月度营业额目标</td></tr><tr class="bad"><td>24</td><td>6,451.61</td><td>199.6</td><td>3.1%</td><td>6,252.01</td><td>月度营业额目标</td></tr><tr class="bad"><td>25</td><td>6,451.61</td><td>548.9</td><td>8.5%</td><td>5,902.71</td><td>月度营业额目标</td></tr><tr class="zero"><td>26</td><td>6,451.61</td><td>0</td><td>0%</td><td>6,451.61</td><td>月度营业额目标</td></tr><tr class="zero"><td>27</td><td>6,451.61</td><td>0</td><td>0%</td><td>6,451.61</td><td>月度营业额目标</td></tr><tr class="zero"><td>28</td><td>6,451.61</td><td>0</td><td>0%</td><td>6,451.61</td><td>月度营业额目标</td></tr><tr class="zero"><td>29</td><td>6,451.61</td><td>0</td><td>0%</td><td>6,451.61</td><td>月度营业额目标</td></tr><tr class="zero"><td>30</td><td>6,451.61</td><td>0</td><td>0%</td><td>6,451.61</td><td>月度营业额目标</td></tr><tr class="zero"><td>31</td><td>6,451.61</td><td>0</td><td>0%</td><td>6,451.61</td><td>月度营业额目标</td></tr></tbody></table></div></details>
+  </section>
+<section class="company-card good" id="谷春雨" data-company="谷春雨">
+    <div class="card-head"><div><p class="eyebrow">子公司</p><h2>谷春雨</h2></div><div class="score">105%</div></div>
+    <div class="metrics"><div><span>月目标</span><b>100万</b></div><div><span>月完成</span><b>104.6万</b></div><div><span>预计完成率</span><b>114.4%</b></div><div><span>3天完成率</span><b>0%</b></div><div><span>周完成率</span><b>50.7%</b></div></div>
+    <div class="summary-box"><h3>总结</h3><p>月目标100万，当前完成104.6万，完成率105%，预计完成率约114.4%，月度已达成。但最近3天完成为0，周度也只有50.7%，说明后半段出现明显停滞或数据未更新。总结口径应是“月度结果好，但近期执行/填报中断”，需要确认是实际没动作，还是经营数据没有及时同步。</p></div>
+    <div class="bars"><label>月度进度 <span>104.6万 / 100万</span></label><i><em style="width:105%"></em></i><label>预计完成率 <span>114.4万 / 100万</span></label><i><em style="width:114.40470971428572%"></em></i><label>3天监督 <span>缺口 9.68万</span></label><i><em style="width:0%"></em></i><label>周监督 <span>缺口 11.14万</span></label><i><em style="width:50.7%"></em></i></div>
+    <details class="edit-module action-module" data-company="谷春雨">
+      <summary><span>每日关键动作（子公司填写）</span><em>点击展开填写</em></summary>
+      <div class="edit-body">
+        <p class="fill-hint">以3天为一个周期填写真实经营动作，不填同步数据：这3天哪一天做了什么动作、投了什么资源、找了谁、改了什么货盘/价格/素材/排期，导致卖好或没卖好。</p>
+
+        <label>关键动作</label>
+        <textarea data-field="action" placeholder="例：本轮3天内，5月20日追加达人A排期并调整主推套装价格；5月21日投放素材换成520数据证明版本；5月22日直播间上新组合装，验证转化是否提升。"></textarea>
+      </div>
+    </details>
+    <details class="edit-module hev-module" data-company="谷春雨">
+      <summary><span>每日假设-执行-验证（子公司填写）</span><em>点击展开填写/复制</em></summary>
+      <div class="edit-body">
+        <div class="share-tools"><button type="button" data-submit>提交本公司填写</button><button type="button" data-copy>复制给子公司填写</button><button type="button" class="secondary" data-download>下载填写模板</button><button type="button" class="secondary" data-clear>清空本公司填写</button></div>
+        <div class="triad-grid">
+          <div class="fill-field"><label>假设</label><textarea data-field="hypothesis" placeholder="请填写：基于最近3天数据，你们认为影响目标达成的核心原因/机会是什么？"></textarea></div>
+          <div class="fill-field"><label>执行</label><textarea data-field="execute" placeholder="请填写：下一个3天周期具体做什么，负责人是谁，每天做到哪一步？"></textarea></div>
+          <div class="fill-field"><label>验证</label><textarea data-field="verify" placeholder="请填写：3天后用什么指标验证动作有效，例如成交额、排期数、投放ROI、直播场次、短视频数量。"></textarea></div>
+        </div>
+      </div>
+    </details>
+    <details class="daily-details"><summary>展开本月每日明细</summary><div class="table-wrap"><table><thead><tr><th>日期</th><th>目标</th><th>完成</th><th>完成率</th><th>缺口</th><th>口径</th></tr></thead><tbody><tr class="bad"><td>1</td><td>3.23万</td><td>2.20万</td><td>68.1%</td><td>1.03万</td><td>月度营业额目标</td></tr><tr class="bad"><td>2</td><td>3.23万</td><td>2.38万</td><td>73.8%</td><td>8,457.57</td><td>月度营业额目标</td></tr><tr class="warn"><td>3</td><td>3.23万</td><td>2.81万</td><td>87.1%</td><td>4,159.07</td><td>月度营业额目标</td></tr><tr class="good"><td>4</td><td>3.23万</td><td>3.30万</td><td>102.3%</td><td>-748.62</td><td>月度营业额目标</td></tr><tr class="good"><td>5</td><td>3.23万</td><td>5.28万</td><td>163.7%</td><td>-2.06万</td><td>月度营业额目标</td></tr><tr class="good"><td>6</td><td>3.23万</td><td>6.36万</td><td>197.1%</td><td>-3.13万</td><td>月度营业额目标</td></tr><tr class="good"><td>7</td><td>3.23万</td><td>10.92万</td><td>338.4%</td><td>-7.69万</td><td>月度营业额目标</td></tr><tr class="good"><td>8</td><td>3.23万</td><td>3.24万</td><td>100.5%</td><td>-153.43</td><td>月度营业额目标</td></tr><tr class="good"><td>9</td><td>3.23万</td><td>6.79万</td><td>210.6%</td><td>-3.57万</td><td>月度营业额目标</td></tr><tr class="good"><td>10</td><td>3.23万</td><td>4.15万</td><td>128.7%</td><td>-9,251.24</td><td>月度营业额目标</td></tr><tr class="good"><td>11</td><td>3.23万</td><td>6.60万</td><td>204.7%</td><td>-3.38万</td><td>月度营业额目标</td></tr><tr class="warn"><td>12</td><td>3.23万</td><td>2.71万</td><td>84%</td><td>5,150.11</td><td>月度营业额目标</td></tr><tr class="good"><td>13</td><td>3.23万</td><td>6.70万</td><td>207.6%</td><td>-3.47万</td><td>月度营业额目标</td></tr><tr class="good"><td>14</td><td>3.23万</td><td>5.38万</td><td>166.7%</td><td>-2.15万</td><td>月度营业额目标</td></tr><tr class="good"><td>15</td><td>3.23万</td><td>3.81万</td><td>118.2%</td><td>-5,864.96</td><td>月度营业额目标</td></tr><tr class="warn"><td>16</td><td>3.23万</td><td>3.18万</td><td>98.5%</td><td>470.89</td><td>月度营业额目标</td></tr><tr class="good"><td>17</td><td>3.23万</td><td>6.65万</td><td>206.1%</td><td>-3.42万</td><td>月度营业额目标</td></tr><tr class="good"><td>18</td><td>3.23万</td><td>7.19万</td><td>222.9%</td><td>-3.97万</td><td>月度营业额目标</td></tr><tr class="good"><td>19</td><td>3.23万</td><td>3.49万</td><td>108.2%</td><td>-2,657.88</td><td>月度营业额目标</td></tr><tr class="good"><td>20</td><td>3.23万</td><td>3.69万</td><td>114.5%</td><td>-4,680.18</td><td>月度营业额目标</td></tr><tr class="bad"><td>21</td><td>3.23万</td><td>2.29万</td><td>71.1%</td><td>9,325.35</td><td>月度营业额目标</td></tr><tr class="good"><td>22</td><td>3.23万</td><td>5.45万</td><td>169%</td><td>-2.23万</td><td>月度营业额目标</td></tr><tr class="zero"><td>23</td><td>3.23万</td><td>0</td><td>0%</td><td>3.23万</td><td>月度营业额目标</td></tr><tr class="zero"><td>24</td><td>3.23万</td><td>0</td><td>0%</td><td>3.23万</td><td>月度营业额目标</td></tr><tr class="zero"><td>25</td><td>3.23万</td><td>0</td><td>0%</td><td>3.23万</td><td>月度营业额目标</td></tr><tr class="zero"><td>26</td><td>3.23万</td><td>0</td><td>0%</td><td>3.23万</td><td>月度营业额目标</td></tr><tr class="zero"><td>27</td><td>3.23万</td><td>0</td><td>0%</td><td>3.23万</td><td>月度营业额目标</td></tr><tr class="zero"><td>28</td><td>3.23万</td><td>0</td><td>0%</td><td>3.23万</td><td>月度营业额目标</td></tr><tr class="zero"><td>29</td><td>3.23万</td><td>0</td><td>0%</td><td>3.23万</td><td>月度营业额目标</td></tr><tr class="zero"><td>30</td><td>3.23万</td><td>0</td><td>0%</td><td>3.23万</td><td>月度营业额目标</td></tr><tr class="zero"><td>31</td><td>3.23万</td><td>0</td><td>0%</td><td>3.23万</td><td>月度营业额目标</td></tr></tbody></table></div></details>
+  </section>
+<section class="company-card bad" id="杭州控驻" data-company="杭州控驻">
+    <div class="card-head"><div><p class="eyebrow">子公司</p><h2>杭州控驻</h2></div><div class="score">51%</div></div>
+    <div class="metrics"><div><span>月目标</span><b>45.00万</b></div><div><span>月完成</span><b>23.00万</b></div><div><span>预计完成率</span><b>62.1%</b></div><div><span>3天完成率</span><b>25.3%</b></div><div><span>周完成率</span><b>56.8%</b></div></div>
+    <div class="summary-box"><h3>总结</h3><p>月目标45万，当前完成23万，完成率51%，预计完成率约62.1%。月度缺口较大，近3天完成率25.3%，周度56.8%，短期和周度都偏弱。当前重点是明确达人/投放动作是否有效，尤其之前提到前置费用和ROI的项目，需要复盘投入产出，不然月底很难追上。</p></div>
+    <div class="bars"><label>月度进度 <span>23.00万 / 45.00万</span></label><i><em style="width:51%"></em></i><label>预计完成率 <span>27.95万 / 45.00万</span></label><i><em style="width:62.1036253968254%"></em></i><label>3天监督 <span>缺口 3.25万</span></label><i><em style="width:25.3%"></em></i><label>周监督 <span>缺口 4.39万</span></label><i><em style="width:56.8%"></em></i></div>
+    <details class="edit-module action-module" data-company="杭州控驻">
+      <summary><span>每日关键动作（子公司填写）</span><em>点击展开填写</em></summary>
+      <div class="edit-body">
+        <p class="fill-hint">以3天为一个周期填写真实经营动作，不填同步数据：这3天哪一天做了什么动作、投了什么资源、找了谁、改了什么货盘/价格/素材/排期，导致卖好或没卖好。</p>
+
+        <label>关键动作</label>
+        <textarea data-field="action" placeholder="例：本轮3天内，5月20日追加达人A排期并调整主推套装价格；5月21日投放素材换成520数据证明版本；5月22日直播间上新组合装，验证转化是否提升。"></textarea>
+      </div>
+    </details>
+    <details class="edit-module hev-module" data-company="杭州控驻">
+      <summary><span>每日假设-执行-验证（子公司填写）</span><em>点击展开填写/复制</em></summary>
+      <div class="edit-body">
+        <div class="share-tools"><button type="button" data-submit>提交本公司填写</button><button type="button" data-copy>复制给子公司填写</button><button type="button" class="secondary" data-download>下载填写模板</button><button type="button" class="secondary" data-clear>清空本公司填写</button></div>
+        <div class="triad-grid">
+          <div class="fill-field"><label>假设</label><textarea data-field="hypothesis" placeholder="请填写：基于最近3天数据，你们认为影响目标达成的核心原因/机会是什么？"></textarea></div>
+          <div class="fill-field"><label>执行</label><textarea data-field="execute" placeholder="请填写：下一个3天周期具体做什么，负责人是谁，每天做到哪一步？"></textarea></div>
+          <div class="fill-field"><label>验证</label><textarea data-field="verify" placeholder="请填写：3天后用什么指标验证动作有效，例如成交额、排期数、投放ROI、直播场次、短视频数量。"></textarea></div>
+        </div>
+      </div>
+    </details>
+    <details class="daily-details"><summary>展开本月每日明细</summary><div class="table-wrap"><table><thead><tr><th>日期</th><th>目标</th><th>完成</th><th>完成率</th><th>缺口</th><th>口径</th></tr></thead><tbody><tr class="bad"><td>1</td><td>1.45万</td><td>1.12万</td><td>76.9%</td><td>3,359.83</td><td>月度营业额目标</td></tr><tr class="bad"><td>2</td><td>1.45万</td><td>688.3</td><td>4.7%</td><td>1.38万</td><td>月度营业额目标</td></tr><tr class="bad"><td>3</td><td>1.45万</td><td>1,154.1</td><td>8%</td><td>1.34万</td><td>月度营业额目标</td></tr><tr class="bad"><td>4</td><td>1.45万</td><td>4,346.8</td><td>29.9%</td><td>1.02万</td><td>月度营业额目标</td></tr><tr class="bad"><td>5</td><td>1.45万</td><td>8,691.1</td><td>59.9%</td><td>5,825.03</td><td>月度营业额目标</td></tr><tr class="good"><td>6</td><td>1.45万</td><td>1.53万</td><td>105.2%</td><td>-754.97</td><td>月度营业额目标</td></tr><tr class="bad"><td>7</td><td>1.45万</td><td>5,473</td><td>37.7%</td><td>9,043.13</td><td>月度营业额目标</td></tr><tr class="bad"><td>8</td><td>1.45万</td><td>8,025.4</td><td>55.3%</td><td>6,490.73</td><td>月度营业额目标</td></tr><tr class="bad"><td>9</td><td>1.45万</td><td>6,942.2</td><td>47.8%</td><td>7,573.93</td><td>月度营业额目标</td></tr><tr class="bad"><td>10</td><td>1.45万</td><td>8,369.5</td><td>57.7%</td><td>6,146.63</td><td>月度营业额目标</td></tr><tr class="good"><td>11</td><td>1.45万</td><td>1.71万</td><td>117.7%</td><td>-2,569.37</td><td>月度营业额目标</td></tr><tr class="good"><td>12</td><td>1.45万</td><td>1.54万</td><td>106.2%</td><td>-897.67</td><td>月度营业额目标</td></tr><tr class="good"><td>13</td><td>1.45万</td><td>1.99万</td><td>137%</td><td>-5,367.27</td><td>月度营业额目标</td></tr><tr class="good"><td>14</td><td>1.45万</td><td>1.50万</td><td>103.5%</td><td>-515.17</td><td>月度营业额目标</td></tr><tr class="bad"><td>15</td><td>1.45万</td><td>1.01万</td><td>69.9%</td><td>4,373.93</td><td>月度营业额目标</td></tr><tr class="bad"><td>16</td><td>1.45万</td><td>4,954</td><td>34.1%</td><td>9,562.13</td><td>月度营业额目标</td></tr><tr class="bad"><td>17</td><td>1.45万</td><td>3,527</td><td>24.3%</td><td>1.10万</td><td>月度营业额目标</td></tr><tr class="bad"><td>18</td><td>1.45万</td><td>4,613.1</td><td>31.8%</td><td>9,903.03</td><td>月度营业额目标</td></tr><tr class="bad"><td>19</td><td>1.45万</td><td>1.14万</td><td>78.9%</td><td>3,069.03</td><td>月度营业额目标</td></tr><tr class="warn"><td>20</td><td>1.45万</td><td>1.25万</td><td>86%</td><td>2,034.83</td><td>月度营业额目标</td></tr><tr class="warn"><td>21</td><td>1.45万</td><td>1.25万</td><td>86%</td><td>2,034.83</td><td>月度营业额目标</td></tr><tr class="good"><td>22</td><td>1.45万</td><td>1.55万</td><td>107.1%</td><td>-1,031.47</td><td>月度营业额目标</td></tr><tr class="bad"><td>23</td><td>1.45万</td><td>6,178.4</td><td>42.6%</td><td>8,337.73</td><td>月度营业额目标</td></tr><tr class="bad"><td>24</td><td>1.45万</td><td>1.10万</td><td>75.9%</td><td>3,494.03</td><td>月度营业额目标</td></tr><tr class="zero"><td>25</td><td>1.45万</td><td>0</td><td>0%</td><td>1.45万</td><td>月度营业额目标</td></tr><tr class="zero"><td>26</td><td>1.45万</td><td>0</td><td>0%</td><td>1.45万</td><td>月度营业额目标</td></tr><tr class="zero"><td>27</td><td>1.45万</td><td>0</td><td>0%</td><td>1.45万</td><td>月度营业额目标</td></tr><tr class="zero"><td>28</td><td>1.45万</td><td>0</td><td>0%</td><td>1.45万</td><td>月度营业额目标</td></tr><tr class="zero"><td>29</td><td>1.45万</td><td>0</td><td>0%</td><td>1.45万</td><td>月度营业额目标</td></tr><tr class="zero"><td>30</td><td>1.45万</td><td>0</td><td>0%</td><td>1.45万</td><td>月度营业额目标</td></tr><tr class="zero"><td>31</td><td>1.45万</td><td>0</td><td>0%</td><td>1.45万</td><td>月度营业额目标</td></tr></tbody></table></div></details>
+  </section>
+<section class="company-card empty" id="深圳赫拉" data-company="深圳赫拉">
+    <div class="card-head"><div><p class="eyebrow">子公司</p><h2>深圳赫拉</h2></div><div class="score">0%</div></div>
+    <div class="metrics"><div><span>月目标</span><b>0</b></div><div><span>月完成</span><b>0</b></div><div><span>预计完成率</span><b>目标待定</b></div><div><span>3天完成率</span><b>0%</b></div><div><span>周完成率</span><b>0%</b></div></div>
+    <div class="summary-box"><h3>总结</h3><p>本月目标0，完成0，当前没有有效经营数据。暂时不适合按完成率评价，需要先确认是否纳入本月经营目标。如果不纳入，就从考核看板中标记为“观察/未启用”；如果纳入，必须补目标、负责人和3天动作。</p></div>
+    <div class="bars"><label>月度进度 <span>0 / 0</span></label><i><em style="width:0%"></em></i><label>预计完成率 <span>目标待定</span></label><i><em style="width:0%"></em></i><label>3天监督 <span>缺口 0</span></label><i><em style="width:0%"></em></i><label>周监督 <span>缺口 0</span></label><i><em style="width:0%"></em></i></div>
+    <details class="edit-module action-module" data-company="深圳赫拉">
+      <summary><span>每日关键动作（子公司填写）</span><em>点击展开填写</em></summary>
+      <div class="edit-body">
+        <p class="fill-hint">以3天为一个周期填写真实经营动作，不填同步数据：这3天哪一天做了什么动作、投了什么资源、找了谁、改了什么货盘/价格/素材/排期，导致卖好或没卖好。</p>
+
+        <label>关键动作</label>
+        <textarea data-field="action" placeholder="例：本轮3天内，5月20日追加达人A排期并调整主推套装价格；5月21日投放素材换成520数据证明版本；5月22日直播间上新组合装，验证转化是否提升。"></textarea>
+      </div>
+    </details>
+    <details class="edit-module hev-module" data-company="深圳赫拉">
+      <summary><span>每日假设-执行-验证（子公司填写）</span><em>点击展开填写/复制</em></summary>
+      <div class="edit-body">
+        <div class="share-tools"><button type="button" data-submit>提交本公司填写</button><button type="button" data-copy>复制给子公司填写</button><button type="button" class="secondary" data-download>下载填写模板</button><button type="button" class="secondary" data-clear>清空本公司填写</button></div>
+        <div class="triad-grid">
+          <div class="fill-field"><label>假设</label><textarea data-field="hypothesis" placeholder="请填写：基于最近3天数据，你们认为影响目标达成的核心原因/机会是什么？"></textarea></div>
+          <div class="fill-field"><label>执行</label><textarea data-field="execute" placeholder="请填写：下一个3天周期具体做什么，负责人是谁，每天做到哪一步？"></textarea></div>
+          <div class="fill-field"><label>验证</label><textarea data-field="verify" placeholder="请填写：3天后用什么指标验证动作有效，例如成交额、排期数、投放ROI、直播场次、短视频数量。"></textarea></div>
+        </div>
+      </div>
+    </details>
+    <details class="daily-details"><summary>展开本月每日明细</summary><div class="table-wrap"><table><thead><tr><th>日期</th><th>目标</th><th>完成</th><th>完成率</th><th>缺口</th><th>口径</th></tr></thead><tbody><tr class="empty"><td>1</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>2</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>3</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>4</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>5</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>6</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>7</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>8</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>9</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>10</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>11</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>12</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>13</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>14</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>15</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>16</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>17</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>18</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>19</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>20</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>21</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>22</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>23</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>24</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>25</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>26</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>27</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>28</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>29</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>30</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>31</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr></tbody></table></div></details>
+  </section>
+<section class="company-card good" id="广州竹蜻蜓" data-company="广州竹蜻蜓">
+    <div class="card-head"><div><p class="eyebrow">子公司</p><h2>广州竹蜻蜓</h2></div><div class="score">100%</div></div>
+    <div class="metrics"><div><span>月目标</span><b>0</b></div><div><span>月完成</span><b>3,801.22</b></div><div><span>预计完成率</span><b>目标待定</b></div><div><span>3天完成率</span><b>0%</b></div><div><span>周完成率</span><b>0%</b></div></div>
+    <div class="summary-box"><h3>总结</h3><p>月目标为0，但有完成额3801.22，当前完成率口径不稳定。这个公司最大问题不是完成好坏，而是目标口径没建立。需要先确认广州竹蜻蜓是否参与本月考核，以及花木轻妍健康轻食、元气甸甸相关店铺的数据归属。否则有成交但无法判断是否达标。</p></div>
+    <div class="bars"><label>月度进度 <span>3,801.22 / 0</span></label><i><em style="width:100%"></em></i><label>预计完成率 <span>目标待定</span></label><i><em style="width:0%"></em></i><label>3天监督 <span>缺口 0</span></label><i><em style="width:0%"></em></i><label>周监督 <span>缺口 0</span></label><i><em style="width:0%"></em></i></div>
+    <details class="edit-module action-module" data-company="广州竹蜻蜓">
+      <summary><span>每日关键动作（子公司填写）</span><em>点击展开填写</em></summary>
+      <div class="edit-body">
+        <p class="fill-hint">以3天为一个周期填写真实经营动作，不填同步数据：这3天哪一天做了什么动作、投了什么资源、找了谁、改了什么货盘/价格/素材/排期，导致卖好或没卖好。</p>
+
+        <label>关键动作</label>
+        <textarea data-field="action" placeholder="例：本轮3天内，5月20日追加达人A排期并调整主推套装价格；5月21日投放素材换成520数据证明版本；5月22日直播间上新组合装，验证转化是否提升。"></textarea>
+      </div>
+    </details>
+    <details class="edit-module hev-module" data-company="广州竹蜻蜓">
+      <summary><span>每日假设-执行-验证（子公司填写）</span><em>点击展开填写/复制</em></summary>
+      <div class="edit-body">
+        <div class="share-tools"><button type="button" data-submit>提交本公司填写</button><button type="button" data-copy>复制给子公司填写</button><button type="button" class="secondary" data-download>下载填写模板</button><button type="button" class="secondary" data-clear>清空本公司填写</button></div>
+        <div class="triad-grid">
+          <div class="fill-field"><label>假设</label><textarea data-field="hypothesis" placeholder="请填写：基于最近3天数据，你们认为影响目标达成的核心原因/机会是什么？"></textarea></div>
+          <div class="fill-field"><label>执行</label><textarea data-field="execute" placeholder="请填写：下一个3天周期具体做什么，负责人是谁，每天做到哪一步？"></textarea></div>
+          <div class="fill-field"><label>验证</label><textarea data-field="verify" placeholder="请填写：3天后用什么指标验证动作有效，例如成交额、排期数、投放ROI、直播场次、短视频数量。"></textarea></div>
+        </div>
+      </div>
+    </details>
+    <details class="daily-details"><summary>展开本月每日明细</summary><div class="table-wrap"><table><thead><tr><th>日期</th><th>目标</th><th>完成</th><th>完成率</th><th>缺口</th><th>口径</th></tr></thead><tbody><tr class="empty"><td>1</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>2</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>3</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>4</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>5</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>6</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>7</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>8</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>9</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>10</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>11</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>12</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>13</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>14</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>15</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>16</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>17</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>18</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>19</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>20</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>21</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>22</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>23</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>24</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>25</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>26</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>27</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>28</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>29</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>30</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr><tr class="empty"><td>31</td><td>0</td><td>0</td><td>0%</td><td>0</td><td>无数据</td></tr></tbody></table></div></details>
+  </section>
+<section class="company-card warn" id="风起云涌" data-company="风起云涌">
+    <div class="card-head"><div><p class="eyebrow">子公司</p><h2>风起云涌</h2></div><div class="score">88%</div></div>
+    <div class="metrics"><div><span>月目标</span><b>50.00万</b></div><div><span>月完成</span><b>44.20万</b></div><div><span>预计完成率</span><b>93.3%</b></div><div><span>3天完成率</span><b>0%</b></div><div><span>周完成率</span><b>25.4%</b></div></div>
+    <div class="summary-box"><h3>总结</h3><p>月目标50万，当前完成44.2万，完成率88%，预计完成率约91.6%，月度接近达成。但最近3天完成为0，周度完成率25.4%，说明前期完成较好，近期明显停滞。需要子公司解释最近3天为什么没有动作或没有数据，并给出下一个3天补量计划。</p></div>
+    <div class="bars"><label>月度进度 <span>44.20万 / 50.00万</span></label><i><em style="width:88%"></em></i><label>预计完成率 <span>46.65万 / 50.00万</span></label><i><em style="width:93.30911428571427%"></em></i><label>3天监督 <span>缺口 4.84万</span></label><i><em style="width:0%"></em></i><label>周监督 <span>缺口 8.43万</span></label><i><em style="width:25.4%"></em></i></div>
+    <details class="edit-module action-module" data-company="风起云涌">
+      <summary><span>每日关键动作（子公司填写）</span><em>点击展开填写</em></summary>
+      <div class="edit-body">
+        <p class="fill-hint">以3天为一个周期填写真实经营动作，不填同步数据：这3天哪一天做了什么动作、投了什么资源、找了谁、改了什么货盘/价格/素材/排期，导致卖好或没卖好。</p>
+
+        <label>关键动作</label>
+        <textarea data-field="action" placeholder="例：本轮3天内，5月20日追加达人A排期并调整主推套装价格；5月21日投放素材换成520数据证明版本；5月22日直播间上新组合装，验证转化是否提升。">围绕直播间成交效率做调整：一是优化直播间画面呈现，二是调整主播话术，三是从原来偏“男包专卖”的单一表达，切换为“男包+营养概念”混合销售，让直播间既保留原有品类认知，又能承接营养概念带来的新增转化。</textarea>
+      </div>
+    </details>
+    <details class="edit-module hev-module" data-company="风起云涌">
+      <summary><span>每日假设-执行-验证（子公司填写）</span><em>点击展开填写/复制</em></summary>
+      <div class="edit-body">
+        <div class="share-tools"><button type="button" data-submit>提交本公司填写</button><button type="button" data-copy>复制给子公司填写</button><button type="button" class="secondary" data-download>下载填写模板</button><button type="button" class="secondary" data-clear>清空本公司填写</button></div>
+        <div class="triad-grid">
+          <div class="fill-field"><label>假设</label><textarea data-field="hypothesis" placeholder="请填写：基于最近3天数据，你们认为影响目标达成的核心原因/机会是什么？">假设本轮3天影响成交的核心因素不是单一货品问题，而是直播间表达和流量承接不足：如果直播间话术更清晰、男女包/营养概念能被主播熟练切换，并同步加强流量调控，就有机会提升停留、转化和成交稳定性。</textarea></div>
+          <div class="fill-field"><label>执行</label><textarea data-field="execute" placeholder="请填写：下一个3天周期具体做什么，负责人是谁，每天做到哪一步？">已完成直播间话术和销售方向调整，接下来3天继续压实执行：1）主播每天复盘话术，确保男包、女包、营养概念能随时切换；2）继续调控流量和出价，先控制整体成本，避免盲目放量；3）重点观察流量偏弱时的素材、出价、场观和成交变化，及时调整直播间承接方式。</textarea></div>
+          <div class="fill-field"><label>验证</label><textarea data-field="verify" placeholder="请填写：3天后用什么指标验证动作有效，例如成交额、排期数、投放ROI、直播场次、短视频数量。">3天后用数据验证方法是否成立：重点看直播间流量是否回升、成交额是否改善、转化率是否提升、出价降低后ROI是否变好、主播切换男女包和营养概念时是否能稳定成交。目前判断方法初步可行，但仍在整理数据，需要用3天结果确认。</textarea></div>
+        </div>
+      </div>
+    </details>
+    <details class="daily-details"><summary>展开本月每日明细</summary><div class="table-wrap"><table><thead><tr><th>日期</th><th>目标</th><th>完成</th><th>完成率</th><th>缺口</th><th>口径</th></tr></thead><tbody><tr class="bad"><td>1</td><td>1.61万</td><td>5,307</td><td>32.9%</td><td>1.08万</td><td>月度营业额目标</td></tr><tr class="bad"><td>2</td><td>1.61万</td><td>9,150</td><td>56.7%</td><td>6,980.63</td><td>月度营业额目标</td></tr><tr class="bad"><td>3</td><td>1.61万</td><td>5,133</td><td>31.8%</td><td>1.10万</td><td>月度营业额目标</td></tr><tr class="bad"><td>4</td><td>1.61万</td><td>7,067</td><td>43.8%</td><td>9,063.63</td><td>月度营业额目标</td></tr><tr class="warn"><td>5</td><td>1.61万</td><td>1.60万</td><td>99.3%</td><td>115.63</td><td>月度营业额目标</td></tr><tr class="bad"><td>6</td><td>1.61万</td><td>1.23万</td><td>76%</td><td>3,878.63</td><td>月度营业额目标</td></tr><tr class="warn"><td>7</td><td>1.61万</td><td>1.52万</td><td>94.3%</td><td>918.63</td><td>月度营业额目标</td></tr><tr class="bad"><td>8</td><td>1.61万</td><td>3,138</td><td>19.5%</td><td>1.30万</td><td>月度营业额目标</td></tr><tr class="bad"><td>9</td><td>1.61万</td><td>3,150</td><td>19.5%</td><td>1.30万</td><td>月度营业额目标</td></tr><tr class="bad"><td>10</td><td>1.61万</td><td>4,524</td><td>28%</td><td>1.16万</td><td>月度营业额目标</td></tr><tr class="bad"><td>11</td><td>1.61万</td><td>5,505</td><td>34.1%</td><td>1.06万</td><td>月度营业额目标</td></tr><tr class="bad"><td>12</td><td>1.61万</td><td>4,917</td><td>30.5%</td><td>1.12万</td><td>月度营业额目标</td></tr><tr class="bad"><td>13</td><td>1.61万</td><td>3,540</td><td>21.9%</td><td>1.26万</td><td>月度营业额目标</td></tr><tr class="bad"><td>14</td><td>1.61万</td><td>3,252</td><td>20.2%</td><td>1.29万</td><td>月度营业额目标</td></tr><tr class="good"><td>15</td><td>1.61万</td><td>12.83万</td><td>795.4%</td><td>-11.22万</td><td>月度营业额目标</td></tr><tr class="good"><td>16</td><td>1.61万</td><td>8.81万</td><td>546.1%</td><td>-7.20万</td><td>月度营业额目标</td></tr><tr class="good"><td>17</td><td>1.61万</td><td>3.17万</td><td>196.2%</td><td>-1.55万</td><td>月度营业额目标</td></tr><tr class="good"><td>18</td><td>1.61万</td><td>3.92万</td><td>243%</td><td>-2.31万</td><td>月度营业额目标</td></tr><tr class="good"><td>19</td><td>1.61万</td><td>2.84万</td><td>175.8%</td><td>-1.22万</td><td>月度营业额目标</td></tr><tr class="good"><td>20</td><td>1.61万</td><td>2.52万</td><td>156.3%</td><td>-9,084.47</td><td>月度营业额目标</td></tr><tr class="zero"><td>21</td><td>1.61万</td><td>0</td><td>0%</td><td>1.61万</td><td>月度营业额目标</td></tr><tr class="bad"><td>22</td><td>1.61万</td><td>1,758</td><td>10.9%</td><td>1.44万</td><td>月度营业额目标</td></tr><tr class="bad"><td>23</td><td>1.61万</td><td>1,665</td><td>10.3%</td><td>1.45万</td><td>月度营业额目标</td></tr><tr class="zero"><td>24</td><td>1.61万</td><td>0</td><td>0%</td><td>1.61万</td><td>月度营业额目标</td></tr><tr class="zero"><td>25</td><td>1.61万</td><td>0</td><td>0%</td><td>1.61万</td><td>月度营业额目标</td></tr><tr class="zero"><td>26</td><td>1.61万</td><td>0</td><td>0%</td><td>1.61万</td><td>月度营业额目标</td></tr><tr class="zero"><td>27</td><td>1.61万</td><td>0</td><td>0%</td><td>1.61万</td><td>月度营业额目标</td></tr><tr class="zero"><td>28</td><td>1.61万</td><td>0</td><td>0%</td><td>1.61万</td><td>月度营业额目标</td></tr><tr class="zero"><td>29</td><td>1.61万</td><td>0</td><td>0%</td><td>1.61万</td><td>月度营业额目标</td></tr><tr class="zero"><td>30</td><td>1.61万</td><td>0</td><td>0%</td><td>1.61万</td><td>月度营业额目标</td></tr><tr class="zero"><td>31</td><td>1.61万</td><td>0</td><td>0%</td><td>1.61万</td><td>月度营业额目标</td></tr></tbody></table></div></details>
+  </section>
+<section class="company-card good" id="不拘一格" data-company="不拘一格">
+    <div class="card-head"><div><p class="eyebrow">子公司</p><h2>不拘一格</h2></div><div class="score">144%</div></div>
+    <div class="metrics"><div><span>月目标</span><b>4.00万</b></div><div><span>月完成</span><b>5.80万</b></div><div><span>预计完成率</span><b>150.8%</b></div><div><span>3天完成率</span><b>0%</b></div><div><span>周完成率</span><b>30.2%</b></div></div>
+    <div class="summary-box"><h3>总结</h3><p>月目标4万，当前完成5.8万，完成率144%，月度已超额。但最近3天完成为0，周度完成率30.2%，说明当前业务可能已经停下或没有继续动作。结合之前“设备租赁业务没了”的风险，这家公司要重点判断后续是否还有持续收入来源，不能只看月度超额。</p></div>
+    <div class="bars"><label>月度进度 <span>5.80万 / 4.00万</span></label><i><em style="width:144%"></em></i><label>预计完成率 <span>6.03万 / 4.00万</span></label><i><em style="width:150.85%"></em></i><label>3天监督 <span>缺口 3,870.96</span></label><i><em style="width:0%"></em></i><label>周监督 <span>缺口 6,302.24</span></label><i><em style="width:30.2%"></em></i></div>
+    <details class="edit-module action-module" data-company="不拘一格">
+      <summary><span>每日关键动作（子公司填写）</span><em>点击展开填写</em></summary>
+      <div class="edit-body">
+        <p class="fill-hint">以3天为一个周期填写真实经营动作，不填同步数据：这3天哪一天做了什么动作、投了什么资源、找了谁、改了什么货盘/价格/素材/排期，导致卖好或没卖好。</p>
+
+        <label>关键动作</label>
+        <textarea data-field="action" placeholder="例：本轮3天内，5月20日追加达人A排期并调整主推套装价格；5月21日投放素材换成520数据证明版本；5月22日直播间上新组合装，验证转化是否提升。"></textarea>
+      </div>
+    </details>
+    <details class="edit-module hev-module" data-company="不拘一格">
+      <summary><span>每日假设-执行-验证（子公司填写）</span><em>点击展开填写/复制</em></summary>
+      <div class="edit-body">
+        <div class="share-tools"><button type="button" data-submit>提交本公司填写</button><button type="button" data-copy>复制给子公司填写</button><button type="button" class="secondary" data-download>下载填写模板</button><button type="button" class="secondary" data-clear>清空本公司填写</button></div>
+        <div class="triad-grid">
+          <div class="fill-field"><label>假设</label><textarea data-field="hypothesis" placeholder="请填写：基于最近3天数据，你们认为影响目标达成的核心原因/机会是什么？"></textarea></div>
+          <div class="fill-field"><label>执行</label><textarea data-field="execute" placeholder="请填写：下一个3天周期具体做什么，负责人是谁，每天做到哪一步？"></textarea></div>
+          <div class="fill-field"><label>验证</label><textarea data-field="verify" placeholder="请填写：3天后用什么指标验证动作有效，例如成交额、排期数、投放ROI、直播场次、短视频数量。"></textarea></div>
+        </div>
+      </div>
+    </details>
+    <details class="daily-details"><summary>展开本月每日明细</summary><div class="table-wrap"><table><thead><tr><th>日期</th><th>目标</th><th>完成</th><th>完成率</th><th>缺口</th><th>口径</th></tr></thead><tbody><tr class="good"><td>1</td><td>1,290.32</td><td>1,736</td><td>134.5%</td><td>-445.68</td><td>月度营业额目标</td></tr><tr class="warn"><td>2</td><td>1,290.32</td><td>1,282</td><td>99.4%</td><td>8.32</td><td>月度营业额目标</td></tr><tr class="bad"><td>3</td><td>1,290.32</td><td>552</td><td>42.8%</td><td>738.32</td><td>月度营业额目标</td></tr><tr class="bad"><td>4</td><td>1,290.32</td><td>787</td><td>61%</td><td>503.32</td><td>月度营业额目标</td></tr><tr class="warn"><td>5</td><td>1,290.32</td><td>1,082</td><td>83.9%</td><td>208.32</td><td>月度营业额目标</td></tr><tr class="bad"><td>6</td><td>1,290.32</td><td>295</td><td>22.9%</td><td>995.32</td><td>月度营业额目标</td></tr><tr class="good"><td>7</td><td>1,290.32</td><td>1,722</td><td>133.5%</td><td>-431.68</td><td>月度营业额目标</td></tr><tr class="bad"><td>8</td><td>1,290.32</td><td>396</td><td>30.7%</td><td>894.32</td><td>月度营业额目标</td></tr><tr class="good"><td>9</td><td>1,290.32</td><td>1,856</td><td>143.8%</td><td>-565.68</td><td>月度营业额目标</td></tr><tr class="warn"><td>10</td><td>1,290.32</td><td>1,190</td><td>92.2%</td><td>100.32</td><td>月度营业额目标</td></tr><tr class="good"><td>11</td><td>1,290.32</td><td>4,515.6</td><td>350%</td><td>-3,225.28</td><td>月度营业额目标</td></tr><tr class="good"><td>12</td><td>1,290.32</td><td>1,673</td><td>129.7%</td><td>-382.68</td><td>月度营业额目标</td></tr><tr class="good"><td>13</td><td>1,290.32</td><td>3,825</td><td>296.4%</td><td>-2,534.68</td><td>月度营业额目标</td></tr><tr class="warn"><td>14</td><td>1,290.32</td><td>1,067</td><td>82.7%</td><td>223.32</td><td>月度营业额目标</td></tr><tr class="good"><td>15</td><td>1,290.32</td><td>8,199.71</td><td>635.5%</td><td>-6,909.39</td><td>月度营业额目标</td></tr><tr class="good"><td>16</td><td>1,290.32</td><td>2,145.05</td><td>166.2%</td><td>-854.73</td><td>月度营业额目标</td></tr><tr class="good"><td>17</td><td>1.00万</td><td>1.58万</td><td>157.6%</td><td>-5,759.25</td><td>月度营业额目标</td></tr><tr class="warn"><td>18</td><td>1,290.32</td><td>1,166.31</td><td>90.4%</td><td>124.01</td><td>月度营业额目标</td></tr><tr class="good"><td>19</td><td>1,290.32</td><td>5,738.66</td><td>444.7%</td><td>-4,448.34</td><td>月度营业额目标</td></tr><tr class="good"><td>20</td><td>1,290.32</td><td>2,139</td><td>165.8%</td><td>-848.68</td><td>月度营业额目标</td></tr><tr class="bad"><td>21</td><td>1,290.32</td><td>198</td><td>15.3%</td><td>1,092.32</td><td>月度营业额目标</td></tr><tr class="bad"><td>22</td><td>1,290.32</td><td>393</td><td>30.5%</td><td>897.32</td><td>月度营业额目标</td></tr><tr class="zero"><td>23</td><td>1,290.32</td><td>0</td><td>0%</td><td>1,290.32</td><td>月度营业额目标</td></tr><tr class="zero"><td>24</td><td>1,290.32</td><td>0</td><td>0%</td><td>1,290.32</td><td>月度营业额目标</td></tr><tr class="zero"><td>25</td><td>1,290.32</td><td>0</td><td>0%</td><td>1,290.32</td><td>月度营业额目标</td></tr><tr class="zero"><td>26</td><td>1,290.32</td><td>0</td><td>0%</td><td>1,290.32</td><td>月度营业额目标</td></tr><tr class="zero"><td>27</td><td>1,290.32</td><td>0</td><td>0%</td><td>1,290.32</td><td>月度营业额目标</td></tr><tr class="zero"><td>28</td><td>1,290.32</td><td>0</td><td>0%</td><td>1,290.32</td><td>月度营业额目标</td></tr><tr class="zero"><td>29</td><td>1,290.32</td><td>0</td><td>0%</td><td>1,290.32</td><td>月度营业额目标</td></tr><tr class="zero"><td>30</td><td>1,290.32</td><td>0</td><td>0%</td><td>1,290.32</td><td>月度营业额目标</td></tr><tr class="zero"><td>31</td><td>1,290.32</td><td>0</td><td>0%</td><td>1,290.32</td><td>月度营业额目标</td></tr></tbody></table></div></details>
+  </section>
+<section class="company-card bad" id="逆戟鲸" data-company="逆戟鲸">
+    <div class="card-head"><div><p class="eyebrow">子公司</p><h2>逆戟鲸</h2></div><div class="score">42%</div></div>
+    <div class="metrics"><div><span>月目标</span><b>300万</b></div><div><span>月完成</span><b>125.8万</b></div><div><span>预计完成率</span><b>47.1%</b></div><div><span>3天完成率</span><b>22.1%</b></div><div><span>周完成率</span><b>22.8%</b></div></div>
+    <div class="summary-box"><h3>总结</h3><p>月目标300万，当前完成125.8万，完成率42%，预计完成率仍偏低，是当前重点风险子公司。近3天完成率22.1%，周度22.8%，说明不是短期波动，而是持续低位。本月未完成原因已明确：海豚兄妹没主推，学好姐姐排期没对上，老雷被品牌方挖走，核心达人资源断档。618应围绕520数据做敲门砖，主攻中腰部达人和代播机构，短直一体达人补充，KOC短视频达人铺量。</p></div>
+    <div class="bars"><label>月度进度 <span>125.8万 / 300万</span></label><i><em style="width:42%"></em></i><label>预计完成率 <span>141.2万 / 300万</span></label><i><em style="width:47.080311904761906%"></em></i><label>3天监督 <span>缺口 21.81万</span></label><i><em style="width:22.1%"></em></i><label>周监督 <span>缺口 60.99万</span></label><i><em style="width:22.8%"></em></i></div>
+    <details class="edit-module action-module" data-company="逆戟鲸">
+      <summary><span>每日关键动作（子公司填写）</span><em>点击展开填写</em></summary>
+      <div class="edit-body">
+        <p class="fill-hint">以3天为一个周期填写真实经营动作，不填同步数据：这3天哪一天做了什么动作、投了什么资源、找了谁、改了什么货盘/价格/素材/排期，导致卖好或没卖好。</p>
+        <div class="reference-box"><b>已知复盘参考：</b><ul><li>公司复盘：海豚兄妹没给主推；学好姐姐排期对不上；老雷被品牌方挖走，导致核心达人资源断档。</li><li>520数据复盘：整理520跑出来的GMV、转化、素材表现，形成达人/机构招商案例包。</li><li>618方向：中腰部达人建联、代播机构开拓、短直一体补位、KOC短视频铺量、排期风险池。</li></ul></div>
+        <label>关键动作</label>
+        <textarea data-field="action" placeholder="例：本轮3天内，5月20日追加达人A排期并调整主推套装价格；5月21日投放素材换成520数据证明版本；5月22日直播间上新组合装，验证转化是否提升。"></textarea>
+      </div>
+    </details>
+    <details class="edit-module hev-module" data-company="逆戟鲸">
+      <summary><span>每日假设-执行-验证（子公司填写）</span><em>点击展开填写/复制</em></summary>
+      <div class="edit-body">
+        <div class="share-tools"><button type="button" data-submit>提交本公司填写</button><button type="button" data-copy>复制给子公司填写</button><button type="button" class="secondary" data-download>下载填写模板</button><button type="button" class="secondary" data-clear>清空本公司填写</button></div>
+        <div class="triad-grid">
+          <div class="fill-field"><label>假设</label><textarea data-field="hypothesis" placeholder="请填写：基于最近3天数据，你们认为影响目标达成的核心原因/机会是什么？"></textarea></div>
+          <div class="fill-field"><label>执行</label><textarea data-field="execute" placeholder="请填写：下一个3天周期具体做什么，负责人是谁，每天做到哪一步？"></textarea></div>
+          <div class="fill-field"><label>验证</label><textarea data-field="verify" placeholder="请填写：3天后用什么指标验证动作有效，例如成交额、排期数、投放ROI、直播场次、短视频数量。"></textarea></div>
+        </div>
+      </div>
+    </details>
+    <details class="daily-details"><summary>展开本月每日明细</summary><div class="table-wrap"><table><thead><tr><th>日期</th><th>目标</th><th>完成</th><th>完成率</th><th>缺口</th><th>口径</th></tr></thead><tbody><tr class="zero"><td>1</td><td>5.00万</td><td>0</td><td>0%</td><td>5.00万</td><td>月度营业额目标</td></tr><tr class="zero"><td>2</td><td>5.00万</td><td>0</td><td>0%</td><td>5.00万</td><td>月度营业额目标</td></tr><tr class="zero"><td>3</td><td>5.00万</td><td>0</td><td>0%</td><td>5.00万</td><td>月度营业额目标</td></tr><tr class="zero"><td>4</td><td>5.00万</td><td>0</td><td>0%</td><td>5.00万</td><td>月度营业额目标</td></tr><tr class="zero"><td>5</td><td>5.00万</td><td>0</td><td>0%</td><td>5.00万</td><td>月度营业额目标</td></tr><tr class="bad"><td>6</td><td>5.00万</td><td>3.63万</td><td>72.6%</td><td>1.37万</td><td>月度营业额目标</td></tr><tr class="bad"><td>7</td><td>5.00万</td><td>3.21万</td><td>64.2%</td><td>1.79万</td><td>月度营业额目标</td></tr><tr class="bad"><td>8</td><td>5.00万</td><td>3.45万</td><td>68.9%</td><td>1.55万</td><td>月度营业额目标</td></tr><tr class="bad"><td>9</td><td>5.00万</td><td>2.34万</td><td>46.9%</td><td>2.66万</td><td>月度营业额目标</td></tr><tr class="bad"><td>10</td><td>5.00万</td><td>3.24万</td><td>64.7%</td><td>1.76万</td><td>月度营业额目标</td></tr><tr class="warn"><td>11</td><td>5.00万</td><td>4.15万</td><td>82.9%</td><td>8,542</td><td>月度营业额目标</td></tr><tr class="bad"><td>12</td><td>5.00万</td><td>3.43万</td><td>68.6%</td><td>1.57万</td><td>月度营业额目标</td></tr><tr class="bad"><td>13</td><td>5.00万</td><td>2.92万</td><td>58.4%</td><td>2.08万</td><td>月度营业额目标</td></tr><tr class="bad"><td>14</td><td>5.00万</td><td>2.78万</td><td>55.7%</td><td>2.22万</td><td>月度营业额目标</td></tr><tr class="bad"><td>15</td><td>22.00万</td><td>7.94万</td><td>36.1%</td><td>14.06万</td><td>月度营业额目标</td></tr><tr class="good"><td>16</td><td>22.00万</td><td>24.83万</td><td>112.9%</td><td>-2.83万</td><td>月度营业额目标</td></tr><tr class="bad"><td>17</td><td>22.00万</td><td>6.09万</td><td>27.7%</td><td>15.91万</td><td>月度营业额目标</td></tr><tr class="warn"><td>18</td><td>21.00万</td><td>19.47万</td><td>92.7%</td><td>1.53万</td><td>月度营业额目标</td></tr><tr class="bad"><td>19</td><td>22.00万</td><td>7.14万</td><td>32.5%</td><td>14.86万</td><td>月度营业额目标</td></tr><tr class="bad"><td>20</td><td>21.00万</td><td>3.23万</td><td>15.4%</td><td>17.77万</td><td>月度营业额目标</td></tr><tr class="bad"><td>21</td><td>10.00万</td><td>3.23万</td><td>32.3%</td><td>6.77万</td><td>月度营业额目标</td></tr><tr class="bad"><td>22</td><td>10.00万</td><td>3.10万</td><td>31%</td><td>6.90万</td><td>月度营业额目标</td></tr><tr class="bad"><td>23</td><td>10.00万</td><td>2.27万</td><td>22.7%</td><td>7.73万</td><td>月度营业额目标</td></tr><tr class="bad"><td>24</td><td>10.00万</td><td>3.02万</td><td>30.2%</td><td>6.98万</td><td>月度营业额目标</td></tr><tr class="bad"><td>25</td><td>10.00万</td><td>3.17万</td><td>31.7%</td><td>6.83万</td><td>月度营业额目标</td></tr><tr class="zero"><td>26</td><td>8.00万</td><td>0</td><td>0%</td><td>8.00万</td><td>月度营业额目标</td></tr><tr class="zero"><td>27</td><td>8.00万</td><td>0</td><td>0%</td><td>8.00万</td><td>月度营业额目标</td></tr><tr class="zero"><td>28</td><td>8.00万</td><td>0</td><td>0%</td><td>8.00万</td><td>月度营业额目标</td></tr><tr class="zero"><td>29</td><td>8.00万</td><td>0</td><td>0%</td><td>8.00万</td><td>月度营业额目标</td></tr><tr class="zero"><td>30</td><td>9.00万</td><td>0</td><td>0%</td><td>9.00万</td><td>月度营业额目标</td></tr><tr class="zero"><td>31</td><td>9.00万</td><td>0</td><td>0%</td><td>9.00万</td><td>月度营业额目标</td></tr></tbody></table></div></details>
+  </section></section></main><div class="footer">Generated by Codex · 2026-05-26</div><script>
+(function(){
+  function key(company,field){return 'subsidiary-kanban-fill:'+company+':'+field;}
+  function companyOf(el){return el.closest('.company-card')?.dataset.company || el.closest('[data-company]')?.dataset.company || '子公司';}
+  function template(company){
+    const card=document.querySelector('.company-card[data-company="'+CSS.escape(company)+'"]');
+    const get=f=>card?.querySelector('[data-field="'+f+'"]')?.value || '';
+    return '【'+company+'】经营动作填写\n\n一、3天关键动作\n'+(get('action')||'待填写')+'\n\n二、3天假设\n'+(get('hypothesis')||'待填写')+'\n\n三、3天执行\n'+(get('execute')||'待填写')+'\n\n四、3天验证\n'+(get('verify')||'待填写');
+  }
+  function toast(msg){let t=document.querySelector('.toast'); if(!t){t=document.createElement('div');t.className='toast';document.body.appendChild(t);} t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800);}
+  function copy(value){if(navigator.clipboard&&navigator.clipboard.writeText)return navigator.clipboard.writeText(value); const ta=document.createElement('textarea');ta.value=value;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();return Promise.resolve();}
+  document.querySelectorAll('textarea[data-field]').forEach(ta=>{const company=companyOf(ta);const field=ta.dataset.field;ta.value=localStorage.getItem(key(company,field))||'';ta.addEventListener('input',()=>localStorage.setItem(key(company,field),ta.value));});
+  document.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();const company=companyOf(btn);copy(template(company)).then(()=>toast(company+' 填写内容已复制'));}));
+  document.querySelectorAll('[data-download]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();const company=companyOf(btn);const blob=new Blob([template(company)],{type:'text/plain;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=company+'-关键动作填写.txt';document.body.appendChild(a);a.click();URL.revokeObjectURL(a.href);a.remove();toast(company+' 模板已下载');}));
+  document.querySelectorAll('[data-clear]').forEach(btn=>btn.addEventListener('click',e=>{e.preventDefault();const card=btn.closest('.company-card');const company=companyOf(btn);card.querySelectorAll('textarea[data-field]').forEach(ta=>{ta.value='';localStorage.removeItem(key(company,ta.dataset.field));});toast(company+' 已清空');}));
+})();
+</script><script>
+(function(){
+  function companyOf(el){return el.closest('.company-card')?.dataset.company || el.closest('[data-company]')?.dataset.company || '子公司';}
+  function toast(msg){let t=document.querySelector('.toast'); if(!t){t=document.createElement('div');t.className='toast';document.body.appendChild(t);} t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+  function formPayload(company){const card=document.querySelector('.company-card[data-company="'+CSS.escape(company)+'"]');const get=f=>card?.querySelector('[data-field="'+f+'"]')?.value||'';return {'form-name':'subsidiary-cycle-report',company,action:get('action'),hypothesis:get('hypothesis'),execute:get('execute'),verify:get('verify')};}
+  document.addEventListener('click',async function(e){const btn=e.target.closest('[data-submit]'); if(!btn) return; e.preventDefault(); const company=companyOf(btn); const data=formPayload(company); if(!data.action&&!data.hypothesis&&!data.execute&&!data.verify){toast('请先填写内容再提交');return;} btn.disabled=true; const old=btn.textContent; btn.textContent='提交中...'; try{const res=await fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(data).toString()}); if(!res.ok) throw new Error('HTTP '+res.status); toast(company+' 已提交'); btn.textContent='已提交'; setTimeout(()=>{btn.textContent=old;btn.disabled=false;},1600);}catch(err){toast('提交失败：请确认使用的是分享网站链接'); btn.textContent=old; btn.disabled=false;}});
+})();
+</script><script>
+(function(){
+  function ready(fn){ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',fn); else fn(); }
+  function companyOf(el){ return el.closest('.company-card')?.dataset.company || el.closest('[data-company]')?.dataset.company || '子公司'; }
+  function selectedDay(card){ return card.querySelector('[data-day-select]')?.value || '26'; }
+  function dailyKey(company, day, field){ return 'subsidiary-kanban-daily:' + company + ':' + day + ':' + field; }
+  function toast(msg){ let t=document.querySelector('.toast'); if(!t){t=document.createElement('div');t.className='toast';document.body.appendChild(t);} t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); }
+  function loadDaily(card){
+    const company=companyOf(card), day=selectedDay(card);
+    card.querySelectorAll('textarea[data-field]').forEach(ta=>{ ta.value=localStorage.getItem(dailyKey(company,day,ta.dataset.field)) || ''; });
+    card.querySelectorAll('[data-date-label]').forEach(x=>x.textContent='当前填写日期：5月'+day+'日');
+  }
+  function saveDaily(ta){ const card=ta.closest('.company-card'); localStorage.setItem(dailyKey(companyOf(card),selectedDay(card),ta.dataset.field),ta.value); }
+  function template(card){
+    const company=companyOf(card), day=selectedDay(card);
+    const get=f=>card.querySelector('[data-field="'+f+'"]')?.value || '';
+    return '【'+company+'】5月'+day+'日经营动作填写\n\n一、每日关键动作\n'+(get('action')||'待填写')+'\n\n二、每日假设\n'+(get('hypothesis')||'待填写')+'\n\n三、每日执行\n'+(get('execute')||'待填写')+'\n\n四、每日验证\n'+(get('verify')||'待填写');
+  }
+  function copy(value){ if(navigator.clipboard&&navigator.clipboard.writeText)return navigator.clipboard.writeText(value); const ta=document.createElement('textarea'); ta.value=value; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); return Promise.resolve(); }
+  function ensureDailyControls(){
+    document.querySelectorAll('.company-card').forEach(card=>{
+      if(!card.querySelector('.daily-action-control')){
+        const control=document.createElement('div'); control.className='daily-action-control';
+        control.innerHTML='<div class="daily-date-main"><div class="daily-date-title">每日填写日期</div><div class="daily-date-label" data-date-label>当前填写日期：5月26日</div></div><select data-day-select>'+Array.from({length:31},(_,i)=>'<option value="'+(i+1)+'">5月'+(i+1)+'日</option>').join('')+'</select>';
+        control.querySelector('select').value='26';
+        const firstModule=card.querySelector('.edit-module');
+        if(firstModule) card.insertBefore(control, firstModule);
+      }
+      card.querySelectorAll('.edit-module summary span').forEach(span=>{
+        span.textContent = span.textContent.includes('关键动作') ? '每日关键动作（子公司填写）' : '每日假设-执行-验证（子公司填写）';
+      });
+      card.querySelectorAll('.edit-module summary em').forEach(em=>{ em.textContent = em.textContent.includes('复制') ? '选择日期后展开填写/复制' : '选择日期后展开填写'; });
+      const hint=card.querySelector('.action-module .fill-hint');
+      if(hint) hint.textContent='按天填写真实经营动作，不填同步数据：这一天做了什么动作、投了什么资源、找了谁、改了什么货盘/价格/素材/排期，导致当天卖好或没卖好。';
+      const action=card.querySelector('textarea[data-field="action"]');
+      if(action) action.placeholder='例：5月26日，调整直播间主推话术；追加达人排期；更换素材/价格/货盘；说明当天成交变好或变差的动作。';
+      const hypo=card.querySelector('textarea[data-field="hypothesis"]');
+      if(hypo) hypo.placeholder='请填写：基于当天数据，你们认为影响目标达成的核心原因/机会是什么？';
+      const exec=card.querySelector('textarea[data-field="execute"]');
+      if(exec) exec.placeholder='请填写：这一天具体做了什么，负责人是谁，完成到什么程度？';
+      const verify=card.querySelector('textarea[data-field="verify"]');
+      if(verify) verify.placeholder='请填写：用什么指标验证当天动作有效，例如成交额、排期数、投放ROI、直播场次、短视频数量。';
+      loadDaily(card);
+    });
+  }
+  ready(function(){
+    ensureDailyControls();
+    document.addEventListener('change',e=>{ if(e.target.matches('[data-day-select]')) loadDaily(e.target.closest('.company-card')); });
+    document.addEventListener('input',e=>{ if(e.target.matches('textarea[data-field]')) saveDaily(e.target); });
+    document.addEventListener('click',async function(e){
+      const copyBtn=e.target.closest('[data-copy]');
+      const dlBtn=e.target.closest('[data-download]');
+      const clearBtn=e.target.closest('[data-clear]');
+      const submitBtn=e.target.closest('[data-submit]');
+      if(!copyBtn && !dlBtn && !clearBtn && !submitBtn) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      const card=e.target.closest('.company-card'); const company=companyOf(card); const day=selectedDay(card);
+      if(copyBtn){ await copy(template(card)); toast(company+' 5月'+day+'日填写内容已复制'); return; }
+      if(dlBtn){ const blob=new Blob([template(card)],{type:'text/plain;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=company+'-5月'+day+'日-动作填写.txt'; document.body.appendChild(a); a.click(); URL.revokeObjectURL(a.href); a.remove(); toast(company+' 5月'+day+'日模板已下载'); return; }
+      if(clearBtn){ card.querySelectorAll('textarea[data-field]').forEach(ta=>{ta.value=''; localStorage.removeItem(dailyKey(company,day,ta.dataset.field));}); toast(company+' 5月'+day+'日已清空'); return; }
+      if(submitBtn){
+        const get=f=>card.querySelector('[data-field="'+f+'"]')?.value || '';
+        const data={'form-name':'subsidiary-cycle-report',company,date:'2026-05-'+String(day).padStart(2,'0'),action:get('action'),hypothesis:get('hypothesis'),execute:get('execute'),verify:get('verify')};
+        if(!data.action&&!data.hypothesis&&!data.execute&&!data.verify){toast('请先填写当天内容再提交');return;}
+        submitBtn.disabled=true; const old=submitBtn.textContent; submitBtn.textContent='提交中...';
+        try{ const res=await fetch('/',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(data).toString()}); if(!res.ok) throw new Error('HTTP '+res.status); toast(company+' 5月'+day+'日已提交'); submitBtn.textContent='已提交'; setTimeout(()=>{submitBtn.textContent=old;submitBtn.disabled=false;},1600); }
+        catch(err){ toast('提交失败：请确认使用的是分享网站链接'); submitBtn.textContent=old; submitBtn.disabled=false; }
+      }
+    }, true);
+  });
+})();
+</script><script id="daily-seed-fengqiyunyong-2026-05-26">
+(function(){
+  const company = '风起云涌';
+  const day = '26';
+  const values = {"action":"围绕直播间成交效率做调整：优化直播间画面、调整主播话术，从原来偏“男包专卖”的单一表达，切换为“男包+营养概念”混合销售。","hypothesis":"本轮1天影响成交的核心因素不是单一货品问题，而是直播间表达和流量承接不足。若话术更清晰、男女包/营养概念能熟练切换，并加强流量调控，有机会提升停留、转化和成交稳定性。","execute":"已完成直播间话术和销售方向调整。接下来继续复盘主播话术、调控流量和出价，观察素材、出价、场观和成交变化。","verify":"1天后看流量是否回升、成交额是否改善、转化率是否提升、降低出价后ROI是否变好，以及主播切换品类和营养概念时能否稳定成交。"};
+  function key(field){ return 'subsidiary-kanban-daily:' + company + ':' + day + ':' + field; }
+  function apply(){
+    Object.entries(values).forEach(([field,value]) => {
+      if (!localStorage.getItem(key(field))) localStorage.setItem(key(field), value);
+    });
+    const card = document.querySelector('.company-card[data-company="风起云涌"]');
+    if (!card) return;
+    const select = card.querySelector('[data-day-select]');
+    if (select && select.value !== day) select.value = day;
+    card.querySelectorAll('[data-date-label]').forEach(x => x.textContent = '当前填写日期：5月26日');
+    card.querySelectorAll('textarea[data-field]').forEach(ta => { ta.value = localStorage.getItem(key(ta.dataset.field)) || ''; });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else apply();
+})();
+</script><script id="daily-seed-yuanqidiandian-2026-05-26">
+(function(){
+  const company = '元气甸甸';
+  const day = '26';
+  const values = {"action":"今天的关键动作是把元气甸甸的增长重点放到达人合作和多瓶装成交上，不只做自营等流量。当天先新增联系20-30个达人，优先筛选母婴、女性健康、补铁、孕产、营养食品类达人；同时重点推进5-10个有意向达人开播或挂车。给达人统一一套安全话术和卖点：补铁、软糖、方便吃、适合女性/孕产相关人群，但不能夸大功效、不能做过度承诺。货盘上主推5瓶装，少推单瓶，用多瓶装提高客单价、消化库存，并让达人在直播和短视频里形成统一表达。","hypothesis":"今天的判断是：元气甸甸当前要提升成交，不能只靠自营自然转化，而要扩大达人直播和短视频挂车曝光。只要每天稳定新增20-30个精准达人，并推动其中5-10个进入开播、挂车或内容发布，曝光和订单会比单纯自营更快放大。但达人端必须同时控制佣金、退款和话术风险：如果达人话术清楚、卖点不过度承诺，用户预期会更稳定，退款率有机会下降；如果主推5瓶装而不是单瓶，也更容易提高客单价、消化库存和拉动销售额。","execute":"今天执行四件事：1）整理达人名单，先联系20-30个达人，按母婴、女性健康、补铁、孕产、营养食品五类筛选，优先找近期有带货、能直播或能短视频挂车的人；2）筛出愿意合作的达人，推进5-10个进入开播、挂车、寄样或排期阶段，并记录每个达人的合作状态；3）准备并发给达人统一资料包，包括产品资料、佣金政策、直播话术、卖点图、禁用功效词和5瓶装主推机制；4）把达人分成三类：可立即开播/挂车、需要寄样培育、暂时观望，今晚更新清单，明确明天优先催播和重点跟进对象。","verify":"今天先看日级验证结果：是否新增联系达人20-30个；是否筛出至少5-10个有明确合作意向的达人；是否至少推动一部分达人进入开播、挂车、寄样或排期；是否把统一话术、佣金政策、卖点图和禁用功效词发给达人；是否有达人开始产生订单或有效咨询。3天累计再看是否新增联系达人60-90个，是否成功推动5-10个达人开播或挂车，是否产生稳定订单。如果订单不稳定，要复盘达人质量、话术是否过度、5瓶装价格机制是否清楚、佣金和退款是否可控。"};
+  function key(field){ return 'subsidiary-kanban-daily:' + company + ':' + day + ':' + field; }
+  function apply(){
+    Object.entries(values).forEach(([field,value]) => { if (!localStorage.getItem(key(field))) localStorage.setItem(key(field), value); });
+    const card = document.querySelector('.company-card[data-company="元气甸甸"]');
+    if (!card) return;
+    const select = card.querySelector('[data-day-select]');
+    if (select) select.value = day;
+    card.querySelectorAll('[data-date-label]').forEach(x => x.textContent = '当前填写日期：5月26日');
+    card.querySelectorAll('textarea[data-field]').forEach(ta => { ta.value = localStorage.getItem(key(ta.dataset.field)) || ''; });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else apply();
+})();
+</script><script id="daily-seed-wulvchuanmei-2026-05-26">
+(function(){
+  const company = '无虑传媒';
+  const day = '26';
+  const values = {"action":"今天的关键动作是为5月27日-6月1日提前购直播做统一机制和开播前准备，核心只推“六盒装508提前购”，不混讲618正期888/12盒。具体动作包括：1）5月27日开播前，所有主播统一培训提前购口径：六盒装原价796/798，活动价508，品牌直降约288，现货、可混搭、保售后；2）运营检查全部千川计划和素材，提前开启千川智能优惠券，并确认券后价格表达不说死，最终以用户端实际到手价为准；3）主播直播中每5分钟循环一次核心话术，持续强调5.27-6.1提前购、半年装508、现货、混搭、限时优惠券、平台券以用户端展示为准、能拍先拍；4）直播运营盯公屏、回弹幕、发福袋，遇到混搭、价格、券、现货、售后问题及时联动客服，避免用户反复刷屏影响成交；5）素材这3天只测三类：796/798直降508、提前购现货、智能优惠券/平台券利益点，表现好的素材再用抖加放大曝光。","hypothesis":"今天的判断是：无虑传媒接下来几天的成交提升点不在于同时讲更多机制，而在于把提前购机制讲透、讲统一、讲到用户能马上理解并下单。六盒装796/798直降508，再叠加千川智能优惠券和可能的平台券，有机会明显提高下单速度和转化率。只要主播把“活动价508、可混搭、现货、限时优惠券、平台券以用户端为准、售后有保障”讲清楚，并且官方旗舰店和营养膳食旗舰店能承接订单，就能减少价格争议和用户犹豫，把成交集中到5月27日-6月1日提前购窗口。","execute":"执行分三天推进：5月27日先跑通机制，主播统一只讲六盒装508、混搭、现货、限时优惠券和售后保障；中控负责盯公屏、回弹幕、发福袋，遇到混搭和券后价问题马上联动客服；运营同步检查千川计划、智能优惠券、素材和出价，确保直播间承接顺畅。5月28日根据数据加预算，重点看账号、时段、主播话术、素材版本的ROI和销售额，哪个账号/时段跑得好就把预算往哪里加，素材只保留“508直降”“提前购现货”“智能优惠券/平台券”中表现好的版本，并择优抖加放大。5月29日固化打法，沉淀表现最好的主播话术、素材、投放时段和客服回复口径，作为5月30日-6月1日继续放量的模板。","verify":"验证看四组结果：第一，六盒装508叠加千川智能优惠券后，ROI是否跑稳，订单成本是否下降或保持可接受；第二，主播每5分钟循环提前购话术后，成交是否更集中，用户下单速度是否变快；第三，公屏关于平台券、智能优惠券、价格、现货、混搭、售后的重复问题是否减少，客服介入是否更顺；第四，三类素材中是否能跑出明确优胜版本，并带动点击、停留和成交提升。若ROI低、订单成本高、价格争议变多或公屏问题变多，要立刻调整话术、券后价表达、客服回复和投放出价，避免提前购窗口被价格理解问题拖慢。"};
+  function key(field){ return 'subsidiary-kanban-daily:' + company + ':' + day + ':' + field; }
+  function apply(){
+    Object.entries(values).forEach(([field,value]) => { if (!localStorage.getItem(key(field))) localStorage.setItem(key(field), value); });
+    const card = document.querySelector('.company-card[data-company="无虑传媒"]');
+    if (!card) return;
+    const select = card.querySelector('[data-day-select]');
+    if (select) select.value = day;
+    card.querySelectorAll('[data-date-label]').forEach(x => x.textContent = '当前填写日期：5月26日');
+    card.querySelectorAll('textarea[data-field]').forEach(ta => { ta.value = localStorage.getItem(key(ta.dataset.field)) || ''; });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else apply();
+})();
+</script><script id="daily-seed-kongjinjie-2026-05-26">
+(function(){
+  const company = '空锦界';
+  const day = '26';
+  const values = {"action":"今天的关键动作是围绕天猫、京东、拼多多三端经营数据做一次日级拉通，不再只看总完成额。先把三端分别拆成成交额、订单数、客单价、转化率、退款/售后、设计需求完成情况和待交付物料，再对照月目标100万、当前完成72.7万、剩余缺口27.3万，明确后6天每天要补的成交和设计交付重点。当天重点推动：1）核对三端实际成交口径，避免预估和实际混在一起；2）找出哪个平台贡献高、哪个平台拖后腿；3）把高优先级设计需求优先排到能直接影响成交的页面、主图、详情页、直播/活动物料上；4）当天输出三端补量清单和设计交付清单。","hypothesis":"今天的判断是：空锦界当前月完成率73%，预计完成率约88.5%，说明按现在节奏月底大概率仍有缺口；但周完成率76.9%高于3天完成率65.4%，说明不是完全没机会，而是最近3天的推进强度和平台拆解还不够。核心假设是：空锦界的问题不只是设计产能，而是天猫、京东、拼多多三端经营数据没有被拆到具体动作上，导致设计资源没有优先服务最能带成交的货盘、活动页、主图和详情页。如果今天把三端成交缺口和设计需求优先级对齐，后6天有机会把预计完成率从88.5%继续往上拉。","execute":"今天执行四件事：1）数据口径统一：分别拉取天猫、京东、拼多多当天及近3天成交额、订单数、客单价、转化率、退款/售后、投放或活动数据，确认哪些是实际成交、哪些是预估；2）平台诊断：按三端拆出贡献排名和短板，标记高成交平台继续加速、低转化平台优先检查主图/详情页/价格机制/活动承接；3）设计排期：把当天设计需求按“能否直接影响成交”排序，优先处理活动页、商品主图、详情页、直播手卡、促销banner，暂缓不能带来当日或本周成交的低优先级需求；4）结果沉淀：当天形成一张三端补量表，写清楚每个平台还差多少、用什么设计动作补、负责人是谁、今天几点前交付。","verify":"今天先用日级指标验证动作是否有效：第一，天猫、京东、拼多多三端成交数据是否已分开，不再只看合计；第二，是否明确后6天每天至少需要补约4.55万成交才能追回月目标；第三，是否识别出至少1个主补量平台和1个重点优化平台；第四，当天是否完成至少3项能直接影响成交的设计交付，例如主图、详情页、活动banner、直播手卡或平台活动素材；第五，次日复盘三端成交额、转化率、客单价和退款/售后是否改善。若成交没有改善，要继续复盘平台流量不足、商品机制不强、设计素材未命中卖点、排期优先级不准四个原因。"};
+  function key(field){ return 'subsidiary-kanban-daily:' + company + ':' + day + ':' + field; }
+  function apply(){
+    Object.entries(values).forEach(([field,value]) => { if (!localStorage.getItem(key(field))) localStorage.setItem(key(field), value); });
+    const card = document.querySelector('.company-card[data-company="空锦界"]');
+    if (!card) return;
+    const select = card.querySelector('[data-day-select]');
+    if (select) select.value = day;
+    card.querySelectorAll('[data-date-label]').forEach(x => x.textContent = '当前填写日期：5月26日');
+    card.querySelectorAll('textarea[data-field]').forEach(ta => { ta.value = localStorage.getItem(key(ta.dataset.field)) || ''; });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else apply();
+})();
+</script><script id="daily-seed-zhaoyizhu-2026-05-26">
+(function(){
+  const company = '赵宜主';
+  const day = '26';
+  const values = {"action":"今天的关键动作是做经营数据诊断，先不盲目加投放，而是把商品、达人、投流、退款、用户评价五类数据拉出来交叉分析。重点找出：哪个SKU卖得最好、哪个SKU退款最高、哪个渠道转化最低、哪个时段掉量、哪个直播间停留最低。当天输出三张经营清单：爆品清单、问题SKU清单、高退款达人清单，为后续投放、达人排期和货盘调整提供依据。","hypothesis":"今天的判断是：赵宜主当前增长问题可能不是流量单点不足，而是“货品-人群-信任-素材”四个环节里存在错配。具体假设为：1）退款高，可能是商品实际体验与用户预期不符；2）ROI低，可能是投流人群不精准；3）转化低，可能是详情页、直播间或达人背书的信任感不足；4）掉量，可能是素材疲劳或高峰时段承接不足。","execute":"今天执行三步：第一步，拉取商品数据、流量数据、达人数据、退款数据和用户评价数据；第二步，整理SKU分析表和退款分析表，把GMV、转化率、退款率、达人来源、投流成本放到同一张表里对比；第三步，输出问题清单，明确哪些SKU继续放量，哪些SKU需要优化卖点/页面/直播话术，哪些达人或渠道要暂停、降权或重新测试。","verify":"今天之后用五组指标验证诊断是否有效：商品端看重点SKU转化率是否提升；流量端看点击率和投放ROI是否改善；达人端看优质达人GMV占比是否增长；直播端看停留时长和成交转化是否提升；售后端看高退款SKU和高退款达人对应的退款率是否下降。若指标没有改善，说明问题不只在数据诊断，还需要进一步调整货盘、素材和达人结构。"};
+  function key(field){ return 'subsidiary-kanban-daily:' + company + ':' + day + ':' + field; }
+  function apply(){
+    Object.entries(values).forEach(([field,value]) => { if (!localStorage.getItem(key(field))) localStorage.setItem(key(field), value); });
+    const card = document.querySelector('.company-card[data-company="赵宜主"]');
+    if (!card) return;
+    const select = card.querySelector('[data-day-select]');
+    if (select) select.value = day;
+    card.querySelectorAll('[data-date-label]').forEach(x => x.textContent = '当前填写日期：5月26日');
+    card.querySelectorAll('textarea[data-field]').forEach(ta => { ta.value = localStorage.getItem(key(ta.dataset.field)) || ''; });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else apply();
+})();
+</script><script id="daily-seed-hangzhoukongzhu-2026-05-26">
+(function(){
+  const company = '杭州控驻';
+  const day = '26';
+  const values = {"action":"今天的关键动作是围绕5月29日曹曦月直播做直播前经营准备，不只是等直播带量。重点要打通三件事：第一，确认曹曦月直播的商业口径，尤其是预估销售额“2-w”到底是2万、20万还是区间目标；第二，确定直播主推机制，从“2个洗发水+3个固发液+3支旅行装”和“2个洗发水+3个固发液+1支发膜”两套机制中选出29号主推款；第三，推动轩哥素材调整，把素材从泛泛掉发焦虑，改成“痛点+用法+套餐机制+直播间承接”，为直播前后接流量。","hypothesis":"今天的判断是：控驻当前不是单纯缺流量，而是直播前的人、货、素材、话术、退款口径还没有完全打通。若29号前没有确认预估销售额、主推链接、到手价、库存、佣金、发货时效、客服承接和退款口径，即使曹曦月直播带来短期GMV，也可能被5万前置费、10%佣金、货品成本和退款售后吃掉利润。反过来，如果今天把主推机制、素材方向和商业测算定清楚，直播才有机会变成可复用的增长动作。","execute":"今天执行四件事：1）确认曹曦月直播预估销售额，明确“2-w”到底是多少，并测算前置费+佣金占销售额比例；2）完成两套新机制的到手价和毛利测算，把前置费、佣金、货品成本、赠品成本、快递费、预估退款都算进去，今天必须选出一个29号主推机制；3）确认直播主推链接、价格、库存、佣金、发货时效，并准备一页纸主播话术，明确适合谁、怎么用、套餐有什么、哪些话不能说；4）轩哥今天先改3条素材：一条讲洗头掉发多，一条讲一洗一固怎么用，一条讲新机制为什么划算。","verify":"今天之后用直播前准备结果验证动作是否有效：第一，曹曦月直播预估销售额和利润模型是否确认；第二，29号主推机制是否确定，且毛利测算能覆盖前置费、佣金和预估退款；第三，轩哥是否完成至少3条素材调整，并进入小预算测试；第四，客服自动回复、退款原因标签、主推链接、库存和赠品口径是否准备好。到5月29日直播后，再看GMV、订单数、客单价、前置费+佣金占比、退款/售后集中问题，以及曹曦月是否值得继续合作。"};
+  function key(field){ return 'subsidiary-kanban-daily:' + company + ':' + day + ':' + field; }
+  function apply(){
+    Object.entries(values).forEach(([field,value]) => { if (!localStorage.getItem(key(field))) localStorage.setItem(key(field), value); });
+    const card = document.querySelector('.company-card[data-company="杭州控驻"]');
+    if (!card) return;
+    const select = card.querySelector('[data-day-select]');
+    if (select) select.value = day;
+    card.querySelectorAll('[data-date-label]').forEach(x => x.textContent = '当前填写日期：5月26日');
+    card.querySelectorAll('textarea[data-field]').forEach(ta => { ta.value = localStorage.getItem(key(ta.dataset.field)) || ''; });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else apply();
+})();
+</script><script id="daily-seed-nijijing-2026-05-26">
+(function(){
+  const company = '逆戟鲸';
+  const day = '26';
+  const values = {"action":"今天的关键动作是把逆戟鲸618前的达人BD链路从“只建联”推进到“有效沟通、寄样、排期、挂链”。具体动作包括：稳住每天300个达人建联、约240个加好友的基础盘；从新增好友里筛出重点沟通对象；提升有效沟通质量；推动寄样和明确合作意向；同时找更多渠道，不只依赖单一达人来源。今天的重点不是单纯追数量，而是把达人池往下一步推进。","hypothesis":"520效果不理想，不一定只是运营或产品问题，商务侧已经具备较强的达人建联能力，但转化链路没有被充分放大。当前BD平均每天可建联300个达人、加好友约240个、有效沟通约40个，但寄样只有4个、明确意向约4-5个，说明瓶颈在“加好友到有效沟通”和“有效沟通到寄样/排期/挂链”的推进效率。今天的假设是：只要优化达人筛选、破冰话术、佣金政策和素材供给，就能提高达人从兴趣到行动的转化。","execute":"今天执行四件事：1）稳住建联规模，继续保持300个达人建联、约240个加好友，但优先筛选近期带过同类产品、正在做618选品、有直播/短视频/私域分发能力的达人；2）提高有效沟通，从240个新增好友中筛出60个重点沟通对象，首次沟通必须讲清楚产品适合谁卖、618机制优势、达人能赚多少钱；3）放大寄样和意向，把当天寄样目标从4个提高到8-10个，明确合作意向提高到8个以上；4）强化运营对接，当天拿到产品链接、佣金政策、618价格机制和素材包，给达人完整的“能不能卖、怎么卖、赚多少、什么时候上”的合作信息。","verify":"今天先看日级推进指标：建联达人是否达到300个，加好友是否达到240个，有效沟通是否达到60个，寄样是否达到8-10个，新增明确意向是否达到8个以上，是否至少有3个进入排期、挂链、建群或内容发布阶段。若未达成，要复盘四点：加好友后的破冰话术是否有效；寄样门槛是否太高；口头意向是否没有被推进到下一步；达人质量是否偏泛，是否需要提高同品类达人、近期带货达人和618选品达人的占比。"};
+  function key(field){ return 'subsidiary-kanban-daily:' + company + ':' + day + ':' + field; }
+  function apply(){
+    Object.entries(values).forEach(([field,value]) => { if (!localStorage.getItem(key(field))) localStorage.setItem(key(field), value); });
+    const card = document.querySelector('.company-card[data-company="逆戟鲸"]');
+    if (!card) return;
+    const select = card.querySelector('[data-day-select]');
+    if (select) select.value = day;
+    card.querySelectorAll('[data-date-label]').forEach(x => x.textContent = '当前填写日期：5月26日');
+    card.querySelectorAll('textarea[data-field]').forEach(ta => { ta.value = localStorage.getItem(key(ta.dataset.field)) || ''; });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else apply();
+})();
+</script></body></html>

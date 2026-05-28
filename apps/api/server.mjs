@@ -19,6 +19,7 @@ import { getPeopleGraph, updatePrimaryContact } from './lib/people.mjs';
 import { updateRiskItem } from './lib/risks.mjs';
 import { LocalSourceFileStore } from './lib/sourceFiles.mjs';
 import { JsonFileStore, prepareInitialData } from './lib/store.mjs';
+import { addTaskCalendarUnit, getTaskCalendar, upsertTaskCalendarMetric, upsertTaskCalendarMonthlyTarget } from './lib/taskCalendar.mjs';
 import { updateWorkflowState, workflowConfigs } from './lib/workflows.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -171,6 +172,18 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    if (url.pathname === '/api/task-calendar' && req.method === 'GET') {
+      const data = store.read();
+      json(res, 200, getTaskCalendar(data, resolveActor(data, req), { month: url.searchParams.get('month') }));
+      return;
+    }
+
+    if (url.pathname === '/api/task-calendar/supervision' && req.method === 'GET') {
+      const data = store.read();
+      json(res, 200, getTaskCalendar(data, resolveActor(data, req), { month: url.searchParams.get('month') }).supervisionDashboard);
+      return;
+    }
+
     const peopleContactMatch = url.pathname.match(/^\/api\/people\/contacts\/([^/]+)$/);
     if (peopleContactMatch && req.method === 'PATCH') {
       const body = await readBody(req);
@@ -202,6 +215,33 @@ const server = createServer(async (req, res) => {
         updateCommercialWorkOrder(data, commercialWorkOrderMatch[1], body, resolveActor(data, req)),
       );
       json(res, 200, result);
+      return;
+    }
+
+    if (url.pathname === '/api/task-calendar/units' && req.method === 'POST') {
+      const body = await readBody(req);
+      const result = store.transaction((data) => addTaskCalendarUnit(data, body, resolveActor(data, req)));
+      json(res, 201, result);
+      return;
+    }
+
+    if (url.pathname === '/api/task-calendar/metrics' && req.method === 'POST') {
+      const body = await readBody(req);
+      const result = store.transaction((data) => upsertTaskCalendarMetric(data, body, resolveActor(data, req)));
+      json(res, 200, {
+        ...result,
+        dashboard: calculateDashboard(store.read()),
+      });
+      return;
+    }
+
+    if (url.pathname === '/api/task-calendar/monthly-targets' && req.method === 'POST') {
+      const body = await readBody(req);
+      const result = store.transaction((data) => upsertTaskCalendarMonthlyTarget(data, body, resolveActor(data, req)));
+      json(res, 200, {
+        ...result,
+        dashboard: calculateDashboard(store.read()),
+      });
       return;
     }
 

@@ -10,15 +10,23 @@ export function prepareInitialData(seed, defaults = {}) {
   }
   if ((!Array.isArray(data.users) || data.users.length === 0) && Array.isArray(defaults.users)) {
     data.users = clone(defaults.users);
+  } else if (Array.isArray(defaults.users)) {
+    data.users = mergeById(data.users, defaults.users);
   }
   data.sourceRows = Array.isArray(data.sourceRows) ? data.sourceRows : buildSeedSourceRows(data);
   data.validationIssues = Array.isArray(data.validationIssues) ? data.validationIssues : [];
   data.auditLogs = Array.isArray(data.auditLogs) ? data.auditLogs : [];
   data.importBatches = Array.isArray(data.importBatches) ? data.importBatches : [];
   data.subsidiaries = Array.isArray(data.subsidiaries) ? data.subsidiaries : [];
+  if (Array.isArray(defaults.subsidiaries)) data.subsidiaries = mergeById(data.subsidiaries, defaults.subsidiaries);
   data.decisionPackages = Array.isArray(data.decisionPackages) ? data.decisionPackages : [];
   data.operatingSystem = data.operatingSystem ?? clone(defaults.operatingSystem ?? {});
   data.commercialSystem = data.commercialSystem ?? clone(defaults.commercialSystem ?? {});
+  data.taskCalendar = data.taskCalendar ?? clone(defaults.taskCalendar ?? { companies: [], units: [], metrics: [] });
+  data.taskCalendar.companies = Array.isArray(data.taskCalendar.companies) ? data.taskCalendar.companies : clone(defaults.taskCalendar?.companies ?? []);
+  data.taskCalendar.units = Array.isArray(data.taskCalendar.units) ? data.taskCalendar.units : clone(defaults.taskCalendar?.units ?? []);
+  data.taskCalendar.metrics = Array.isArray(data.taskCalendar.metrics) ? data.taskCalendar.metrics : clone(defaults.taskCalendar?.metrics ?? []);
+  data.taskCalendar.monthlyTargets = Array.isArray(data.taskCalendar.monthlyTargets) ? data.taskCalendar.monthlyTargets : clone(defaults.taskCalendar?.monthlyTargets ?? []);
   data.operatingSystem.people = Array.isArray(data.operatingSystem.people) ? data.operatingSystem.people : clone(defaults.operatingSystem?.people ?? []);
   data.operatingSystem.moduleResponsibilities = Array.isArray(data.operatingSystem.moduleResponsibilities)
     ? data.operatingSystem.moduleResponsibilities
@@ -34,13 +42,20 @@ export function prepareInitialData(seed, defaults = {}) {
   return data;
 }
 
+function mergeById(current = [], defaults = []) {
+  const ids = new Set(current.map((item) => item.id));
+  return [...current, ...clone(defaults).filter((item) => item?.id && !ids.has(item.id))];
+}
+
 function roleNeedsRefresh(roles) {
   const pmo = roles.find((role) => role.id === 'pmo');
   return (
     !pmo?.permissions?.includes('source.read') ||
     !pmo?.permissions?.includes('people.manage') ||
     !pmo?.permissions?.includes('risk.manage') ||
-    !pmo?.permissions?.includes('system.manage')
+    !pmo?.permissions?.includes('system.manage') ||
+    !pmo?.permissions?.includes('task_calendar.read') ||
+    !pmo?.permissions?.includes('task_calendar.write')
   );
 }
 

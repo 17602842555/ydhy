@@ -9,10 +9,24 @@ export const transitions = {
 };
 
 const fallbackPermissions = {
-  boss: ['dashboard.read', 'subsidiary.read', 'decision.decide', 'audit.read', 'source.read'],
-  pmo: ['dashboard.read', 'subsidiary.read', 'import.upload', 'import.validate', 'data.publish', 'workflow.manage', 'people.manage', 'risk.manage', 'system.manage', 'audit.read', 'source.read'],
-  subsidiary_owner: ['subsidiary.read', 'hev.submit', 'task.update'],
-  finance_ops: ['dashboard.read', 'import.upload', 'import.validate', 'data.correct', 'source.read'],
+  boss: ['dashboard.read', 'subsidiary.read', 'decision.decide', 'audit.read', 'source.read', 'task_calendar.read'],
+  pmo: [
+    'dashboard.read',
+    'subsidiary.read',
+    'import.upload',
+    'import.validate',
+    'data.publish',
+    'workflow.manage',
+    'people.manage',
+    'risk.manage',
+    'system.manage',
+    'audit.read',
+    'source.read',
+    'task_calendar.read',
+    'task_calendar.write',
+  ],
+  subsidiary_owner: ['subsidiary.read', 'hev.submit', 'task.update', 'task_calendar.read', 'task_calendar.write'],
+  finance_ops: ['dashboard.read', 'import.upload', 'import.validate', 'data.correct', 'source.read', 'task_calendar.read', 'task_calendar.write'],
 };
 
 export class ApiError extends Error {
