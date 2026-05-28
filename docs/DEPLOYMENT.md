@@ -113,7 +113,7 @@ curl https://ydhy-api.2445776963.workers.dev/api/health
 ```bash
 TOKEN=$(curl -sS -X POST https://ydhy-api.2445776963.workers.dev/api/auth/login \
   -H 'Content-Type: application/json' \
-  -d '{"userId":"user-lijinning"}' | node -pe "JSON.parse(fs.readFileSync(0,'utf8')).token")
+  -d '{"userId":"user-lijinning","password":"123456"}' | node -pe "JSON.parse(fs.readFileSync(0,'utf8')).token")
 
 curl -sS https://ydhy-api.2445776963.workers.dev/api/operating-system \
   -H "Authorization: Bearer $TOKEN"

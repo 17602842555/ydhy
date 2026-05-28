@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Building2, ChevronLeft, ChevronRight, Save, Target } from 'lucide-react'
+import { type FormEvent, useEffect, useMemo, useState } from 'react'
+import { Building2, ChevronLeft, ChevronRight, LogOut, Save, Target } from 'lucide-react'
 
 type BusinessUnit = { id: string; company: string; type: 'store' | 'business'; name: string }
 type BusinessMetric = {
@@ -204,17 +204,29 @@ function preferredCompanyFromHash() {
   return new URLSearchParams(query).get('company') || ''
 }
 
-async function login(apiBaseUrl: string, userId: string, signal?: AbortSignal) {
+async function login(apiBaseUrl: string, userId: string, password: string, signal?: AbortSignal) {
   const response = await fetch(`${apiBaseUrl}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId }),
+    body: JSON.stringify({ userId, password }),
     signal,
   })
-  if (!response.ok) throw new Error(`登录后端失败：${response.status}`)
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({})) as { reason?: string; error?: string }
+    throw new Error(error.reason || error.error || `登录后端失败：${response.status}`)
+  }
   const result = (await response.json()) as { token?: string; user?: AuthUser }
   if (!result.token || !result.user) throw new Error('后端没有返回登录会话')
   return { token: result.token, user: result.user }
+}
+
+async function fetchTaskCalendar(apiBaseUrl: string, sessionToken: string, month: string, signal?: AbortSignal) {
+  const response = await fetch(`${apiBaseUrl}/task-calendar?month=${month}`, {
+    headers: { Authorization: `Bearer ${sessionToken}` },
+    signal,
+  })
+  if (!response.ok) throw new Error(`读取填报数据失败：${response.status}`)
+  return (await response.json()) as TaskCalendarData
 }
 
 export function TaskCalendarEntryPage({
@@ -230,7 +242,10 @@ export function TaskCalendarEntryPage({
 }) {
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' })
   const [loginUsers, setLoginUsers] = useState<AuthUser[]>([])
-  const [activeUserId, setActiveUserId] = useState('')
+  const [loginUserId, setLoginUserId] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [loginError, setLoginError] = useState('')
+  const [loginBusy, setLoginBusy] = useState(false)
   const [activeUser, setActiveUser] = useState<AuthUser | null>(null)
   const [token, setToken] = useState('')
   const [visibleMonth, setVisibleMonth] = useState(monthOf(today()))
@@ -260,7 +275,7 @@ export function TaskCalendarEntryPage({
           ?? taskUsers.find((user) => user.id === 'user-kongjinjie-task-owner')
           ?? taskUsers.find((user) => user.roleCode === 'subsidiary_owner')
           ?? taskUsers[0]
-        setActiveUserId(preferred?.id || '')
+        setLoginUserId(preferred?.id || '')
       })
       .catch((error: Error) => {
         if (controller.signal.aborted) return
@@ -268,36 +283,6 @@ export function TaskCalendarEntryPage({
       })
     return () => controller.abort()
   }, [apiBaseUrl])
-
-  useEffect(() => {
-    if (!activeUserId) return
-    const controller = new AbortController()
-    login(apiBaseUrl, activeUserId, controller.signal)
-      .then(async (session) => {
-        const response = await fetch(`${apiBaseUrl}/task-calendar?month=${visibleMonth}`, {
-          headers: { Authorization: `Bearer ${session.token}` },
-          signal: controller.signal,
-        })
-        if (!response.ok) throw new Error(`读取填报数据失败：${response.status}`)
-        const data = (await response.json()) as TaskCalendarData
-        setToken(session.token)
-        setActiveUser(session.user)
-        setLoadState({ status: 'ready', data })
-        setSelectedCompany((current) => {
-          const preferredCompany = preferredCompanyFromHash()
-          if (session.user.roleCode !== 'subsidiary_owner' && (!preferredCompany || preferredCompany === allCompaniesLabel)) return allCompaniesLabel
-          if (preferredCompany && data.companies.includes(preferredCompany)) return preferredCompany
-          if (current === allCompaniesLabel && session.user.roleCode !== 'subsidiary_owner') return current
-          if (data.companies.includes(current)) return current
-          return data.companies[0] || ''
-        })
-      })
-      .catch((error: Error) => {
-        if (controller.signal.aborted) return
-        setLoadState({ status: 'error', message: error.message })
-      })
-    return () => controller.abort()
-  }, [activeUserId, apiBaseUrl, visibleMonth])
 
   const activeData = loadState.status === 'ready' ? loadState.data : null
   const canViewAllCompanies = activeUser?.roleCode !== 'subsidiary_owner'
@@ -472,12 +457,126 @@ export function TaskCalendarEntryPage({
   function changeMonth(nextMonth: string) {
     setVisibleMonth(nextMonth)
     setSelectedDate(`${nextMonth}-01`)
+    if (token && activeUser) void refreshCalendar(nextMonth)
+  }
+
+  function applyCalendarData(data: TaskCalendarData, user: AuthUser) {
+    setLoadState({ status: 'ready', data })
+    setSelectedCompany((current) => {
+      const preferredCompany = preferredCompanyFromHash()
+      if (user.roleCode !== 'subsidiary_owner' && (!preferredCompany || preferredCompany === allCompaniesLabel)) return allCompaniesLabel
+      if (preferredCompany && data.companies.includes(preferredCompany)) return preferredCompany
+      if (current === allCompaniesLabel && user.roleCode !== 'subsidiary_owner') return current
+      if (data.companies.includes(current)) return current
+      return data.companies[0] || ''
+    })
+  }
+
+  async function refreshCalendar(month = visibleMonth, sessionToken = token, sessionUser = activeUser) {
+    if (!sessionToken || !sessionUser) return
+    setLoadState({ status: 'loading' })
+    try {
+      const data = await fetchTaskCalendar(apiBaseUrl, sessionToken, month)
+      applyCalendarData(data, sessionUser)
+    } catch (error) {
+      setLoadState({ status: 'error', message: error instanceof Error ? error.message : '读取填报数据失败' })
+    }
+  }
+
+  async function submitLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!loginUserId || !loginPassword || loginBusy) return
+    setLoginBusy(true)
+    setLoginError('')
+    setNotice('')
+    setLoadState({ status: 'loading' })
+    try {
+      const session = await login(apiBaseUrl, loginUserId, loginPassword)
+      const data = await fetchTaskCalendar(apiBaseUrl, session.token, visibleMonth)
+      setToken(session.token)
+      setActiveUser(session.user)
+      setLoginPassword('')
+      applyCalendarData(data, session.user)
+    } catch (error) {
+      setToken('')
+      setActiveUser(null)
+      setLoginError(error instanceof Error ? error.message : '登录失败')
+    } finally {
+      setLoginBusy(false)
+    }
+  }
+
+  async function logoutFromEntry() {
+    if (token) {
+      await fetch(`${apiBaseUrl}/auth/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => undefined)
+    }
+    setToken('')
+    setActiveUser(null)
+    setLoginPassword('')
+    setSelectedCompany('')
+    setNotice('')
+    setLoadState({ status: 'loading' })
   }
 
   if (loadState.status === 'error') {
     return (
       <section className={`task-calendar-shell ${standalone ? 'task-calendar-standalone' : ''}`}>
         <div className="task-calendar-error">{loadState.message}</div>
+      </section>
+    )
+  }
+
+  if (!token || !activeUser) {
+    return (
+      <section className={`task-calendar-shell ${standalone ? 'task-calendar-standalone' : ''}`}>
+        <div className="task-calendar-login-shell">
+          <div className="task-calendar-login-intro">
+            <div className="task-calendar-brandmark" aria-hidden="true">J</div>
+            <p>涌动花鱼（珠海）网络科技有限公司</p>
+            <h1>任务填报登录</h1>
+            <span>账号登录后只加载对应公司的目标、日数据和完成率；集团账号仅用于查看汇总。</span>
+          </div>
+          <form className="task-calendar-login-card" onSubmit={submitLogin}>
+            <label className="task-calendar-field">
+              账号
+              <select value={loginUserId} disabled={!loginUsers.length || loginBusy} onChange={(event) => setLoginUserId(event.currentTarget.value)}>
+                {!loginUsers.length ? <option value="">读取账号中</option> : null}
+                {loginUsers.map((user) => (
+                  <option value={user.id} key={user.id}>
+                    {user.displayName}{user.companyName ? ` / ${user.companyName}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="task-calendar-field">
+              密码
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(event) => setLoginPassword(event.currentTarget.value)}
+                placeholder="请输入密码"
+                autoComplete="current-password"
+                disabled={loginBusy}
+              />
+            </label>
+            {loginError ? <p className="task-calendar-login-error">{loginError}</p> : null}
+            <button className="task-calendar-primary full" type="submit" disabled={!loginUserId || !loginPassword || loginBusy}>
+              {loginBusy ? '登录中' : '登录填报'}
+            </button>
+            <p className="task-calendar-login-hint">当前演示账号密码统一为 123456。子公司账号只能看到和修改本公司数据。</p>
+          </form>
+        </div>
+      </section>
+    )
+  }
+
+  if (!activeData) {
+    return (
+      <section className={`task-calendar-shell ${standalone ? 'task-calendar-standalone' : ''}`}>
+        <div className="task-calendar-error task-calendar-loading">正在读取填报数据...</div>
       </section>
     )
   }
@@ -496,12 +595,12 @@ export function TaskCalendarEntryPage({
           <span>集团主账号仅查看，子公司账号负责填报；保存后自动进入后端数据库并联动监管看板。</span>
         </div>
         <div className="task-calendar-account">
-          <label>
-            当前账号
-            <select value={activeUserId} onChange={(event) => setActiveUserId(event.currentTarget.value)}>
-              {loginUsers.map((user) => <option value={user.id} key={user.id}>{user.displayName}</option>)}
-            </select>
-          </label>
+          <div className="task-calendar-session-card">
+            <span>当前账号</span>
+            <strong>{activeUser.displayName}</strong>
+            <em>{activeUser.roleCode === 'subsidiary_owner' ? `${activeUser.companyName || accountCompany(activeUser)} · 独立填报` : '全部子公司 · 只读汇总'}</em>
+          </div>
+          <button className="task-calendar-light-button" type="button" onClick={logoutFromEntry}><LogOut size={16} /> 退出登录</button>
           {onBack ? <button className="task-calendar-light-button" type="button" onClick={onBack}>返回监管看板</button> : null}
         </div>
       </header>

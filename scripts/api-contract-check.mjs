@@ -37,14 +37,14 @@ try {
 
   const pmoLogin = await request('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ userId: 'user-lijinning' }),
+    body: JSON.stringify({ userId: 'user-lijinning', password: '123456' }),
   });
   assert(pmoLogin.status === 201, 'PMO login should issue a session');
   const pmoAuth = auth(pmoLogin.body.token);
 
   const dashboard = await request('/dashboard', { headers: pmoAuth });
   assert(dashboard.status === 200, 'PMO dashboard should load');
-  assert(dashboard.body.subsidiaries.length === 8, 'dashboard should expose 8 subsidiaries');
+  assert(dashboard.body.subsidiaries.length === 11, 'dashboard should expose 11 subsidiaries');
 
   const operatingSystem = await request('/operating-system', { headers: pmoAuth });
   assert(operatingSystem.status === 200, 'PMO operating system should load');
@@ -219,7 +219,7 @@ try {
 
   const ownerLogin = await request('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ userId: 'user-zhaoyizhu-owner' }),
+    body: JSON.stringify({ userId: 'user-zhaoyizhu-owner', password: '123456' }),
   });
   const ownerAuth = auth(ownerLogin.body.token);
   const crossRead = await request('/subsidiaries/nijijing', { headers: ownerAuth });
@@ -250,7 +250,7 @@ try {
 
   const financeLogin = await request('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ userId: 'user-finance' }),
+    body: JSON.stringify({ userId: 'user-finance', password: '123456' }),
   });
   const financeAuth = auth(financeLogin.body.token);
   const taskDenied = await request('/operating-system/tasks/TASK-002', {

@@ -2,14 +2,19 @@ import { createHash, randomBytes } from 'node:crypto';
 import { fail, permissionsFor } from './domain.mjs';
 
 const sessionTtlMs = 12 * 60 * 60 * 1000;
+const defaultPassword = '123456';
+const defaultPasswordSalt = 'huage-task-calendar-v1';
 
 export function listLoginUsers(data) {
   return (data.users ?? []).filter((user) => user.active !== false).map((user) => publicUser(data, user));
 }
 
 export function login(data, body = {}) {
-  const userId = String(body.userId || 'user-lijinning');
+  const userId = String(body.userId || '').trim();
+  const password = String(body.password || '');
+  if (!userId || !password) fail(401, 'invalid_credentials', '账号或密码不正确');
   const user = findActiveUser(data, userId);
+  if (!verifyPassword(user, password)) fail(401, 'invalid_credentials', '账号或密码不正确');
   const token = `huage_${randomBytes(32).toString('base64url')}`;
   const now = new Date();
   const expiresAt = new Date(now.getTime() + sessionTtlMs).toISOString();
@@ -90,4 +95,16 @@ function findActiveUser(data, userId) {
 
 function hashToken(token) {
   return createHash('sha256').update(token).digest('hex');
+}
+
+function verifyPassword(user, password) {
+  if (user.passwordHash) {
+    const salt = user.passwordSalt || defaultPasswordSalt;
+    return hashPassword(password, salt) === user.passwordHash;
+  }
+  return password === defaultPassword;
+}
+
+function hashPassword(password, salt) {
+  return createHash('sha256').update(`${salt}:${password}`).digest('hex');
 }

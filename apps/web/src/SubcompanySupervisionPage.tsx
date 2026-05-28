@@ -352,7 +352,7 @@ async function loadDashboard({
     const loginResponse = await fetch(`${apiBaseUrl}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: 'user-lijinning' }),
+      body: JSON.stringify({ userId: 'user-lijinning', password: '123456' }),
       signal,
     })
     if (!loginResponse.ok) throw new Error(`登录后端失败：${loginResponse.status}`)

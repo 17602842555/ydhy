@@ -98,11 +98,11 @@ Implemented API routes:
 
 Session identity:
 
-- Web requests call `POST /api/auth/login` and receive a server-issued Bearer token.
+- Web requests call `POST /api/auth/login` with account and password, then receive a server-issued Bearer token.
 - Business routes resolve actor, role, permissions, and subsidiary scope from the session token.
 - Session records persist in the current JSON store and map to the planned PostgreSQL `sessions` table.
 - `HUAGE_ALLOW_HEADER_AUTH=1` can re-enable header actor fallback for local debugging only.
-- This is still a development login stub; production must replace user selection with password, SSO, or another real identity provider.
+- Demo accounts currently share the seed password `123456`; production must replace this with per-user password hashes, SSO, or another real identity provider before broader rollout.
 
 ## Workflow State Machines
 

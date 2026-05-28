@@ -386,7 +386,7 @@ const server = createServer(async (req, res) => {
 
 function runSelfCheck() {
   const data = prepareInitialData(seed);
-  const loggedIn = login(data, { userId: 'user-lijinning' });
+  const loggedIn = login(data, { userId: 'user-lijinning', password: '123456' });
   const sessionActor = authenticate(data, {
     headers: {
       authorization: `Bearer ${loggedIn.token}`,
