@@ -1212,6 +1212,9 @@ function App() {
   }, [])
 
   useEffect(() => {
+    if (hashRoute) {
+      return
+    }
     const controller = new AbortController()
     loadOperatingSystem(controller.signal)
       .then((loadedState) => {
@@ -1233,7 +1236,7 @@ function App() {
         })
       })
     return () => controller.abort()
-  }, [])
+  }, [hashRoute])
 
   useEffect(() => {
     if (!toast) return
