@@ -4,8 +4,27 @@ import './App.css'
 
 type ViewKey = 'overview' | 'pyramid' | 'brand' | 'tax' | 'supply' | 'org' | 'risk' | 'decision'
 type TaskStatus = '待办' | '进行中' | '已完成'
+type Kpi = { label: string; value: string; prefix?: string; unit?: string; trend?: string; trendType?: 'up' | 'down'; target: string; progress: number }
+type PyramidItem = { level: string; title: string; desc: string }
+type Contact = { module: string; company: string; contact: string; reportsTo: string; status: '正常' | '预警' | '停用'; remark: string }
+type Brand = { name: string; company: string; completion: number }
+type Task = { name: string; owner: string; due: string; priority: '高' | '中' | '低'; status: TaskStatus }
+type Risk = { type: 'local' | 'decision'; text: string }
+type Cost = { brand: string; product: number; logistics: number; total: number; spec: string }
+type TaxCard = { title: string; desc: string }
+type GoalGroup = { no: string; name: string; summary: string; goals: string[] }
+type DashboardData = {
+  kpis: Kpi[]
+  pyramid: PyramidItem[]
+  contacts: Contact[]
+  brands: Brand[]
+  tasks: Task[]
+  risks: Risk[]
+  costs: Cost[]
+  taxCards: TaxCard[]
+}
 
-const DATA = {
+const FALLBACK_DATA: DashboardData = {
   kpis: [
     { label: '年度目标完成率', value: '62.7', unit: '%', trend: '+8.6pct', trendType: 'up', target: '年度目标：100%', progress: 62.7 },
     { label: '本月GMV', value: '2.83', prefix: '¥', unit: '亿', trend: '+15.4%', trendType: 'up', target: '目标：¥3.20亿｜完成88.4%', progress: 88.4 },
@@ -72,18 +91,14 @@ const DATA = {
     { title: '运营公司', desc: '运营侧采用差额服务费开票，按6%缴纳增值税，重点监控佣金、广告、服务费。' },
     { title: '优化目标', desc: '建立集团统一财务中心，标准化发票流转，实现100%合规与税负最优化。' },
   ],
-} as const
-
-type Contact = (typeof DATA.contacts)[number]
-type Task = Omit<(typeof DATA.tasks)[number], 'status'> & { status: TaskStatus }
-type Risk = (typeof DATA.risks)[number]
+}
 type BranchAction = { action: string; owner: string }
 type BranchTarget = {
   code: string
   group: string
   title: string
-  children: readonly string[]
-  actions: readonly (readonly BranchAction[])[]
+  children: string[]
+  actions: BranchAction[][]
 }
 
 const NAV_ITEMS: Array<{ key: ViewKey; label: string; icon: string }> = [
@@ -110,7 +125,7 @@ const ROSTER_MAP = {
   lijinning: '李锦宁',
 } as const
 
-const OWNER_DIRECTORY: Record<string, string> = {
+const FALLBACK_OWNER_DIRECTORY: Record<string, string> = {
   '各品牌一级负责人': ROSTER_MAP.brandOwners,
   品牌运营负责人: ROSTER_MAP.brandOps,
   '品牌负责人 + 财务负责人': `${ROSTER_MAP.brandOwners}；${ROSTER_MAP.financeLead}`,
@@ -136,7 +151,7 @@ const OWNER_DIRECTORY: Record<string, string> = {
   李锦宁统筹: ROSTER_MAP.lijinning,
 }
 
-const BRANCH_TARGETS: BranchTarget[] = [
+const FALLBACK_BRANCH_TARGETS: BranchTarget[] = [
   {
     code: '01',
     group: '集团增长分支',
@@ -461,13 +476,13 @@ const BRANCH_TARGETS: BranchTarget[] = [
   },
 ] as const
 
-const GOAL_GROUPS = [
+const FALLBACK_GOAL_GROUPS: GoalGroup[] = [
   { no: '01', name: '集团增长分支', summary: '增长、利润、现金流', goals: ['品牌增长目标', '产品与客户体验目标'] },
   { no: '02', name: '集团 OS 分支', summary: '目标、数据、流程、预警', goals: ['集团 OS 目标', '数据资产目标', 'AI 透明工厂'] },
   { no: '03', name: '子公司监管分支', summary: '经营、财务、人效、风险', goals: ['法务合同目标', '子公司监管目标', '决策闭环目标'] },
   { no: '04', name: '降本增效分支', summary: '人工成本、财税、供应链', goals: ['组织人效目标', '人才梯队目标', '财税合规目标', '现金流与预算目标', '供应链降本目标'] },
   { no: '05', name: '专项项目分支', summary: '专项项目节点管控', goals: ['别墅项目目标'] },
-] as const
+]
 
 const VIEW_COPY: Record<ViewKey, { title: string; desc: string }> = {
   overview: { title: '总览', desc: '集团经营核心指标、运行状态和对齐规则。' },
@@ -480,15 +495,192 @@ const VIEW_COPY: Record<ViewKey, { title: string; desc: string }> = {
   decision: { title: '决策包', desc: '汇总 AI 拆解建议、异常提醒和下周关注重点。' },
 }
 
+const DEFAULT_CLOUD_API_BASE_URL = 'https://ydhy-api.2445776963.workers.dev/api'
+
+type OperatingSystemResponse = {
+  kpis?: Array<Kpi & { tone?: string }>
+  goalPyramid?: Array<{ level: string; title: string; desc?: string; description?: string }>
+  goalBranches?: Array<{
+    code: string
+    name: string
+    summary?: string
+    goals?: string[]
+    owner?: string
+    objectives?: Array<{
+      code?: string
+      group?: string
+      title: string
+      owner?: string
+      children?: string[]
+      actions?: Array<string | Array<{ action: string; owner: string; ownerDetail?: string }>>
+    }>
+  }>
+  ownerDirectory?: Record<string, string>
+  contacts?: Array<Contact & { id?: string }>
+  brands?: Array<Brand & { id?: string; status?: string; owner?: string }>
+  tasks?: Array<Omit<Task, 'due'> & { id?: string; due?: string; dueLabel?: string; displayDue?: string; module?: string }>
+  risks?: Array<Risk & { id?: string; level?: string; owner?: string; status?: string }>
+  costs?: Array<Cost & { id?: string; status?: string }>
+  taxCards?: Array<{ id?: string; title: string; desc?: string; description?: string; status?: string }>
+}
+
+type LoadedDashboardState = {
+  data: DashboardData
+  goalGroups: GoalGroup[]
+  branchTargets: BranchTarget[]
+  ownerDirectory: Record<string, string>
+}
+
+type RemoteBranchActionGroup = string | Array<{ action: string; owner: string; ownerDetail?: string }>
+
+type DataConnection = {
+  state: 'loading' | 'cloud' | 'fallback'
+  apiBaseUrl: string
+  message: string
+}
+
 const TASK_STATUSES: TaskStatus[] = ['待办', '进行中', '已完成']
+
+function fallbackDashboardState(): LoadedDashboardState {
+  return {
+    data: FALLBACK_DATA,
+    goalGroups: FALLBACK_GOAL_GROUPS,
+    branchTargets: FALLBACK_BRANCH_TARGETS,
+    ownerDirectory: FALLBACK_OWNER_DIRECTORY,
+  }
+}
+
+function getApiBaseUrl() {
+  const configured = import.meta.env.VITE_API_BASE_URL?.trim()
+  if (configured) return configured.replace(/\/$/, '')
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return 'http://127.0.0.1:8787/api'
+  }
+  return DEFAULT_CLOUD_API_BASE_URL
+}
+
+async function loadOperatingSystem(signal: AbortSignal): Promise<LoadedDashboardState> {
+  const apiBaseUrl = getApiBaseUrl()
+  const loginResponse = await fetch(`${apiBaseUrl}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ userId: 'user-lijinning' }),
+    signal,
+  })
+  if (!loginResponse.ok) throw new Error(`登录后端失败：${loginResponse.status}`)
+  const login = (await loginResponse.json()) as { token?: string }
+  if (!login.token) throw new Error('后端没有返回登录 token')
+
+  const response = await fetch(`${apiBaseUrl}/operating-system`, {
+    headers: { Authorization: `Bearer ${login.token}` },
+    signal,
+  })
+  if (!response.ok) throw new Error(`读取经营系统失败：${response.status}`)
+  return normalizeOperatingSystem((await response.json()) as OperatingSystemResponse)
+}
+
+function normalizeOperatingSystem(payload: OperatingSystemResponse): LoadedDashboardState {
+  const fallback = fallbackDashboardState()
+  const goalGroups = (payload.goalBranches ?? []).map((branch) => ({
+    no: String(branch.code),
+    name: String(branch.name),
+    summary: String(branch.summary ?? ''),
+    goals: Array.isArray(branch.goals) && branch.goals.length > 0
+      ? branch.goals.map(String)
+      : (branch.objectives ?? []).map((objective) => String(objective.title)),
+  }))
+  const branchTargets = (payload.goalBranches ?? []).flatMap((branch) =>
+    (branch.objectives ?? []).map((objective) => ({
+      code: String(objective.code ?? branch.code),
+      group: String(objective.group ?? branch.name),
+      title: String(objective.title),
+      children: Array.isArray(objective.children) ? objective.children.map(String) : [],
+      actions: normalizeBranchActions(objective.actions ?? [], String(objective.owner ?? branch.owner ?? '系统')),
+    })),
+  )
+
+  return {
+    data: {
+      kpis: payload.kpis?.length ? payload.kpis.map((item) => ({
+        label: String(item.label),
+        value: String(item.value),
+        prefix: item.prefix ? String(item.prefix) : undefined,
+        unit: item.unit ? String(item.unit) : undefined,
+        trend: item.trend ? String(item.trend) : '',
+        trendType: item.trendType === 'down' ? 'down' : 'up',
+        target: String(item.target),
+        progress: Number(item.progress) || 0,
+      })) : fallback.data.kpis,
+      pyramid: payload.goalPyramid?.length ? payload.goalPyramid.map((item) => ({
+        level: String(item.level),
+        title: String(item.title),
+        desc: String(item.desc ?? item.description ?? ''),
+      })) : fallback.data.pyramid,
+      contacts: payload.contacts?.length ? payload.contacts.map((item) => ({
+        module: String(item.module),
+        company: String(item.company),
+        contact: String(item.contact),
+        reportsTo: String(item.reportsTo),
+        status: item.status,
+        remark: String(item.remark),
+      })) : fallback.data.contacts,
+      brands: payload.brands?.length ? payload.brands.map((item) => ({
+        name: String(item.name),
+        company: String(item.company),
+        completion: Number(item.completion) || 0,
+      })) : fallback.data.brands,
+      tasks: payload.tasks?.length ? payload.tasks.map((item) => ({
+        name: String(item.name),
+        owner: String(item.owner),
+        due: taskDueLabel(item),
+        priority: item.priority,
+        status: item.status,
+      })) : fallback.data.tasks,
+      risks: payload.risks?.length ? payload.risks.map((item) => ({
+        type: item.type,
+        text: String(item.text),
+      })) : fallback.data.risks,
+      costs: payload.costs?.length ? payload.costs.map((item) => ({
+        brand: String(item.brand),
+        product: Number(item.product) || 0,
+        logistics: Number(item.logistics) || 0,
+        total: Number(item.total) || 0,
+        spec: String(item.spec),
+      })) : fallback.data.costs,
+      taxCards: payload.taxCards?.length ? payload.taxCards.map((item) => ({
+        title: String(item.title),
+        desc: String(item.desc ?? item.description ?? ''),
+      })) : fallback.data.taxCards,
+    },
+    goalGroups: goalGroups.length ? goalGroups : fallback.goalGroups,
+    branchTargets: branchTargets.length ? branchTargets.sort((a, b) => Number(a.code) - Number(b.code)) : fallback.branchTargets,
+    ownerDirectory: payload.ownerDirectory ?? fallback.ownerDirectory,
+  }
+}
+
+function normalizeBranchActions(actions: RemoteBranchActionGroup[], fallbackOwner: string): BranchAction[][] {
+  return actions.map((items) => {
+    if (Array.isArray(items)) {
+      return items.map((item) => ({ action: String(item.action), owner: String(item.owner) }))
+    }
+    return [{ action: String(items), owner: fallbackOwner }]
+  })
+}
+
+function taskDueLabel(task: { due?: string; dueLabel?: string; displayDue?: string }) {
+  const displayDue = task.dueLabel ?? task.displayDue
+  if (displayDue) return String(displayDue)
+  const isoMatch = String(task.due ?? '').match(/^\d{4}-(\d{2}-\d{2})/)
+  return isoMatch?.[1] ?? String(task.due ?? '')
+}
 
 function formatDateTime(date: Date) {
   const pad = (value: number) => String(value).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
-function ownerDetail(owner: string) {
-  return OWNER_DIRECTORY[owner] ?? owner
+function ownerDetail(owner: string, directory: Record<string, string>) {
+  return directory[owner] ?? owner
 }
 
 function brandColor(value: number) {
@@ -510,9 +702,9 @@ function toCsv(rows: readonly Contact[]) {
   return [header, ...body].map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
 }
 
-function buildAiInsights(tasks: readonly Task[]) {
-  const lowBrands = DATA.brands.filter((brand) => brand.completion < 70).map((brand) => brand.name)
-  const decisionRisks = DATA.risks.filter((risk) => risk.type === 'decision')
+function buildAiInsights(data: DashboardData, tasks: readonly Task[]) {
+  const lowBrands = data.brands.filter((brand) => brand.completion < 70).map((brand) => brand.name)
+  const decisionRisks = data.risks.filter((risk) => risk.type === 'decision')
   const openHighTasks = tasks.filter((task) => task.priority === '高' && task.status !== '已完成')
 
   return {
@@ -534,18 +726,18 @@ function buildAiInsights(tasks: readonly Task[]) {
   }
 }
 
-function buildDecisionPackage(tasks: readonly Task[]) {
-  const decisionRisks = DATA.risks.filter((risk) => risk.type === 'decision').map((risk) => `- ${risk.text}`).join('\n')
-  const lowBrands = DATA.brands.filter((brand) => brand.completion < 70).map((brand) => `- ${brand.name}：${brand.completion}%`).join('\n')
+function buildDecisionPackage(data: DashboardData, tasks: readonly Task[]) {
+  const decisionRisks = data.risks.filter((risk) => risk.type === 'decision').map((risk) => `- ${risk.text}`).join('\n')
+  const lowBrands = data.brands.filter((brand) => brand.completion < 70).map((brand) => `- ${brand.name}：${brand.completion}%`).join('\n')
   const highTasks = tasks.filter((task) => task.priority === '高' && task.status !== '已完成').map((task) => `- ${task.name}｜${task.owner}｜${task.due}`).join('\n')
 
   return `《华哥决策包》\n\n一、需华哥拍板事项\n${decisionRisks || '无'}\n\n二、低于70%目标完成度品牌\n${lowBrands || '无'}\n\n三、未完成高优先级任务\n${highTasks || '无'}\n\n四、李锦宁建议\n1. 执行类事项继续由李锦宁统一收口。\n2. 预算、人事、股权、重大合作、财税法务风险形成书面决策包后再上报。\n3. 各公司一级对接人每周固定提交经营数据、风险清单、资源需求。`
 }
 
-function KpiGrid() {
+function KpiGrid({ kpis }: { kpis: readonly Kpi[] }) {
   return (
     <section className="grid kpi-grid" id="kpiGrid">
-      {DATA.kpis.map((kpi) => (
+      {kpis.map((kpi) => (
         <article className="panel kpi-card" key={kpi.label}>
           <div>
             <div className="label">{kpi.label}</div>
@@ -580,13 +772,25 @@ function PanelHeader({ title, subtitle, action }: { title: string; subtitle: str
   )
 }
 
-function PyramidPanel({ selectedGroup, showBranches, onSelectGroup }: { selectedGroup: string; showBranches: boolean; onSelectGroup: (group: string) => void }) {
+function PyramidPanel({
+  pyramid,
+  goalGroups,
+  selectedGroup,
+  showBranches,
+  onSelectGroup,
+}: {
+  pyramid: readonly PyramidItem[]
+  goalGroups: readonly GoalGroup[]
+  selectedGroup: string
+  showBranches: boolean
+  onSelectGroup: (group: string) => void
+}) {
   return (
     <div className="panel pyramid-panel">
       <PanelHeader title="目标金字塔拆解" subtitle="华哥散目标先归集，再由总助承接，继续拆到分支目标与下层动作" />
       <div className="panel-body">
         <div className="pyramid">
-          {DATA.pyramid.map((item, index) => (
+          {pyramid.map((item, index) => (
             <div className="pyramid-row" key={item.level}>
               <span className="pyramid-level">{item.level}</span>
               <div className={`pyramid-block step-${index}`}>
@@ -600,7 +804,7 @@ function PyramidPanel({ selectedGroup, showBranches, onSelectGroup }: { selected
 
         {showBranches ? (
           <div className="goal-groups">
-            {GOAL_GROUPS.map((group) => {
+            {goalGroups.map((group) => {
               const isSelected = selectedGroup === group.name
               return (
                 <button
@@ -623,9 +827,19 @@ function PyramidPanel({ selectedGroup, showBranches, onSelectGroup }: { selected
   )
 }
 
-function BranchDetailPanel({ groupName }: { groupName: string }) {
-  const group = GOAL_GROUPS.find((item) => item.name === groupName) ?? GOAL_GROUPS[0]
-  const targets = BRANCH_TARGETS.filter((target) => target.group === group.name)
+function BranchDetailPanel({
+  groupName,
+  goalGroups,
+  branchTargets,
+  ownerDirectory,
+}: {
+  groupName: string
+  goalGroups: readonly GoalGroup[]
+  branchTargets: readonly BranchTarget[]
+  ownerDirectory: Record<string, string>
+}) {
+  const group = goalGroups.find((item) => item.name === groupName) ?? goalGroups[0]
+  const targets = branchTargets.filter((target) => target.group === group.name)
 
   return (
     <section className="branch-detail-panel" id="branchDetails">
@@ -654,7 +868,7 @@ function BranchDetailPanel({ groupName }: { groupName: string }) {
                       <article className="branch-action-card" key={`${target.title}-${child}-${item.action}`}>
                         <strong>{item.action}</strong>
                         <span>{item.owner}</span>
-                        <p>{ownerDetail(item.owner)}</p>
+                        <p>{ownerDetail(item.owner, ownerDirectory)}</p>
                       </article>
                     ))}
                   </div>
@@ -722,13 +936,13 @@ function ContactsPanel({ keyword, rows, onKeywordChange, onExport }: { keyword: 
   )
 }
 
-function BrandPanel() {
+function BrandPanel({ brands }: { brands: readonly Brand[] }) {
   return (
     <div className="panel brand-progress-panel">
       <PanelHeader title="品牌经营进度" subtitle="五大核心品牌目标完成度" />
       <div className="panel-body">
         <div className="brand-list">
-          {DATA.brands.map((brand) => (
+          {brands.map((brand) => (
             <div className="brand-row" key={brand.name} title={brand.company}>
               <div className="brand-name">{brand.name}</div>
               <div className="bar">
@@ -778,9 +992,9 @@ function TasksPanel({ tasks, activeStatus, onStatusChange, onTaskToggle }: { tas
   )
 }
 
-function RiskPanel() {
-  const localRisks = DATA.risks.filter((risk) => risk.type === 'local')
-  const decisionRisks = DATA.risks.filter((risk) => risk.type === 'decision')
+function RiskPanel({ risks }: { risks: readonly Risk[] }) {
+  const localRisks = risks.filter((risk) => risk.type === 'local')
+  const decisionRisks = risks.filter((risk) => risk.type === 'decision')
 
   return (
     <div className="panel risk-panel section-anchor" id="risk">
@@ -809,13 +1023,13 @@ function RiskBox({ title, risks, countLabel, type }: { title: string; risks: rea
   )
 }
 
-function SupplyPanel() {
+function SupplyPanel({ costs }: { costs: readonly Cost[] }) {
   return (
     <div className="panel">
       <PanelHeader title="供应链真实成本" subtitle="用于拆解“售价 - 佣金 - 成本 - 税费 - 净利”" />
       <div className="panel-body">
         <div className="cost-grid">
-          {DATA.costs.map((item) => (
+          {costs.map((item) => (
             <div className="cost-card" key={item.brand}>
               <strong>{item.brand}</strong>
               <div className="cost-line"><span>产品成本</span><span>{item.product.toFixed(1)} 元</span></div>
@@ -830,13 +1044,13 @@ function SupplyPanel() {
   )
 }
 
-function TaxPanel() {
+function TaxPanel({ taxCards }: { taxCards: readonly TaxCard[] }) {
   return (
     <div className="panel section-anchor" id="tax">
       <PanelHeader title="财税合规拆解" subtitle="供应链公司与运营公司两条模型分开看" />
       <div className="panel-body">
         <div className="governance-list">
-          {DATA.taxCards.map((card) => (
+          {taxCards.map((card) => (
             <div className="rule-card" key={card.title}>
               <h4>{card.title}</h4>
               <p>{card.desc}</p>
@@ -848,8 +1062,8 @@ function TaxPanel() {
   )
 }
 
-function DecisionPanel({ tasks, onCopy }: { tasks: readonly Task[]; onCopy: () => void }) {
-  const insights = useMemo(() => buildAiInsights(tasks), [tasks])
+function DecisionPanel({ data, tasks, onCopy }: { data: DashboardData; tasks: readonly Task[]; onCopy: () => void }) {
+  const insights = useMemo(() => buildAiInsights(data, tasks), [data, tasks])
 
   return (
     <section className="panel decision-panel section-anchor" id="decision">
@@ -912,6 +1126,12 @@ function RulesPanel() {
 }
 
 function App() {
+  const [dashboardState, setDashboardState] = useState<LoadedDashboardState>(() => fallbackDashboardState())
+  const [connection, setConnection] = useState<DataConnection>(() => ({
+    state: 'loading',
+    apiBaseUrl: getApiBaseUrl(),
+    message: '连接后端中',
+  }))
   const [activeView, setActiveView] = useState<ViewKey>('overview')
   const [selectedGoalGroup, setSelectedGoalGroup] = useState('')
   const [contactKeyword, setContactKeyword] = useState('')
@@ -926,21 +1146,47 @@ function App() {
   }, [])
 
   useEffect(() => {
+    const controller = new AbortController()
+    loadOperatingSystem(controller.signal)
+      .then((loadedState) => {
+        setDashboardState(loadedState)
+        setConnection({
+          state: 'cloud',
+          apiBaseUrl: getApiBaseUrl(),
+          message: '后端联动',
+        })
+      })
+      .catch((error: Error) => {
+        if (controller.signal.aborted) return
+        console.warn('HUAGE operating-system API fallback:', error)
+        setDashboardState(fallbackDashboardState())
+        setConnection({
+          state: 'fallback',
+          apiBaseUrl: getApiBaseUrl(),
+          message: '本地兜底',
+        })
+      })
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
     if (!toast) return
     const timer = window.setTimeout(() => setToast(''), 1800)
     return () => window.clearTimeout(timer)
   }, [toast])
 
+  const { data, goalGroups, branchTargets, ownerDirectory } = dashboardState
+
   const tasks = useMemo(
-    () => DATA.tasks.map((task) => ({ ...task, status: taskOverrides[task.name] ?? task.status })) as Task[],
-    [taskOverrides],
+    () => data.tasks.map((task) => ({ ...task, status: taskOverrides[task.name] ?? task.status })) as Task[],
+    [data.tasks, taskOverrides],
   )
 
   const filteredContacts = useMemo(() => {
     const query = contactKeyword.trim().toLowerCase()
-    if (!query) return DATA.contacts
-    return DATA.contacts.filter((item) => [item.module, item.company, item.contact, item.reportsTo, item.status, item.remark].join(' ').toLowerCase().includes(query))
-  }, [contactKeyword])
+    if (!query) return data.contacts
+    return data.contacts.filter((item) => [item.module, item.company, item.contact, item.reportsTo, item.status, item.remark].join(' ').toLowerCase().includes(query))
+  }, [contactKeyword, data.contacts])
 
   const showPyramidPanel = activeView === 'overview' || activeView === 'pyramid'
   const showContactsPanel = activeView === 'overview' || activeView === 'org'
@@ -952,7 +1198,7 @@ function App() {
   const showDecisionPanel = activeView === 'overview' || activeView === 'decision'
   const showRulesPanel = activeView === 'decision'
   const viewCopy = VIEW_COPY[activeView]
-  const detailGroupName = selectedGoalGroup || GOAL_GROUPS[0].name
+  const detailGroupName = selectedGoalGroup || goalGroups[0]?.name || ''
 
   function activateView(view: ViewKey) {
     setActiveView(view)
@@ -971,7 +1217,7 @@ function App() {
   }
 
   function exportContacts() {
-    const csv = `\ufeff${toCsv(DATA.contacts)}`
+    const csv = `\ufeff${toCsv(data.contacts)}`
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
@@ -983,7 +1229,7 @@ function App() {
   }
 
   async function copyDecisionPackage() {
-    const text = buildDecisionPackage(tasks)
+    const text = buildDecisionPackage(data, tasks)
     try {
       await navigator.clipboard.writeText(text)
       setToast('华哥决策包已复制')
@@ -1014,7 +1260,7 @@ function App() {
                     {item.label}
                   </button>
                   <div className="nav-sublist" aria-label="JOSMAN目标金字塔分支">
-                    {GOAL_GROUPS.map((group) => (
+                    {goalGroups.map((group) => (
                       <button className={`nav-subitem ${selectedGoalGroup === group.name ? 'active' : ''}`} key={group.name} type="button" onClick={() => selectGoalGroup(group.name)}>
                         <span>{group.no}</span>
                         {group.name}
@@ -1051,8 +1297,9 @@ function App() {
           </div>
           <div className="top-actions">
             <span className="badge-dark">📅 {formatDateTime(now)}</span>
-            <span className="badge-dark badge-green">● 系统正常</span>
+            <span className={`badge-dark ${connection.state === 'fallback' ? 'badge-orange' : 'badge-green'}`}>● {connection.message}</span>
             <span className="badge-dark badge-blue">AI 分析中</span>
+            <span className="badge-dark" title={connection.apiBaseUrl}>数据源：{connection.state === 'cloud' ? 'Cloudflare D1' : connection.state === 'loading' ? '连接中' : '本地缓存'}</span>
             <span className="badge-dark">服务对象：集团总助 李锦宁⌄</span>
           </div>
         </header>
@@ -1065,33 +1312,33 @@ function App() {
           </section>
         ) : null}
 
-        {activeView === 'overview' ? <KpiGrid /> : null}
+        {activeView === 'overview' ? <KpiGrid kpis={data.kpis} /> : null}
 
         {showPyramidPanel || showContactsPanel ? (
           <section className={`grid two-col section-anchor ${showPyramidPanel !== showContactsPanel ? 'single-view' : ''}`} id="pyramid">
-            {showPyramidPanel ? <PyramidPanel selectedGroup={activeView === 'pyramid' ? detailGroupName : selectedGoalGroup} showBranches={activeView === 'pyramid'} onSelectGroup={selectGoalGroup} /> : null}
+            {showPyramidPanel ? <PyramidPanel pyramid={data.pyramid} goalGroups={goalGroups} selectedGroup={activeView === 'pyramid' ? detailGroupName : selectedGoalGroup} showBranches={activeView === 'pyramid'} onSelectGroup={selectGoalGroup} /> : null}
             {showContactsPanel ? <ContactsPanel keyword={contactKeyword} rows={filteredContacts} onKeywordChange={setContactKeyword} onExport={exportContacts} /> : null}
           </section>
         ) : null}
 
-        {activeView === 'pyramid' ? <BranchDetailPanel groupName={detailGroupName} /> : null}
+        {activeView === 'pyramid' ? <BranchDetailPanel groupName={detailGroupName} goalGroups={goalGroups} branchTargets={branchTargets} ownerDirectory={ownerDirectory} /> : null}
 
         {showBrandPanel || showTaskPanel || showRiskPanel ? (
           <section className={`grid three-col section-anchor ${[showBrandPanel, showTaskPanel, showRiskPanel].filter(Boolean).length === 1 ? 'single-view' : ''}`} id="brand">
-            {showBrandPanel ? <BrandPanel /> : null}
+            {showBrandPanel ? <BrandPanel brands={data.brands} /> : null}
             {showTaskPanel ? <TasksPanel tasks={tasks} activeStatus={taskStatus} onStatusChange={setTaskStatus} onTaskToggle={handleTaskToggle} /> : null}
-            {showRiskPanel ? <RiskPanel /> : null}
+            {showRiskPanel ? <RiskPanel risks={data.risks} /> : null}
           </section>
         ) : null}
 
         {showSupplyPanel || showTaxPanel ? (
           <section className={`grid bottom-grid section-anchor ${showSupplyPanel !== showTaxPanel ? 'single-view' : ''}`} id="supply">
-            {showSupplyPanel ? <SupplyPanel /> : null}
-            {showTaxPanel ? <TaxPanel /> : null}
+            {showSupplyPanel ? <SupplyPanel costs={data.costs} /> : null}
+            {showTaxPanel ? <TaxPanel taxCards={data.taxCards} /> : null}
           </section>
         ) : null}
 
-        {showDecisionPanel ? <DecisionPanel tasks={tasks} onCopy={copyDecisionPackage} /> : null}
+        {showDecisionPanel ? <DecisionPanel data={data} tasks={tasks} onCopy={copyDecisionPackage} /> : null}
         {showRulesPanel ? <RulesPanel /> : null}
       </main>
 
