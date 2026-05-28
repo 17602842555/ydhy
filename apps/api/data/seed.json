@@ -2298,7 +2298,8 @@
         "decision.decide",
         "audit.read",
         "source.read",
-        "task_calendar.read"
+        "task_calendar.read",
+        "villa_project.read"
       ]
     },
     {
@@ -2318,7 +2319,9 @@
         "audit.read",
         "source.read",
         "task_calendar.read",
-        "task_calendar.write"
+        "task_calendar.write",
+        "villa_project.read",
+        "villa_project.write"
       ]
     },
     {
@@ -67296,5 +67299,552 @@
     ],
     "importedFrom": "http://yongdonghuayu_task_calendar.zhuqingtingai.com/",
     "importedAt": "2026-05-28T17:02:55.401Z"
+  },
+  "villaProject": {
+    "title": "华哥别墅装修进度系统看板",
+    "subtitle": "施工进度、监督整改、预算支出统一看板 / 数据来源：huage-villa-dashboard-package.zip",
+    "phases": [
+      {
+        "id": "phase-1",
+        "name": "拆改与清运",
+        "zone": "1F 客餐厅",
+        "owner": "李工",
+        "start": "2026-05-18",
+        "end": "2026-05-28",
+        "progress": 82,
+        "status": "施工中",
+        "acceptance": "拆除范围、垃圾清运、保护膜复核",
+        "next": "墙体放线后安排水电定位会"
+      },
+      {
+        "id": "phase-2",
+        "name": "水电定位",
+        "zone": "全屋",
+        "owner": "王工",
+        "start": "2026-05-24",
+        "end": "2026-06-03",
+        "progress": 38,
+        "status": "施工中",
+        "acceptance": "强弱电点位、水路走向、回路编号留档",
+        "next": "华哥确认插座和灯位清单"
+      },
+      {
+        "id": "phase-3",
+        "name": "地下室防潮",
+        "zone": "B1 地下室",
+        "owner": "周工",
+        "start": "2026-05-20",
+        "end": "2026-05-30",
+        "progress": 80,
+        "status": "施工中",
+        "acceptance": "防潮层闭水、阴阳角照片归档",
+        "next": "负一整体按80%推进，重点转入全屋定制复尺和艺术漆收口"
+      },
+      {
+        "id": "phase-b1-entry",
+        "name": "入户空间收尾",
+        "zone": "负一 · 入户",
+        "owner": "半包施工方",
+        "start": "2026-05-01",
+        "end": "2026-06-10",
+        "progress": 80,
+        "status": "施工中",
+        "acceptance": "地墙顶基础完成、门洞和动线尺寸复核、现场保护到位",
+        "next": "全屋定制玄关柜复尺，艺术漆基层修补与面漆收口"
+      },
+      {
+        "id": "phase-b1-shoes",
+        "name": "鞋帽间收尾",
+        "zone": "负一 · 鞋帽间",
+        "owner": "半包施工方",
+        "start": "2026-05-01",
+        "end": "2026-06-10",
+        "progress": 80,
+        "status": "施工中",
+        "acceptance": "柜体安装面尺寸复核、墙顶面基层完成、灯位预留检查",
+        "next": "鞋帽柜定制下单/安装，艺术漆面层和踢脚收口"
+      },
+      {
+        "id": "phase-b1-elevator",
+        "name": "电梯间收尾",
+        "zone": "负一 · 电梯间",
+        "owner": "半包施工方",
+        "start": "2026-05-01",
+        "end": "2026-06-10",
+        "progress": 80,
+        "status": "施工中",
+        "acceptance": "电梯门套周边基层完成、墙面垂平复核、照明点位检查",
+        "next": "门套和定制收边复尺，艺术漆面层统一收口"
+      },
+      {
+        "id": "phase-b1-elevator-storage",
+        "name": "电梯杂物间收尾",
+        "zone": "负一 · 电梯杂物间",
+        "owner": "半包施工方",
+        "start": "2026-05-01",
+        "end": "2026-06-10",
+        "progress": 80,
+        "status": "施工中",
+        "acceptance": "储物空间尺寸、插座点位、墙顶面基层完成",
+        "next": "杂物柜定制复尺，艺术漆基层找补和门套收口"
+      },
+      {
+        "id": "phase-b1-tea",
+        "name": "茶室收尾",
+        "zone": "负一 · 茶室",
+        "owner": "半包施工方",
+        "start": "2026-05-01",
+        "end": "2026-06-10",
+        "progress": 80,
+        "status": "施工中",
+        "acceptance": "茶台位置、水电点位、墙顶面基层和地面保护完成",
+        "next": "茶柜/展示柜定制复尺，艺术漆面层和背景墙收口"
+      },
+      {
+        "id": "phase-b1-bath-1",
+        "name": "卫生间一收尾",
+        "zone": "负一 · 卫生间一",
+        "owner": "半包施工方",
+        "start": "2026-05-01",
+        "end": "2026-06-10",
+        "progress": 80,
+        "status": "施工中",
+        "acceptance": "防水、排水坡度、洁具点位和门槛石基础复核",
+        "next": "浴室柜定制复尺，干区艺术漆/墙顶面收口"
+      },
+      {
+        "id": "phase-b1-reception",
+        "name": "会客厅收尾",
+        "zone": "负一 · 会客厅",
+        "owner": "半包施工方",
+        "start": "2026-05-01",
+        "end": "2026-06-10",
+        "progress": 80,
+        "status": "施工中",
+        "acceptance": "墙顶面基层、灯光回路、背景墙尺寸复核完成",
+        "next": "背景柜/展示柜定制复尺，艺术漆大面和阴阳角收口"
+      },
+      {
+        "id": "phase-b1-dining",
+        "name": "餐厅收尾",
+        "zone": "负一 · 餐厅",
+        "owner": "半包施工方",
+        "start": "2026-05-01",
+        "end": "2026-06-10",
+        "progress": 80,
+        "status": "施工中",
+        "acceptance": "餐边柜安装面、照明点位、墙面基层完成",
+        "next": "餐边柜定制复尺，艺术漆面层和柜边收口"
+      },
+      {
+        "id": "phase-b1-kitchen",
+        "name": "厨房收尾",
+        "zone": "负一 · 厨房",
+        "owner": "半包施工方",
+        "start": "2026-05-01",
+        "end": "2026-06-10",
+        "progress": 80,
+        "status": "施工中",
+        "acceptance": "橱柜水电点位、烟道、墙地面基础和尺寸完成复核",
+        "next": "橱柜定制复尺，墙顶面修补和设备收口"
+      },
+      {
+        "id": "phase-b1-hall",
+        "name": "过厅收尾",
+        "zone": "负一 · 过厅",
+        "owner": "半包施工方",
+        "start": "2026-05-01",
+        "end": "2026-06-10",
+        "progress": 80,
+        "status": "施工中",
+        "acceptance": "过道墙顶面基层、灯位、门洞收边完成复核",
+        "next": "过道柜/端景定制复尺，艺术漆面层统一收口"
+      },
+      {
+        "id": "phase-b1-leisure-storage",
+        "name": "休闲杂物间收尾",
+        "zone": "负一 · 休闲杂物间",
+        "owner": "半包施工方",
+        "start": "2026-05-01",
+        "end": "2026-06-10",
+        "progress": 80,
+        "status": "施工中",
+        "acceptance": "储物布局、插座点位、墙顶面基层完成",
+        "next": "储物柜定制复尺，艺术漆基层修补和门套收口"
+      },
+      {
+        "id": "phase-b1-laundry",
+        "name": "洗衣房收尾",
+        "zone": "负一 · 洗衣房",
+        "owner": "半包施工方",
+        "start": "2026-05-01",
+        "end": "2026-06-10",
+        "progress": 80,
+        "status": "施工中",
+        "acceptance": "上下水、地漏坡度、设备位和柜体尺寸复核完成",
+        "next": "洗衣柜定制复尺，墙顶面防潮基层和艺术漆收口"
+      },
+      {
+        "id": "phase-b1-gym",
+        "name": "健身房收尾",
+        "zone": "负一 · 健身房",
+        "owner": "半包施工方",
+        "start": "2026-05-01",
+        "end": "2026-06-10",
+        "progress": 80,
+        "status": "施工中",
+        "acceptance": "地面保护、镜面/储物安装面、墙顶面基层完成",
+        "next": "器械储物定制复尺，艺术漆面层和踢脚收口"
+      },
+      {
+        "id": "phase-b1-bath-2",
+        "name": "卫生间二收尾",
+        "zone": "负一 · 卫生间二",
+        "owner": "半包施工方",
+        "start": "2026-05-01",
+        "end": "2026-06-10",
+        "progress": 80,
+        "status": "施工中",
+        "acceptance": "防水、排水坡度、洁具点位和门槛石基础复核",
+        "next": "浴室柜定制复尺，干区艺术漆/墙顶面收口"
+      },
+      {
+        "id": "phase-4",
+        "name": "外立面修补",
+        "zone": "外立面",
+        "owner": "陈工",
+        "start": "2026-05-26",
+        "end": "2026-06-08",
+        "progress": 12,
+        "status": "施工中",
+        "acceptance": "空鼓修补、窗边收口、防水胶检查",
+        "next": "雨后观察渗漏点"
+      },
+      {
+        "id": "phase-5",
+        "name": "主卧套间深化",
+        "zone": "2F 主卧",
+        "owner": "设计许",
+        "start": "2026-05-21",
+        "end": "2026-05-29",
+        "progress": 76,
+        "status": "施工中",
+        "acceptance": "衣帽间尺寸、卫浴排水、灯槽剖面确认",
+        "next": "冻结图纸给木作和水电班组"
+      },
+      {
+        "id": "phase-6",
+        "name": "庭院排水沟",
+        "zone": "庭院",
+        "owner": "赵工",
+        "start": "2026-06-01",
+        "end": "2026-06-11",
+        "progress": 0,
+        "status": "未开始",
+        "acceptance": "坡度、雨水口位置、沟盖板样式确认",
+        "next": "等外墙脚手架拆除后进场"
+      }
+    ],
+    "issues": [
+      {
+        "id": "issue-1",
+        "title": "地下室防潮层照片缺失",
+        "zone": "B1 地下室",
+        "owner": "周工",
+        "due": "2026-05-29",
+        "severity": "高",
+        "status": "待整改",
+        "note": "补拍阴阳角、管根、地漏周边照片，复验前归档。"
+      },
+      {
+        "id": "issue-2",
+        "title": "客厅临时保护边角翘起",
+        "zone": "1F 客厅",
+        "owner": "李工",
+        "due": "2026-05-28",
+        "severity": "中",
+        "status": "整改中",
+        "note": "进出材料通道重新贴牢，避免划伤地面和门套。"
+      },
+      {
+        "id": "issue-3",
+        "title": "主卧灯槽尺寸需复核",
+        "zone": "2F 主卧",
+        "owner": "设计许",
+        "due": "2026-05-30",
+        "severity": "中",
+        "status": "待复验",
+        "note": "与空调出风口间距重新标注，发群确认。"
+      },
+      {
+        "id": "issue-4",
+        "title": "材料堆放占用消防通道",
+        "zone": "庭院入口",
+        "owner": "材料员",
+        "due": "2026-05-27",
+        "severity": "高",
+        "status": "待整改",
+        "note": "今日下班前转移到临时堆放区并拍照。"
+      }
+    ],
+    "budgets": [
+      {
+        "category": "设计管理",
+        "budget": 260000
+      },
+      {
+        "category": "基础施工",
+        "budget": 1200000
+      },
+      {
+        "category": "门窗系统",
+        "budget": 520000
+      },
+      {
+        "category": "金属护栏",
+        "budget": 180000
+      },
+      {
+        "category": "窗帘软装",
+        "budget": 300000
+      },
+      {
+        "category": "石材瓷砖",
+        "budget": 480000
+      },
+      {
+        "category": "全屋定制",
+        "budget": 650000
+      },
+      {
+        "category": "水系统",
+        "budget": 300000
+      },
+      {
+        "category": "庭院景观",
+        "budget": 110000
+      }
+    ],
+    "expenses": [
+      {
+        "id": "expense-landscape-20260527",
+        "date": "2026-05-27",
+        "category": "庭院景观",
+        "item": "景观制作费",
+        "vendor": "杨彪",
+        "amount": 17600,
+        "status": "已付",
+        "voucherType": "银行回执",
+        "voucherNo": "108404913710",
+        "note": "中国建设银行网上银行电子回执单；交易状态：银行受理成功。"
+      },
+      {
+        "id": "expense-rail-20260428",
+        "date": "2026-04-28",
+        "category": "金属护栏",
+        "item": "铁艺护栏",
+        "vendor": "珠海市香洲李洪江建材商行",
+        "amount": 21666,
+        "status": "已付",
+        "voucherType": "电子发票",
+        "voucherNo": "26442000004666187101",
+        "note": "金属制品；不含税21451.49，税额214.51。"
+      },
+      {
+        "id": "expense-curtain-20260410",
+        "date": "2026-04-10",
+        "category": "窗帘软装",
+        "item": "窗帘布",
+        "vendor": "茂名市茂南区伊蔓莎窗帘墙布商行",
+        "amount": 35000,
+        "status": "已付",
+        "voucherType": "电子发票",
+        "voucherNo": "26442000003881211511",
+        "note": "纺织产品；不含税34653.47，税额346.53。"
+      },
+      {
+        "id": "expense-door-20260407",
+        "date": "2026-04-07",
+        "category": "门窗系统",
+        "item": "室内门四套安装",
+        "vendor": "珠海旭瀚建材有限公司",
+        "amount": 14891,
+        "status": "已付",
+        "voucherType": "电子发票",
+        "voucherNo": "26442000003758772316",
+        "note": "建筑服务；不含税14743.56，税额147.44。"
+      },
+      {
+        "id": "expense-renovation-20260106",
+        "date": "2026-01-06",
+        "category": "基础施工",
+        "item": "华发院子129栋装修款",
+        "vendor": "广东一渡空间设计工程有限公司",
+        "amount": 68000,
+        "status": "已付",
+        "voucherType": "电子发票",
+        "voucherNo": "2644200000163368811",
+        "note": "建筑服务装修费；不含税67326.73，税额673.27。"
+      },
+      {
+        "id": "expense-half-package-20260527",
+        "date": "2026-05-27",
+        "category": "基础施工",
+        "item": "半包施工合同价",
+        "vendor": "半包施工方",
+        "amount": 1480000,
+        "status": "合同",
+        "voucherType": "合同",
+        "voucherNo": "待补合同编号",
+        "note": "半包施工总价1480000；待补合同、付款节点和责任范围。"
+      },
+      {
+        "id": "expense-stone-20260107",
+        "date": "2026-01-07",
+        "category": "石材瓷砖",
+        "item": "大理石",
+        "vendor": "珠海万峰建材有限公司",
+        "amount": 26647.63,
+        "status": "已付",
+        "voucherType": "电子发票",
+        "voucherNo": "2644200000219493906",
+        "note": "非金属矿物制品；不含税26383.79，税额263.84。"
+      },
+      {
+        "id": "expense-custom-20260420",
+        "date": "2026-04-20",
+        "category": "全屋定制",
+        "item": "全屋定制家具",
+        "vendor": "提比斯特家居（珠海）有限公司",
+        "amount": 39610,
+        "status": "已付",
+        "voucherType": "电子发票",
+        "voucherNo": "2644200004292261896",
+        "note": "家具；不含税39217.82，税额392.18。"
+      },
+      {
+        "id": "expense-water-20260408",
+        "date": "2026-04-08",
+        "category": "水系统",
+        "item": "家美乐水系统产品零售合同",
+        "vendor": "深圳市家美乐装饰材料有限公司珠海分公司",
+        "amount": 268000,
+        "status": "合同",
+        "voucherType": "合同",
+        "voucherNo": "LSD-ZH-000",
+        "note": "合同总额268000；约定80%首款214400，尾款53600。"
+      }
+    ],
+    "villaZones": [
+      {
+        "key": "车库",
+        "title": "车库",
+        "aliases": [
+          "车库",
+          "操作间"
+        ],
+        "rooms": [
+          "操作间"
+        ]
+      },
+      {
+        "key": "负一",
+        "title": "负一",
+        "aliases": [
+          "负一",
+          "B1",
+          "地下室"
+        ],
+        "rooms": [
+          "入户",
+          "鞋帽间",
+          "电梯间",
+          "电梯杂物间",
+          "茶室",
+          "卫生间一",
+          "会客厅",
+          "餐厅",
+          "厨房",
+          "过厅",
+          "休闲杂物间",
+          "洗衣房",
+          "健身房",
+          "卫生间二"
+        ]
+      },
+      {
+        "key": "夹层",
+        "title": "夹层",
+        "aliases": [
+          "夹层"
+        ],
+        "rooms": [
+          "电梯间",
+          "卫生间",
+          "书房",
+          "影音室",
+          "客房"
+        ]
+      },
+      {
+        "key": "一楼",
+        "title": "一楼",
+        "aliases": [
+          "一楼",
+          "1F"
+        ],
+        "rooms": [
+          "入户",
+          "客厅",
+          "公区卫生间",
+          "长辈房",
+          "长辈房卫生间",
+          "餐厅",
+          "厨房"
+        ]
+      },
+      {
+        "key": "二楼",
+        "title": "二楼",
+        "aliases": [
+          "二楼",
+          "2F"
+        ],
+        "rooms": [
+          "公区卫生间",
+          "小儿童房",
+          "大儿童房",
+          "户外露台"
+        ]
+      },
+      {
+        "key": "三楼",
+        "title": "三楼",
+        "aliases": [
+          "三楼",
+          "3F"
+        ],
+        "rooms": [
+          "主人房",
+          "主人房卫生间一",
+          "主人房卫生间二",
+          "主人房户外露台"
+        ]
+      },
+      {
+        "key": "四楼",
+        "title": "四楼",
+        "aliases": [
+          "四楼",
+          "4F",
+          "楼顶"
+        ],
+        "rooms": [
+          "楼顶户外阳台"
+        ]
+      }
+    ],
+    "importedFrom": "/Volumes/空锦界文件库/服务器/huage-villa-dashboard-package.zip",
+    "importedAt": "2026-05-28T16:30:27.210Z"
   }
 }

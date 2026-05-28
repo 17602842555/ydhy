@@ -51,6 +51,8 @@
 - Connected the third-level subsidiary supervision page's `打开填报页` action to the standalone task-calendar route instead of embedding the entry form inside the supervision page.
 - Synced the standalone task-calendar data with `http://yongdonghuayu_task_calendar.zhuqingtingai.com/`: imported 11 companies, 38 operating units, 1194 business metrics, 1730 calendar entries, and 12 monthly targets, then added backend `entries` support so daily targets and fallback actuals match the original task-management calculation model.
 - Updated the standalone task-calendar account flow so the group account opens a read-only `全部子公司` view, while each subsidiary account can switch into its own company-only fill page and save only that company's data.
+- Added a `别墅项目目标` third-level page under `JOSMAN目标金字塔 -> 专项项目分支`: imported `huage-villa-dashboard-package.zip` into backend `villaProject` seed data and rebuilt the villa dashboard as a unified light-neumorphic React page.
+- Added villa project backend endpoints for reading the dashboard, adding/updating施工节点, adding/updating整改问题, adding预算支出, and syncing the seed source into the Cloudflare D1-backed runtime state.
 - Reworked the web app into a multi-module management console covering 总览, 系统全景, 目标金字塔, 子公司监管, 数据导入, 组织人物, 主数据, 品牌经营, 财税合规, 供应链, 审批工单, 集成中心, 风险预警, 决策包, 经营报告, 系统设置, 软件端, and 审计日志.
 - Added role-switch validation UI so PMO, owner, finance, and boss sessions expose allowed actions, disabled buttons, and server-side 403 behavior.
 - Extended the PostgreSQL target schema and deterministic seed SQL for operating modules, goal branches, person profiles, contacts, module responsibilities, reporting lines, handover events, brand progress, operating tasks, risk items, decision packages, supply costs, tax cards, commercial modules, master data records, approval flows, commercial work orders, integration connectors, report packs, client targets, and system policies.
@@ -69,7 +71,9 @@
 - API self-check now verifies the operating-system payload and task status mutation.
 - API self-check now verifies the people graph, contact handover/audit write, risk escalation, and decision-package idempotency.
 - API self-check now verifies the commercial-system payload and audited commercial work-order update.
+- API self-check now verifies the villa project payload from the imported dashboard seed, including phase count, issue count, and 400万 budget total.
 - Isolated API contract check now verifies people/contact mutation, task audit, commercial-system payload, work-order audit, risk escalation, decision-package idempotency, and finance/owner 403 boundaries.
+- Isolated API contract check now verifies villa project read, construction phase creation, inspection issue creation, budget expense creation, category rollup, and audit writes.
 - `npm run check` now includes the PostgreSQL schema gate, PostgreSQL seed check, migration dry-run, isolated API contract check, Web build, and API self-check.
 - Browser QA: `http://127.0.0.1:5173/` loaded with API online, dirty import preview returned raw errors, validated batch `BATCH-20260528-004` was created and published, KPI/table/audit state refreshed.
 - Browser QA: `http://127.0.0.1:5173/` rendered the neumorphic digital UI, showed `后端联动` and `Cloudflare D1`, kept 6 KPI cards and 12 contact rows, and had no console warnings/errors.
@@ -96,6 +100,8 @@
 - Standalone task-calendar Playwright QA: desktop `1440x900` saved a business metric from the `经营数据` tab and displayed `已保存，并同步到子公司监管看板。`; mobile `390x844` rendered the independent page with no horizontal overflow and no console/page errors. Test writes were restored afterward.
 - Playwright real CSV QA: uploaded `子公司监管导入-对象仓储CSV.csv`, created validated batch `BATCH-20260528-004`, stored source bytes with `objectKey`, published the batch, downloaded the source through `GET /api/imports/:id/source-file`, and verified the downloaded SHA-256 matched the original file.
 - Duplicate file QA: re-importing the same SHA-256 returned `409 duplicate_import`.
+- Local villa project QA: Browser verified `#/villa-project` and `JOSMAN目标金字塔 -> 05 专项项目分支 -> 别墅项目目标 -> 打开三级页面`, confirmed the imported villa dashboard title, 4 metric cards, 7 zone cards, backend write toast, no console warnings/errors, and no horizontal overflow.
+- Villa project Playwright QA: desktop `1440x900` and mobile `390x844` rendered 20 construction rows and 4 metric cards with no horizontal overflow and no console/page errors.
 - Playwright mobile smoke: 390x844 viewport, no horizontal overflow, no console/page errors.
 
 ### Remaining

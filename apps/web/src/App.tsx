@@ -4,6 +4,7 @@ import { BarChart3, CircleDot, ClipboardCheck, LayoutGrid, PackageCheck, Receipt
 import './App.css'
 import { SubcompanySupervisionPage } from './SubcompanySupervisionPage'
 import { TaskCalendarEntryPage } from './TaskCalendarEntryPage'
+import { VillaProjectPage } from './VillaProjectPage'
 
 type ViewKey = 'overview' | 'pyramid' | 'brand' | 'tax' | 'supply' | 'org' | 'risk' | 'decision'
 type TaskStatus = '待办' | '进行中' | '已完成'
@@ -118,6 +119,8 @@ const NAV_ITEMS: Array<{ key: ViewKey; label: string; icon: ReactNode }> = [
 const SUBCOMPANY_BRANCH_NAME = '子公司监管分支'
 const SUBCOMPANY_TARGET_NAME = '子公司监管目标'
 const SUBCOMPANY_SUPERVISION_URL = `${import.meta.env.BASE_URL}subcompany-supervision/index.html`
+const VILLA_BRANCH_NAME = '专项项目分支'
+const VILLA_TARGET_NAME = '别墅项目目标'
 
 const ROSTER_MAP = {
   brandOwners: '赵宜主：李锦宁；最家西子：负责人待确认；花木轻妍：负责人待确认；控驻：负责人待确认；元气甸甸：梁燕红',
@@ -864,12 +867,14 @@ function BranchDetailPanel({
   branchTargets,
   ownerDirectory,
   onOpenSubcompany,
+  onOpenVilla,
 }: {
   groupName: string
   goalGroups: readonly GoalGroup[]
   branchTargets: readonly BranchTarget[]
   ownerDirectory: Record<string, string>
   onOpenSubcompany: () => void
+  onOpenVilla: () => void
 }) {
   const group = goalGroups.find((item) => item.name === groupName) ?? goalGroups[0]
   const targets = branchTargets.filter((target) => target.group === group.name)
@@ -886,13 +891,18 @@ function BranchDetailPanel({
 
       <div className="branch-target-list">
         {targets.map((target) => (
-          <article className={`branch-target-row ${target.title === SUBCOMPANY_TARGET_NAME ? 'has-drilldown' : ''}`} key={target.title}>
+          <article className={`branch-target-row ${[SUBCOMPANY_TARGET_NAME, VILLA_TARGET_NAME].includes(target.title) ? 'has-drilldown' : ''}`} key={target.title}>
             <aside className="branch-target-rail">
               <span>{target.code}</span>
               <strong>{target.title}</strong>
               <em>系统</em>
               {target.title === SUBCOMPANY_TARGET_NAME ? (
                 <button className="branch-drill-button" type="button" onClick={onOpenSubcompany}>
+                  打开三级页面
+                </button>
+              ) : null}
+              {target.title === VILLA_TARGET_NAME ? (
+                <button className="branch-drill-button" type="button" onClick={onOpenVilla}>
                   打开三级页面
                 </button>
               ) : null}
@@ -1176,13 +1186,22 @@ function App() {
   const [taskStatus, setTaskStatus] = useState<TaskStatus>('待办')
   const [taskOverrides, setTaskOverrides] = useState<Record<string, TaskStatus>>({})
   const [subcompanyDrilldownOpen, setSubcompanyDrilldownOpen] = useState(false)
+  const [villaDrilldownOpen, setVillaDrilldownOpen] = useState(false)
   const [taskCalendarEntryOpen, setTaskCalendarEntryOpen] = useState(false)
-  const [hashRoute, setHashRoute] = useState(() => window.location.hash.startsWith('#/task-calendar') ? 'task-calendar' : '')
+  const [hashRoute, setHashRoute] = useState(() => {
+    if (window.location.hash.startsWith('#/task-calendar')) return 'task-calendar'
+    if (window.location.hash.startsWith('#/villa-project')) return 'villa-project'
+    return ''
+  })
   const [toast, setToast] = useState('')
   const [now, setNow] = useState(() => new Date())
 
   useEffect(() => {
-    const syncHashRoute = () => setHashRoute(window.location.hash.startsWith('#/task-calendar') ? 'task-calendar' : '')
+    const syncHashRoute = () => {
+      if (window.location.hash.startsWith('#/task-calendar')) setHashRoute('task-calendar')
+      else if (window.location.hash.startsWith('#/villa-project')) setHashRoute('villa-project')
+      else setHashRoute('')
+    }
     window.addEventListener('hashchange', syncHashRoute)
     return () => window.removeEventListener('hashchange', syncHashRoute)
   }, [])
@@ -1247,6 +1266,7 @@ function App() {
   const viewCopy = VIEW_COPY[activeView]
   const detailGroupName = selectedGoalGroup || goalGroups[0]?.name || ''
   const showSubcompanyPage = activeView === 'pyramid' && detailGroupName === SUBCOMPANY_BRANCH_NAME && subcompanyDrilldownOpen
+  const showVillaPage = activeView === 'pyramid' && detailGroupName === VILLA_BRANCH_NAME && villaDrilldownOpen
   const showTaskCalendarEntryPage = showSubcompanyPage && taskCalendarEntryOpen
 
   function activateView(view: ViewKey) {
@@ -1254,6 +1274,7 @@ function App() {
     if (view !== 'pyramid') {
       setSelectedGoalGroup('')
       setSubcompanyDrilldownOpen(false)
+      setVillaDrilldownOpen(false)
       setTaskCalendarEntryOpen(false)
     }
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -1266,12 +1287,24 @@ function App() {
       setSubcompanyDrilldownOpen(false)
       setTaskCalendarEntryOpen(false)
     }
+    if (group !== VILLA_BRANCH_NAME) {
+      setVillaDrilldownOpen(false)
+    }
   }
 
   function openSubcompanyDrilldown() {
     setActiveView('pyramid')
     setSelectedGoalGroup(SUBCOMPANY_BRANCH_NAME)
     setSubcompanyDrilldownOpen(true)
+    setTaskCalendarEntryOpen(false)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function openVillaDrilldown() {
+    setActiveView('pyramid')
+    setSelectedGoalGroup(VILLA_BRANCH_NAME)
+    setVillaDrilldownOpen(true)
+    setSubcompanyDrilldownOpen(false)
     setTaskCalendarEntryOpen(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -1313,8 +1346,20 @@ function App() {
     )
   }
 
+  if (hashRoute === 'villa-project') {
+    return (
+      <VillaProjectPage
+        apiBaseUrl={getApiBaseUrl()}
+        onBack={() => {
+          window.location.hash = ''
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+        }}
+      />
+    )
+  }
+
   return (
-    <div className={`app ${showSubcompanyPage ? 'subcompany-shell' : ''}`}>
+    <div className={`app ${showSubcompanyPage || showVillaPage ? 'subcompany-shell' : ''}`}>
       <aside className="sidebar">
         <div className="brand-logo">
           <div className="logo-mark" />
@@ -1364,7 +1409,7 @@ function App() {
         </div>
       </aside>
 
-      <main className={`main ${activeView === 'overview' && !showSubcompanyPage ? 'overview-main' : ''} ${showSubcompanyPage ? 'subcompany-main' : ''}`}>
+      <main className={`main ${activeView === 'overview' && !showSubcompanyPage && !showVillaPage ? 'overview-main' : ''} ${showSubcompanyPage || showVillaPage ? 'subcompany-main' : ''}`}>
         {showTaskCalendarEntryPage ? (
           <TaskCalendarEntryPage
             apiBaseUrl={getApiBaseUrl()}
@@ -1388,6 +1433,16 @@ function App() {
             onOpenEntry={() => {
               const basePath = import.meta.env.BASE_URL || '/'
               window.open(`${window.location.origin}${basePath}#/task-calendar`, '_blank', 'noopener,noreferrer')
+            }}
+          />
+        ) : showVillaPage ? (
+          <VillaProjectPage
+            apiBaseUrl={getApiBaseUrl()}
+            onBack={() => {
+              setVillaDrilldownOpen(false)
+              setActiveView('pyramid')
+              setSelectedGoalGroup(VILLA_BRANCH_NAME)
+              window.scrollTo({ top: 0, behavior: 'smooth' })
             }}
           />
         ) : (
@@ -1446,6 +1501,7 @@ function App() {
             branchTargets={branchTargets}
             ownerDirectory={ownerDirectory}
             onOpenSubcompany={openSubcompanyDrilldown}
+            onOpenVilla={openVillaDrilldown}
           />
         ) : null}
 

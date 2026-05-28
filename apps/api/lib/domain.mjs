@@ -9,7 +9,7 @@ export const transitions = {
 };
 
 const fallbackPermissions = {
-  boss: ['dashboard.read', 'subsidiary.read', 'decision.decide', 'audit.read', 'source.read', 'task_calendar.read'],
+  boss: ['dashboard.read', 'subsidiary.read', 'decision.decide', 'audit.read', 'source.read', 'task_calendar.read', 'villa_project.read'],
   pmo: [
     'dashboard.read',
     'subsidiary.read',
@@ -24,6 +24,8 @@ const fallbackPermissions = {
     'source.read',
     'task_calendar.read',
     'task_calendar.write',
+    'villa_project.read',
+    'villa_project.write',
   ],
   subsidiary_owner: ['subsidiary.read', 'hev.submit', 'task.update', 'task_calendar.read', 'task_calendar.write'],
   finance_ops: ['dashboard.read', 'import.upload', 'import.validate', 'data.correct', 'source.read', 'task_calendar.read', 'task_calendar.write'],

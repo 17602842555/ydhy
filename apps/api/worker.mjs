@@ -15,6 +15,15 @@ import { getOperatingSystem, updateOperatingTask } from './lib/operatingSystem.m
 import { getPeopleGraph, updatePrimaryContact } from './lib/people.mjs';
 import { updateRiskItem } from './lib/risks.mjs';
 import { addTaskCalendarUnit, getTaskCalendar, syncTaskCalendarFromSeed, upsertTaskCalendarMetric, upsertTaskCalendarMonthlyTarget } from './lib/taskCalendar.mjs';
+import {
+  addVillaExpense,
+  addVillaIssue,
+  addVillaPhase,
+  getVillaProject,
+  syncVillaProjectFromSeed,
+  updateVillaIssue,
+  updateVillaPhase,
+} from './lib/villaProject.mjs';
 import { updateWorkflowState, workflowConfigs } from './lib/workflows.mjs';
 
 const maxBodyBytes = 15_000_000;
@@ -129,6 +138,11 @@ async function handleRequest(request, env, store) {
       return json(request, env, 200, getTaskCalendar(data, resolveActor(data, request, env), { month: url.searchParams.get('month') }).supervisionDashboard);
     }
 
+    if (url.pathname === '/api/villa-project' && request.method === 'GET') {
+      const data = await store.read();
+      return json(request, env, 200, getVillaProject(data, resolveActor(data, request, env)));
+    }
+
     const peopleContactMatch = url.pathname.match(/^\/api\/people\/contacts\/([^/]+)$/);
     if (peopleContactMatch && request.method === 'PATCH') {
       const body = await readBody(request);
@@ -189,6 +203,43 @@ async function handleRequest(request, env, store) {
         ...result,
         dashboard: calculateDashboard(await store.read()),
       });
+    }
+
+    if (url.pathname === '/api/villa-project/phases' && request.method === 'POST') {
+      const body = await readBody(request);
+      const result = await store.transaction((data) => addVillaPhase(data, body, resolveActor(data, request, env)));
+      return json(request, env, 201, result);
+    }
+
+    const villaPhaseMatch = url.pathname.match(/^\/api\/villa-project\/phases\/([^/]+)$/);
+    if (villaPhaseMatch && request.method === 'PATCH') {
+      const body = await readBody(request);
+      const result = await store.transaction((data) => updateVillaPhase(data, villaPhaseMatch[1], body, resolveActor(data, request, env)));
+      return json(request, env, 200, result);
+    }
+
+    if (url.pathname === '/api/villa-project/issues' && request.method === 'POST') {
+      const body = await readBody(request);
+      const result = await store.transaction((data) => addVillaIssue(data, body, resolveActor(data, request, env)));
+      return json(request, env, 201, result);
+    }
+
+    const villaIssueMatch = url.pathname.match(/^\/api\/villa-project\/issues\/([^/]+)$/);
+    if (villaIssueMatch && request.method === 'PATCH') {
+      const body = await readBody(request);
+      const result = await store.transaction((data) => updateVillaIssue(data, villaIssueMatch[1], body, resolveActor(data, request, env)));
+      return json(request, env, 200, result);
+    }
+
+    if (url.pathname === '/api/villa-project/expenses' && request.method === 'POST') {
+      const body = await readBody(request);
+      const result = await store.transaction((data) => addVillaExpense(data, body, resolveActor(data, request, env)));
+      return json(request, env, 201, result);
+    }
+
+    if (url.pathname === '/api/villa-project/sync-source' && request.method === 'POST') {
+      const result = await store.transaction((data) => syncVillaProjectFromSeed(data, seed, resolveActor(data, request, env)));
+      return json(request, env, 200, result);
     }
 
     if (url.pathname === '/api/imports/validate-preview' && request.method === 'POST') {

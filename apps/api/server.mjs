@@ -20,6 +20,15 @@ import { updateRiskItem } from './lib/risks.mjs';
 import { LocalSourceFileStore } from './lib/sourceFiles.mjs';
 import { JsonFileStore, prepareInitialData } from './lib/store.mjs';
 import { addTaskCalendarUnit, getTaskCalendar, syncTaskCalendarFromSeed, upsertTaskCalendarMetric, upsertTaskCalendarMonthlyTarget } from './lib/taskCalendar.mjs';
+import {
+  addVillaExpense,
+  addVillaIssue,
+  addVillaPhase,
+  getVillaProject,
+  syncVillaProjectFromSeed,
+  updateVillaIssue,
+  updateVillaPhase,
+} from './lib/villaProject.mjs';
 import { updateWorkflowState, workflowConfigs } from './lib/workflows.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -184,6 +193,12 @@ const server = createServer(async (req, res) => {
       return;
     }
 
+    if (url.pathname === '/api/villa-project' && req.method === 'GET') {
+      const data = store.read();
+      json(res, 200, getVillaProject(data, resolveActor(data, req)));
+      return;
+    }
+
     const peopleContactMatch = url.pathname.match(/^\/api\/people\/contacts\/([^/]+)$/);
     if (peopleContactMatch && req.method === 'PATCH') {
       const body = await readBody(req);
@@ -251,6 +266,49 @@ const server = createServer(async (req, res) => {
         ...result,
         dashboard: calculateDashboard(store.read()),
       });
+      return;
+    }
+
+    if (url.pathname === '/api/villa-project/phases' && req.method === 'POST') {
+      const body = await readBody(req);
+      const result = store.transaction((data) => addVillaPhase(data, body, resolveActor(data, req)));
+      json(res, 201, result);
+      return;
+    }
+
+    const villaPhaseMatch = url.pathname.match(/^\/api\/villa-project\/phases\/([^/]+)$/);
+    if (villaPhaseMatch && req.method === 'PATCH') {
+      const body = await readBody(req);
+      const result = store.transaction((data) => updateVillaPhase(data, villaPhaseMatch[1], body, resolveActor(data, req)));
+      json(res, 200, result);
+      return;
+    }
+
+    if (url.pathname === '/api/villa-project/issues' && req.method === 'POST') {
+      const body = await readBody(req);
+      const result = store.transaction((data) => addVillaIssue(data, body, resolveActor(data, req)));
+      json(res, 201, result);
+      return;
+    }
+
+    const villaIssueMatch = url.pathname.match(/^\/api\/villa-project\/issues\/([^/]+)$/);
+    if (villaIssueMatch && req.method === 'PATCH') {
+      const body = await readBody(req);
+      const result = store.transaction((data) => updateVillaIssue(data, villaIssueMatch[1], body, resolveActor(data, req)));
+      json(res, 200, result);
+      return;
+    }
+
+    if (url.pathname === '/api/villa-project/expenses' && req.method === 'POST') {
+      const body = await readBody(req);
+      const result = store.transaction((data) => addVillaExpense(data, body, resolveActor(data, req)));
+      json(res, 201, result);
+      return;
+    }
+
+    if (url.pathname === '/api/villa-project/sync-source' && req.method === 'POST') {
+      const result = store.transaction((data) => syncVillaProjectFromSeed(data, seed, resolveActor(data, req)));
+      json(res, 200, result);
       return;
     }
 
@@ -477,6 +535,10 @@ function runSelfCheck() {
   if (commercialSystem.systemModules.length < 12 || commercialSystem.integrations.length < 6 || commercialSystem.workOrders.length < 6) {
     throw new Error('expected commercial system payload to expose full system typed records');
   }
+  const villaProject = getVillaProject(data, sessionActor);
+  if (villaProject.phases.length < 20 || villaProject.issues.length < 4 || villaProject.summary.budgetTotal !== 4000000) {
+    throw new Error('expected villa project payload to expose imported dashboard seed data');
+  }
   const commercialWorkOrder = updateCommercialWorkOrder(
     data,
     'WO-001',
@@ -522,6 +584,8 @@ function runSelfCheck() {
           operatingTasks: operatingSystem.tasks.length,
           people: people.people.length,
           commercialModules: commercialSystem.systemModules.length,
+          villaPhases: villaProject.phases.length,
+          villaBudgetTotal: villaProject.summary.budgetTotal,
           workOrderAudit: commercialWorkOrder.auditLog.action,
           contactAudit: contactUpdate.auditLog.action,
           riskDecision: riskUpdate.decisionPackage.id,

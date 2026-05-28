@@ -86,6 +86,13 @@ Implemented API routes:
 - `PATCH /api/risks/:id`
 - `GET /api/commercial-system`
 - `PATCH /api/commercial-system/work-orders/:id`
+- `GET /api/villa-project`
+- `POST /api/villa-project/phases`
+- `PATCH /api/villa-project/phases/:id`
+- `POST /api/villa-project/issues`
+- `PATCH /api/villa-project/issues/:id`
+- `POST /api/villa-project/expenses`
+- `POST /api/villa-project/sync-source`
 - `GET /api/dashboard`
 - `GET /api/subsidiaries/:id`
 - `PATCH /api/subsidiaries/:id/workflows/:type`
@@ -185,6 +192,19 @@ Escalation is idempotent by `sourceRiskId`: a repeated escalation request return
 - system policies
 
 `PATCH /api/commercial-system/work-orders/:id` mutates work-order status and writes an audit entry. Other commercial-system records remain read-only typed records until their data source and ownership are confirmed; the UI must not fake ERP sync, platform API sync, or approval completion.
+
+## Villa Project Boundary
+
+`别墅项目目标` is a third-level page under `JOSMAN目标金字塔 -> 专项项目分支`. It imports the supplied villa dashboard seed into the backend as `villaProject`, then serves and mutates it through `/api/villa-project`.
+
+Implemented records:
+
+- Construction phases with zone, owner, dates, progress, status, acceptance standard, and next action.
+- Inspection issues with zone, owner, deadline, severity, status, and closure note.
+- Budget categories and expense records with vendor, amount, status, and voucher metadata.
+- Villa zone summaries calculated from the current phase data.
+
+Writes require `villa_project.write` and create audit entries. The standalone public route `#/villa-project` and the in-branch `打开三级页面` action both call the same backend API, so Cloudflare D1 remains the canonical data source after deployment.
 
 ## Deployment Assumption
 

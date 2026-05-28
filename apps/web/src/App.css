@@ -2441,6 +2441,276 @@ p {
   box-shadow: var(--recessed-shadow);
 }
 
+.villa-page {
+  --villa-accent: #139aa5;
+}
+
+.villa-hero h2 {
+  max-width: 900px;
+}
+
+.villa-metric-grid {
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+}
+
+.villa-metric-grid article span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.villa-tabs {
+  display: inline-flex;
+  width: fit-content;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 999px;
+  background: rgba(245, 245, 247, 0.72);
+  box-shadow: var(--shadow-soft);
+}
+
+.villa-tabs button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 900;
+  padding: 0 16px;
+}
+
+.villa-tabs button.active {
+  background: #050607;
+  color: var(--cyan);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.18);
+}
+
+.villa-overview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.18fr) minmax(360px, 0.82fr);
+  gap: 18px;
+}
+
+.villa-panel {
+  padding: 20px;
+}
+
+.villa-zone-grid,
+.villa-compact-list,
+.villa-phase-list,
+.villa-issue-grid,
+.villa-budget-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.villa-zone-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.villa-zone-card,
+.villa-phase-row,
+.villa-issue-card,
+.villa-budget-grid article,
+.villa-compact-list article {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 20px;
+  background: linear-gradient(145deg, rgba(249, 249, 250, 0.76), rgba(229, 229, 233, 0.72));
+  box-shadow: var(--shadow-soft);
+}
+
+.villa-zone-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  padding: 14px;
+}
+
+.villa-zone-card strong,
+.villa-phase-row strong,
+.villa-issue-card strong,
+.villa-budget-grid strong,
+.villa-compact-list strong {
+  color: var(--ink);
+  font-weight: 950;
+}
+
+.villa-zone-card span,
+.villa-phase-row span,
+.villa-phase-row p,
+.villa-phase-row em,
+.villa-issue-card span,
+.villa-issue-card p,
+.villa-issue-card em,
+.villa-budget-grid span,
+.villa-budget-grid em,
+.villa-compact-list span {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 780;
+  line-height: 1.5;
+}
+
+.villa-zone-card > em {
+  color: var(--villa-accent);
+  font-family: "DIN Alternate", "Arial Narrow", Arial, sans-serif;
+  font-size: 24px;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.villa-zone-card i,
+.villa-row-progress i,
+.villa-budget-grid i,
+.villa-compact-list i {
+  grid-column: 1 / -1;
+  display: block;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--recessed-face);
+  box-shadow: var(--recessed-shadow);
+}
+
+.villa-zone-card b,
+.villa-row-progress b,
+.villa-budget-grid b,
+.villa-compact-list b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #66d7df, #3db5c1);
+}
+
+.villa-compact-list article {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+}
+
+.villa-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.villa-toolbar h3 {
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.villa-toolbar p {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.villa-toolbar select,
+.villa-entry-form input,
+.villa-entry-form select {
+  min-height: 42px;
+  border: 1px solid rgba(120, 120, 130, 0.11);
+  border-radius: 17px;
+  padding: 0 13px;
+  outline: none;
+  background: var(--recessed-face);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  box-shadow: var(--recessed-shadow);
+}
+
+.villa-phase-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(220px, 0.5fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+}
+
+.villa-phase-row > div:first-child,
+.villa-issue-card > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.villa-row-progress {
+  display: grid;
+  gap: 7px;
+}
+
+.villa-row-progress strong {
+  color: var(--villa-accent);
+  font-family: "DIN Alternate", "Arial Narrow", Arial, sans-serif;
+  font-size: 30px;
+}
+
+.villa-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.villa-issue-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.villa-issue-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  padding: 16px;
+}
+
+.villa-issue-card.severity-高 {
+  border-color: rgba(200, 39, 51, 0.24);
+}
+
+.villa-issue-card.severity-高 span {
+  color: var(--red);
+}
+
+.villa-budget-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.villa-budget-grid article {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+}
+
+.villa-budget-grid strong {
+  color: var(--villa-accent);
+  font-size: 22px;
+}
+
+.villa-table-wrap {
+  overflow: auto;
+}
+
+.villa-table {
+  min-width: 1040px;
+}
+
+.villa-entry-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.villa-entry-form .wide {
+  grid-column: 1 / -1;
+}
+
 .task-entry-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.5fr);
@@ -3337,6 +3607,29 @@ tbody td:last-child {
   .subcompany-mini-metrics {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .villa-overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .villa-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .villa-phase-row,
+  .villa-issue-card {
+    grid-template-columns: 1fr;
+  }
+
+  .villa-issue-grid,
+  .villa-budget-grid,
+  .villa-zone-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .villa-row-actions {
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 880px) {
@@ -3535,6 +3828,36 @@ tbody td:last-child {
   .task-entry-controls,
   .task-entry-fields,
   .task-entry-add-unit {
+    grid-template-columns: 1fr;
+  }
+
+  .villa-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .villa-tabs button {
+    flex: 1 0 max-content;
+  }
+
+  .villa-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .villa-toolbar select {
+    width: 100%;
+  }
+
+  .villa-entry-form {
+    grid-template-columns: 1fr;
+  }
+
+  .villa-entry-form .wide {
+    grid-column: auto;
+  }
+
+  .villa-metric-grid {
     grid-template-columns: 1fr;
   }
 

@@ -22,6 +22,12 @@ export function prepareInitialData(seed, defaults = {}) {
   data.decisionPackages = Array.isArray(data.decisionPackages) ? data.decisionPackages : [];
   data.operatingSystem = data.operatingSystem ?? clone(defaults.operatingSystem ?? {});
   data.commercialSystem = data.commercialSystem ?? clone(defaults.commercialSystem ?? {});
+  data.villaProject = data.villaProject ?? clone(defaults.villaProject ?? { phases: [], issues: [], budgets: [], expenses: [], villaZones: [] });
+  data.villaProject.phases = Array.isArray(data.villaProject.phases) ? data.villaProject.phases : clone(defaults.villaProject?.phases ?? []);
+  data.villaProject.issues = Array.isArray(data.villaProject.issues) ? data.villaProject.issues : clone(defaults.villaProject?.issues ?? []);
+  data.villaProject.budgets = Array.isArray(data.villaProject.budgets) ? data.villaProject.budgets : clone(defaults.villaProject?.budgets ?? []);
+  data.villaProject.expenses = Array.isArray(data.villaProject.expenses) ? data.villaProject.expenses : clone(defaults.villaProject?.expenses ?? []);
+  data.villaProject.villaZones = Array.isArray(data.villaProject.villaZones) ? data.villaProject.villaZones : clone(defaults.villaProject?.villaZones ?? []);
   data.taskCalendar = data.taskCalendar ?? clone(defaults.taskCalendar ?? { companies: [], units: [], metrics: [], entries: [] });
   data.taskCalendar.companies = Array.isArray(data.taskCalendar.companies) ? data.taskCalendar.companies : clone(defaults.taskCalendar?.companies ?? []);
   data.taskCalendar.units = Array.isArray(data.taskCalendar.units) ? data.taskCalendar.units : clone(defaults.taskCalendar?.units ?? []);
@@ -56,7 +62,9 @@ function roleNeedsRefresh(roles) {
     !pmo?.permissions?.includes('risk.manage') ||
     !pmo?.permissions?.includes('system.manage') ||
     !pmo?.permissions?.includes('task_calendar.read') ||
-    !pmo?.permissions?.includes('task_calendar.write')
+    !pmo?.permissions?.includes('task_calendar.write') ||
+    !pmo?.permissions?.includes('villa_project.read') ||
+    !pmo?.permissions?.includes('villa_project.write')
   );
 }
 

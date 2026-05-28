@@ -67,6 +67,68 @@ try {
   assert(commercialSystem.body.integrations.length >= 6, 'commercial system should expose integration registry');
   assert(commercialSystem.body.desktopClients.length >= 3, 'commercial system should expose software client targets');
 
+  const villaProject = await request('/villa-project', { headers: pmoAuth });
+  assert(villaProject.status === 200, 'PMO villa project should load');
+  assert(villaProject.body.phases.length >= 20, 'villa project should expose imported construction phases');
+  assert(villaProject.body.issues.length >= 4, 'villa project should expose imported inspection issues');
+  assert(villaProject.body.budgets.length >= 9, 'villa project should expose imported budget categories');
+  assert(villaProject.body.summary.budgetTotal === 4000000, 'villa project should calculate total budget');
+  assert(villaProject.body.summary.expenseTotal > 1900000, 'villa project should calculate registered expenses');
+
+  const villaPhaseCreate = await request('/villa-project/phases', {
+    method: 'POST',
+    headers: pmoAuth,
+    body: JSON.stringify({
+      name: '契约测试新增施工节点',
+      zone: '1F 客厅',
+      owner: '李锦宁',
+      start: '2026-05-29',
+      end: '2026-06-02',
+      progress: 15,
+      status: '施工中',
+      acceptance: '照片、报价与现场验收同步归档',
+      next: '安排施工负责人复核',
+    }),
+  });
+  assert(villaPhaseCreate.status === 201, 'PMO should create villa construction phase');
+  assert(villaPhaseCreate.body.phase.name === '契约测试新增施工节点', 'created villa phase should echo payload');
+  assert(villaPhaseCreate.body.auditLog?.action === 'villa_project.phase.create', 'villa phase create should audit');
+
+  const villaIssueCreate = await request('/villa-project/issues', {
+    method: 'POST',
+    headers: pmoAuth,
+    body: JSON.stringify({
+      title: '契约测试新增整改问题',
+      zone: 'B1 影音室',
+      owner: '施工负责人',
+      due: '2026-06-03',
+      severity: '中',
+      status: '待整改',
+      note: '闭环前不得进入节点验收',
+    }),
+  });
+  assert(villaIssueCreate.status === 201, 'PMO should create villa inspection issue');
+  assert(villaIssueCreate.body.auditLog?.action === 'villa_project.issue.create', 'villa issue create should audit');
+
+  const villaExpenseCreate = await request('/villa-project/expenses', {
+    method: 'POST',
+    headers: pmoAuth,
+    body: JSON.stringify({
+      date: '2026-05-29',
+      category: '契约测试',
+      item: '临时保护材料',
+      vendor: '测试供应商',
+      amount: 888,
+      status: '待付',
+      voucherType: '收据',
+      voucherNo: 'TEST-001',
+      note: '契约测试写入',
+    }),
+  });
+  assert(villaExpenseCreate.status === 201, 'PMO should create villa budget expense');
+  assert(villaExpenseCreate.body.villaProject.budgets.some((item) => item.category === '契约测试'), 'new villa expense category should appear in budgets');
+  assert(villaExpenseCreate.body.auditLog?.action === 'villa_project.expense.create', 'villa expense create should audit');
+
   const workOrderUpdate = await request('/commercial-system/work-orders/WO-001', {
     method: 'PATCH',
     headers: pmoAuth,
@@ -283,6 +345,11 @@ try {
           operatingBranches: operatingSystem.body.goalBranches.length,
           people: people.body.people.length,
           commercialModules: commercialSystem.body.systemModules.length,
+          villaPhases: villaProject.body.phases.length,
+          villaBudgetTotal: villaProject.body.summary.budgetTotal,
+          villaPhaseAudit: villaPhaseCreate.body.auditLog.action,
+          villaIssueAudit: villaIssueCreate.body.auditLog.action,
+          villaExpenseAudit: villaExpenseCreate.body.auditLog.action,
           workOrderAudit: workOrderUpdate.body.auditLog.action,
           contactAudit: contactUpdate.body.auditLog.action,
           operatingTaskStatus: taskUpdate.body.task.status,
