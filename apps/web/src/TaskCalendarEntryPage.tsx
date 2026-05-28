@@ -30,6 +30,21 @@ type MonthlyTarget = {
   dailyTarget: number
   updatedAt?: string
 }
+type CalendarEntry = {
+  id: string
+  company: string
+  date: string
+  task: string
+  status?: string
+  revenueTarget?: number
+  revenueActual?: number
+  progress?: number
+  action?: string
+  owner?: string
+  risk?: string
+  source?: string
+  businessMetricId?: string
+}
 type CompanySummary = {
   company: string
   targetWan: number
@@ -50,6 +65,7 @@ type TaskCalendarData = {
   companies: string[]
   units: BusinessUnit[]
   metrics: BusinessMetric[]
+  entries: CalendarEntry[]
   monthlyTargets: MonthlyTarget[]
   summaries: CompanySummary[]
 }
@@ -79,6 +95,7 @@ const businessFields = [
 ] as const
 const allFields = [...storeFields, ...businessFields] as const
 const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+const allCompaniesLabel = '全部子公司'
 
 function today() {
   return new Date().toISOString().slice(0, 10)
@@ -239,6 +256,7 @@ export function TaskCalendarEntryPage({
         setLoginUsers(taskUsers)
         const preferredCompany = preferredCompanyFromHash()
         const preferred = taskUsers.find((user) => accountCompany(user) === preferredCompany)
+          ?? taskUsers.find((user) => user.id === 'user-lijinning')
           ?? taskUsers.find((user) => user.id === 'user-kongjinjie-task-owner')
           ?? taskUsers.find((user) => user.roleCode === 'subsidiary_owner')
           ?? taskUsers[0]
@@ -267,7 +285,9 @@ export function TaskCalendarEntryPage({
         setLoadState({ status: 'ready', data })
         setSelectedCompany((current) => {
           const preferredCompany = preferredCompanyFromHash()
+          if (session.user.roleCode !== 'subsidiary_owner' && (!preferredCompany || preferredCompany === allCompaniesLabel)) return allCompaniesLabel
           if (preferredCompany && data.companies.includes(preferredCompany)) return preferredCompany
+          if (current === allCompaniesLabel && session.user.roleCode !== 'subsidiary_owner') return current
           if (data.companies.includes(current)) return current
           return data.companies[0] || ''
         })
@@ -280,21 +300,30 @@ export function TaskCalendarEntryPage({
   }, [activeUserId, apiBaseUrl, visibleMonth])
 
   const activeData = loadState.status === 'ready' ? loadState.data : null
-  const companyUnits = useMemo(() => activeData?.units.filter((unit) => unit.company === selectedCompany) ?? [], [activeData, selectedCompany])
-  const selectedMetrics = useMemo(
-    () => activeData?.metrics.filter((metric) => metric.company === selectedCompany && metric.date === selectedDate) ?? [],
-    [activeData, selectedCompany, selectedDate],
+  const canViewAllCompanies = activeUser?.roleCode !== 'subsidiary_owner'
+  const companyOptions = useMemo(
+    () => activeData ? (canViewAllCompanies ? [allCompaniesLabel, ...activeData.companies] : activeData.companies) : [],
+    [activeData, canViewAllCompanies],
   )
-  const monthMetrics = useMemo(
-    () => activeData?.metrics.filter((metric) => metric.company === selectedCompany) ?? [],
+  const targetCompanies = useMemo(
+    () => activeData ? (selectedCompany === allCompaniesLabel ? activeData.companies : [selectedCompany].filter(Boolean)) : [],
     [activeData, selectedCompany],
+  )
+  const companyUnits = useMemo(() => activeData?.units.filter((unit) => targetCompanies.includes(unit.company)) ?? [], [activeData, targetCompanies])
+  const monthMetrics = useMemo(
+    () => activeData?.metrics.filter((metric) => targetCompanies.includes(metric.company)) ?? [],
+    [activeData, targetCompanies],
+  )
+  const selectedEntries = useMemo(
+    () => activeData?.entries.filter((entry) => targetCompanies.includes(entry.company) && entry.date === selectedDate) ?? [],
+    [activeData, targetCompanies, selectedDate],
   )
   const selectedSummary = activeData?.summaries.find((item) => item.company === selectedCompany)
   const selectedTarget = activeData?.monthlyTargets.find((target) => target.company === selectedCompany && target.month === visibleMonth)
-  const monthTarget = selectedTarget?.monthlyTarget ?? Number(selectedSummary?.targetWan || 0) * 10000
-  const monthActual = monthMetrics.reduce((sum, metric) => sum + metricRevenue(metric), 0)
+  const monthTarget = targetCompanies.reduce((sum, company) => sum + targetForCompany(company), 0)
+  const monthActual = targetCompanies.reduce((sum, company) => sum + actualForCompany(company), 0)
   const monthRate = monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0
-  const canEdit = activeUser?.roleCode !== 'boss' && Boolean(token)
+  const canEdit = activeUser?.roleCode === 'subsidiary_owner' && Boolean(token)
 
   useEffect(() => {
     if (!activeData) return
@@ -313,17 +342,45 @@ export function TaskCalendarEntryPage({
     setTargetOpen(true)
   }
 
-  function dayRows(date: string) {
-    return activeData?.metrics.filter((metric) => metric.company === selectedCompany && metric.date === date) ?? []
+  function metricRowsForCompany(company: string) {
+    return activeData?.metrics.filter((metric) => metric.company === company) ?? []
+  }
+
+  function entryRowsForCompany(company: string) {
+    return activeData?.entries.filter((entry) => entry.company === company) ?? []
+  }
+
+  function targetForCompany(company: string) {
+    const summaryTarget = activeData?.summaries.find((item) => item.company === company)?.targetWan
+    if (Number(summaryTarget) > 0) return Number(summaryTarget) * 10000
+    return entryRowsForCompany(company).reduce((sum, entry) => sum + Number(entry.revenueTarget || 0), 0)
+  }
+
+  function actualForCompany(company: string) {
+    const rows = metricRowsForCompany(company)
+    if (rows.length) return rows.reduce((sum, metric) => sum + metricRevenue(metric), 0)
+    return entryRowsForCompany(company).reduce((sum, entry) => sum + Number(entry.revenueActual || 0), 0)
+  }
+
+  function dayMetricRows(date: string) {
+    return activeData?.metrics.filter((metric) => targetCompanies.includes(metric.company) && metric.date === date) ?? []
+  }
+
+  function dayEntryRows(date: string) {
+    return activeData?.entries.filter((entry) => targetCompanies.includes(entry.company) && entry.date === date) ?? []
   }
 
   function dayActual(date: string) {
-    return dayRows(date).reduce((sum, metric) => sum + metricRevenue(metric), 0)
+    const metrics = dayMetricRows(date)
+    if (metrics.length) return metrics.reduce((sum, metric) => sum + metricRevenue(metric), 0)
+    return dayEntryRows(date).reduce((sum, entry) => sum + Number(entry.revenueActual || 0), 0)
   }
 
-  function dayTarget() {
+  function dayTarget(date: string) {
+    const entryTarget = dayEntryRows(date).reduce((sum, entry) => sum + Number(entry.revenueTarget || 0), 0)
+    if (entryTarget > 0) return entryTarget
     if (!monthTarget) return 0
-    return selectedTarget?.allocationMode === 'daily' && selectedTarget.dailyTarget > 0
+    return selectedTarget?.allocationMode === 'daily' && selectedTarget.dailyTarget > 0 && selectedCompany !== allCompaniesLabel
       ? selectedTarget.dailyTarget
       : monthTarget / daysInMonth(visibleMonth)
   }
@@ -426,7 +483,7 @@ export function TaskCalendarEntryPage({
   }
 
   const selectedDateActual = dayActual(selectedDate)
-  const selectedDateTarget = dayTarget()
+  const selectedDateTarget = dayTarget(selectedDate)
   const selectedDateRate = selectedDateTarget > 0 ? (selectedDateActual / selectedDateTarget) * 100 : 0
 
   return (
@@ -464,12 +521,13 @@ export function TaskCalendarEntryPage({
           <section className="task-calendar-panel">
             <div className="task-calendar-section-title"><Building2 size={14} /> 子公司</div>
             <div className="task-calendar-company-list">
-              {(activeData?.companies ?? []).map((company) => {
+              {companyOptions.map((company) => {
                 const summary = activeData?.summaries.find((item) => item.company === company)
+                const target = company === allCompaniesLabel ? monthTarget : Number(summary?.targetWan || 0) * 10000
                 return (
                   <button className={company === selectedCompany ? 'active' : ''} type="button" key={company} onClick={() => setSelectedCompany(company)}>
                     <span>{company}</span>
-                    <em>{formatWan(summary?.targetWan)}</em>
+                    <em>{company === allCompaniesLabel ? formatMoney(target) : formatWan(summary?.targetWan)}</em>
                   </button>
                 )
               })}
@@ -489,7 +547,7 @@ export function TaskCalendarEntryPage({
               </article>
             </div>
             <div className="task-calendar-progress-line"><i style={{ width: `${Math.min(monthRate, 100)}%` }} /></div>
-            <p>{selectedSummary?.summary || '选择子公司后查看月度进度。'}</p>
+            <p>{selectedSummary?.summary || `${selectedCompany} 月完成 ${formatMoney(monthActual)}，完成率 ${formatPercent(monthRate)}。`}</p>
           </section>
         </aside>
 
@@ -562,11 +620,11 @@ export function TaskCalendarEntryPage({
               <div className="task-calendar-progress-line"><i style={{ width: `${Math.min(selectedDateRate, 100)}%` }} /></div>
             </div>
             <div className="task-calendar-entry-list">
-              {selectedMetrics.length ? selectedMetrics.map((metric) => (
-                <article key={metric.id}>
-                  <strong>{metric.unitName}</strong>
-                  <span>{metric.unitType === 'business' ? '业务' : '店铺'} · {formatMoney(metricRevenue(metric))}</span>
-                  <em>{metric.note || '已同步经营数据'}</em>
+              {selectedEntries.length ? selectedEntries.slice(0, 14).map((entry) => (
+                <article key={entry.id}>
+                  <strong>{entry.task}</strong>
+                  <span>{entry.company} · {entry.owner || '填报账号'} · {formatMoney(entry.revenueActual || 0)}</span>
+                  <em>目标 {formatMoney(entry.revenueTarget || 0)}{entry.risk ? ` · 风险：${entry.risk}` : entry.action ? ` · ${entry.action}` : ''}</em>
                 </article>
               )) : <p className="task-calendar-empty">当天暂无经营数据，切换到“经营数据”填报。</p>}
             </div>
@@ -625,14 +683,14 @@ function CalendarGrid({
   selectedDate: string
   mode: 'month' | 'week'
   dayActual: (date: string) => number
-  dayTarget: () => number
+  dayTarget: (date: string) => number
   onSelectDate: (date: string) => void
 }) {
   return (
     <div className={mode === 'week' ? 'task-calendar-week-board' : 'task-calendar-grid'}>
       {dates.map((date) => {
         const actual = dayActual(date)
-        const target = dayTarget()
+        const target = dayTarget(date)
         const rate = target > 0 ? (actual / target) * 100 : 0
         const isMuted = monthOf(date) !== month
         const isSelected = date === selectedDate

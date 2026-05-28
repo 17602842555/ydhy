@@ -9,6 +9,7 @@ export function getTaskCalendar(data, actor, options = {}) {
   const state = taskCalendarState(data);
   const scopedCompanies = scopeCompanies(data, actor, state.companies);
   const metrics = state.metrics.filter((metric) => scopedCompanies.includes(metric.company) && String(metric.date || '').startsWith(`${month}-`));
+  const entries = state.entries.filter((entry) => scopedCompanies.includes(entry.company) && String(entry.date || '').startsWith(`${month}-`));
   const units = state.units.filter((unit) => scopedCompanies.includes(unit.company));
   const monthlyTargets = state.monthlyTargets.filter((target) => scopedCompanies.includes(target.company) && target.month === month);
   const summaries = buildCompanySummaries(data, state, month, scopedCompanies);
@@ -22,6 +23,7 @@ export function getTaskCalendar(data, actor, options = {}) {
     companies: scopedCompanies,
     units,
     metrics,
+    entries,
     monthlyTargets,
     summaries,
     supervisionDashboard: buildSupervisionDashboard(data, summaries, month),
@@ -54,6 +56,7 @@ export function upsertTaskCalendarMonthlyTarget(data, body, actor) {
   };
   if (existing) Object.assign(existing, target);
   else state.monthlyTargets = [target, ...state.monthlyTargets];
+  syncMonthlyTargetEntries(state, target);
   data.taskCalendar = state;
 
   const subsidiary = data.subsidiaries?.find((item) => item.name === company);
@@ -115,6 +118,7 @@ export function upsertTaskCalendarMetric(data, body, actor) {
   data.taskCalendar = state;
 
   const afterMetric = state.metrics.find((item) => item.company === unit.company && item.unitId === unit.id && item.date === date);
+  syncMetricEntry(state, afterMetric, actor);
   const rollup = applyTaskCalendarRollup(data, unit.company, date.slice(0, 7), actor);
   const auditLog = addAudit(
     data,
@@ -165,8 +169,9 @@ function taskCalendarState(data) {
   const companies = Array.isArray(taskCalendar.companies) ? taskCalendar.companies.map(String) : [];
   const units = Array.isArray(taskCalendar.units) ? taskCalendar.units : [];
   const metrics = Array.isArray(taskCalendar.metrics) ? taskCalendar.metrics : [];
+  const entries = Array.isArray(taskCalendar.entries) ? taskCalendar.entries : [];
   const monthlyTargets = Array.isArray(taskCalendar.monthlyTargets) ? taskCalendar.monthlyTargets : [];
-  data.taskCalendar = { companies, units, metrics, monthlyTargets };
+  data.taskCalendar = { companies, units, metrics, entries, monthlyTargets };
   return data.taskCalendar;
 }
 
@@ -236,21 +241,25 @@ function buildCompanySummaries(data, state, month, companies) {
 
 function summarizeCompany(data, state, company, month) {
   const rows = state.metrics.filter((metric) => metric.company === company && String(metric.date || '').startsWith(`${month}-`));
+  const entries = state.entries.filter((entry) => entry.company === company && String(entry.date || '').startsWith(`${month}-`));
   const subsidiary = data.subsidiaries?.find((item) => item.name === company);
   const monthlyTarget = findMonthlyTarget(state, company, month);
-  const dates = rows.map((row) => row.date).filter(Boolean).sort();
+  const sourceRows = rows.length ? rows : entries;
+  const dates = sourceRows.map((row) => row.date).filter(Boolean).sort();
   const lastDate = dates.at(-1) ?? `${month}-01`;
   const elapsedDays = Math.max(1, Number(lastDate.slice(8, 10)) || 1);
   const days = daysInMonth(month);
-  const actualWan = roundWan(sumMetricRevenue(rows));
-  const targetWan = monthlyTarget ? roundWan(monthlyTarget.monthlyTarget) : Number(subsidiary?.target ?? 0);
+  const actualWan = rows.length ? roundWan(sumMetricRevenue(rows)) : roundWan(sumEntryRevenue(entries, 'revenueActual'));
+  const targetWan = monthlyTarget ? roundWan(monthlyTarget.monthlyTarget) : roundWan(sumEntryRevenue(entries, 'revenueTarget')) || Number(subsidiary?.target ?? 0);
   const completionRate = targetWan > 0 ? (actualWan / targetWan) * 100 : null;
   const dailyNeedWan = targetWan > 0 ? Math.max(0, (targetWan - actualWan) / Math.max(1, days - elapsedDays)) : 0;
   const forecastRate = targetWan > 0 ? (actualWan / elapsedDays) * days / targetWan * 100 : null;
-  const recentRows = rows.filter((row) => row.date > dateOffset(lastDate, -3));
-  const weekRows = rows.filter((row) => row.date > dateOffset(lastDate, -7));
-  const threeDayRate = targetWan > 0 ? (roundWan(sumMetricRevenue(recentRows)) / (targetWan / days * 3)) * 100 : 0;
-  const weekRate = targetWan > 0 ? (roundWan(sumMetricRevenue(weekRows)) / (targetWan / days * 7)) * 100 : 0;
+  const recentRows = sourceRows.filter((row) => row.date > dateOffset(lastDate, -3));
+  const weekRows = sourceRows.filter((row) => row.date > dateOffset(lastDate, -7));
+  const threeDayActual = rows.length ? roundWan(sumMetricRevenue(recentRows)) : roundWan(sumEntryRevenue(recentRows, 'revenueActual'));
+  const weekActual = rows.length ? roundWan(sumMetricRevenue(weekRows)) : roundWan(sumEntryRevenue(weekRows, 'revenueActual'));
+  const threeDayRate = targetWan > 0 ? (threeDayActual / (targetWan / days * 3)) * 100 : 0;
+  const weekRate = targetWan > 0 ? (weekActual / (targetWan / days * 7)) * 100 : 0;
   const status = targetWan <= 0 ? 'pending' : completionRate >= 90 ? 'good' : completionRate >= 70 ? 'watch' : 'risk';
   const gapWan = targetWan > 0 ? Math.max(0, targetWan - actualWan) : 0;
 
@@ -265,10 +274,10 @@ function summarizeCompany(data, state, company, month) {
     gapWan,
     dailyNeedWan,
     status,
-    rowCount: rows.length,
-    unitCount: new Set(rows.map((row) => row.unitId || row.unitName)).size,
+    rowCount: sourceRows.length,
+    unitCount: rows.length ? new Set(rows.map((row) => row.unitId || row.unitName)).size : new Set(entries.map((row) => row.owner || row.task)).size,
     latestDate: dates.at(-1) ?? null,
-    summary: buildSummary(company, targetWan, actualWan, completionRate, status, rows.length),
+    summary: buildSummary(company, targetWan, actualWan, completionRate, status, sourceRows.length),
   };
 }
 
@@ -371,6 +380,10 @@ function sumMetricRevenue(rows) {
   return rows.reduce((sum, metric) => sum + getMetricRevenue(metric), 0);
 }
 
+function sumEntryRevenue(rows, key) {
+  return rows.reduce((sum, entry) => sum + Number(entry?.[key] || 0), 0);
+}
+
 function getMetricRevenue(metric) {
   if (Number.isFinite(Number(metric.revenueAmount))) return Number(metric.revenueAmount || 0);
   if (metric.unitType === 'business') return Number(metric.revenue || metric.income || 0);
@@ -379,6 +392,55 @@ function getMetricRevenue(metric) {
 
 function findMonthlyTarget(state, company, month) {
   return state.monthlyTargets.find((target) => target.company === company && target.month === month);
+}
+
+function syncMetricEntry(state, metric, actor) {
+  if (!metric) return;
+  const id = `business-metric-${metric.id}`;
+  const entry = {
+    id,
+    company: metric.company,
+    date: metric.date,
+    task: `${metric.unitName || '经营数据'}同步`,
+    status: '',
+    revenueTarget: 0,
+    revenueActual: getMetricRevenue(metric),
+    progress: 0,
+    action: metric.note || '经营数据已同步。',
+    owner: metric.owner || actor.name,
+    risk: '',
+    source: 'business-metric',
+    businessMetricId: metric.id,
+    updatedAt: metric.updatedAt || new Date().toISOString(),
+  };
+  const index = state.entries.findIndex((item) => item.id === id || item.businessMetricId === metric.id);
+  if (index >= 0) state.entries[index] = { ...state.entries[index], ...entry };
+  else state.entries = [entry, ...state.entries];
+}
+
+function syncMonthlyTargetEntries(state, target) {
+  if (target.allocationMode !== 'daily') return;
+  const [year, monthNumber] = target.month.split('-').map(Number);
+  const days = daysInMonth(target.month);
+  state.entries = state.entries.filter((entry) => !(entry.source === 'monthly-target' && entry.company === target.company && String(entry.date || '').startsWith(`${target.month}-`)));
+  const generated = Array.from({ length: days }, (_, index) => {
+    const day = String(index + 1).padStart(2, '0');
+    return {
+      id: `${target.id}-${day}`,
+      company: target.company,
+      date: `${year}-${String(monthNumber).padStart(2, '0')}-${day}`,
+      task: '月度营业额目标',
+      status: '未开始',
+      revenueTarget: target.dailyTarget,
+      revenueActual: 0,
+      progress: 0,
+      action: '按月度目标自动拆分。',
+      owner: target.updatedBy,
+      risk: '',
+      source: 'monthly-target',
+    };
+  });
+  state.entries = [...generated, ...state.entries];
 }
 
 function buildSummary(company, targetWan, actualWan, completionRate, status, rowCount) {
