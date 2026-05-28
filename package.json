@@ -1,0 +1,35 @@
+{
+  "name": "huage-commercial-os",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "HUAGE GROUP commercial operations management MVP focused on the subsidiary supervision vertical slice.",
+  "workspaces": [
+    "apps/web",
+    "apps/api"
+  ],
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:web": "npm --workspace apps/web run dev",
+    "dev:api": "npm --workspace apps/api run dev",
+    "build": "npm --workspace apps/web run build",
+    "lint": "npm --workspace apps/web run lint",
+    "db:schema:check": "node scripts/check-schema.mjs",
+    "db:seed:generate": "node scripts/export-postgres-seed.mjs --write docs/seed.sql",
+    "db:seed:check": "node scripts/export-postgres-seed.mjs --check",
+    "db:migrate": "node scripts/db-migrate.mjs",
+    "db:migrate:dry-run": "node scripts/db-migrate.mjs --dry-run",
+    "cf:seed:generate": "node scripts/export-d1-seed.mjs --write apps/api/d1/seed.sql",
+    "cf:seed:check": "node scripts/export-d1-seed.mjs --check",
+    "cf:d1:migrate:local": "npx wrangler d1 migrations apply DB --local",
+    "cf:d1:migrate:remote": "npx wrangler d1 migrations apply DB --remote",
+    "cf:d1:seed:local": "npx wrangler d1 execute DB --local --file apps/api/d1/seed.sql",
+    "cf:d1:seed:remote": "npx wrangler d1 execute DB --remote --file apps/api/d1/seed.sql",
+    "cf:deploy": "npm run cf:seed:generate && npx wrangler deploy",
+    "api:contract:check": "node scripts/api-contract-check.mjs",
+    "check": "npm run db:schema:check && npm run db:seed:check && npm run cf:seed:check && npm run db:migrate:dry-run && npm run api:contract:check && npm run build && node apps/api/server.mjs --check"
+  },
+  "devDependencies": {
+    "playwright": "^1.60.0"
+  }
+}

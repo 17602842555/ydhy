@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.env
+.env.local
+apps/web/dist/
+apps/api/data/runtime.json
+apps/api/storage/
+.omx/
+*.zip
+artifacts/
+references/
+share-site/
+JNnn超级哈雷/

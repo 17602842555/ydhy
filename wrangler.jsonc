@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ydhy-api",
+  "main": "apps/api/worker.mjs",
+  "compatibility_date": "2026-05-28",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "vars": {
+    "ENVIRONMENT": "production",
+    "HUAGE_CORS_ORIGIN": "*",
+    "HUAGE_ALLOW_HEADER_AUTH": "0"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ydhy-db",
+      "database_id": "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID",
+      "migrations_dir": "apps/api/migrations"
+    }
+  ]
+}
