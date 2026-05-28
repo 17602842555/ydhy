@@ -1,15 +1,6 @@
 name: Deploy backend to Cloudflare
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/api/**'
-      - 'scripts/export-d1-seed.mjs'
-      - 'scripts/prepare-cloudflare-config.mjs'
-      - 'wrangler.jsonc'
-      - 'package.json'
-      - 'package-lock.json'
   workflow_dispatch:
 
 permissions:

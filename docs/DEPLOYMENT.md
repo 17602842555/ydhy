@@ -4,7 +4,8 @@
 
 - 前端：GitHub Pages，仓库 `https://github.com/17602842555/ydhy.git`
 - 后端：Cloudflare Worker，Worker 名称 `ydhy-api`
-- 数据库：Cloudflare D1，建议数据库名 `ydhy-db`
+- 后端地址：`https://ydhy-api.2445776963.workers.dev`
+- 数据库：Cloudflare D1，数据库名 `ydhy-db`
 
 ## 1. 本地推送到 GitHub
 
@@ -59,7 +60,13 @@ npx wrangler login
 npx wrangler d1 create ydhy-db
 ```
 
-把返回的 `database_id` 填到两个地方之一：
+当前 D1 database id 已写入 `wrangler.jsonc`：
+
+```text
+345ac340-35da-48ca-a75e-ab8a471865dc
+```
+
+如果后续重建数据库，把返回的 `database_id` 填到两个地方之一：
 
 - 本地：替换 `wrangler.jsonc` 里的 `REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID`
 - GitHub Actions：仓库 `Settings -> Secrets and variables -> Actions -> Secrets` 增加 `CLOUDFLARE_D1_DATABASE_ID`
@@ -98,17 +105,17 @@ VITE_API_BASE_URL=https://<your-worker-subdomain>.workers.dev/api
 后端：
 
 ```bash
-curl https://<your-worker-subdomain>.workers.dev/api/health
+curl https://ydhy-api.2445776963.workers.dev/api/health
 ```
 
 登录并读取经营系统：
 
 ```bash
-TOKEN=$(curl -sS -X POST https://<your-worker-subdomain>.workers.dev/api/auth/login \
+TOKEN=$(curl -sS -X POST https://ydhy-api.2445776963.workers.dev/api/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"userId":"user-lijinning"}' | node -pe "JSON.parse(fs.readFileSync(0,'utf8')).token")
 
-curl -sS https://<your-worker-subdomain>.workers.dev/api/operating-system \
+curl -sS https://ydhy-api.2445776963.workers.dev/api/operating-system \
   -H "Authorization: Bearer $TOKEN"
 ```
 
