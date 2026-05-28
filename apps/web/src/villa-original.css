@@ -1,0 +1,1237 @@
+/* Generated from huage-villa-dashboard-package/styles.css and scoped to the React villa page. */
+.villa-original {
+  --bg: #050915;
+  --surface: rgba(12, 18, 34, 0.62);
+  --surface-strong: rgba(16, 24, 44, 0.72);
+  --ink: #eef5ff;
+  --muted: #aab7c9;
+  --line: rgba(255, 255, 255, 0.16);
+  --accent: #6c8cff;
+  --accent-dark: #4d68ef;
+  --blue: #4c82ff;
+  --amber: #f5b957;
+  --red: #ff6b6b;
+  --green: #57d99a;
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 18px 48px rgba(0, 0, 0, 0.32);
+  --radius: 24px;
+}
+
+.villa-original * {
+  box-sizing: border-box;
+}
+
+.villa-original {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 24% 0%, rgba(38, 112, 255, 0.9) 0, rgba(38, 112, 255, 0.44) 28%, transparent 52%),
+    radial-gradient(circle at 92% 14%, rgba(82, 119, 255, 0.55) 0, transparent 38%),
+    linear-gradient(180deg, #1264ff 0%, #0a2364 36%, #050915 76%);
+  color: var(--ink);
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  letter-spacing: 0;
+}
+
+.villa-original::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), transparent 72%);
+}
+
+.villa-original button,
+.villa-original input,
+.villa-original select {
+  font: inherit;
+}
+
+.villa-original button {
+  cursor: pointer;
+}
+
+.villa-original .app-shell {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.villa-original .sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  padding: 24px;
+  background: rgba(3, 7, 18, 0.46);
+  color: #f4f8ff;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(26px) saturate(150%);
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.villa-original .brand {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.villa-original .brand-mark {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(113, 149, 255, 0.72));
+  color: #0a1a45;
+  border-radius: var(--radius);
+  font-weight: 800;
+  font-size: 1.35rem;
+}
+
+.villa-original .brand h1,
+.villa-original .topbar h2,
+.villa-original .section-head h3 {
+  margin: 0;
+}
+
+.villa-original .brand h1 {
+  font-size: 1.1rem;
+  line-height: 1.35;
+}
+
+.villa-original .eyebrow {
+  margin: 0 0 5px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.villa-original .sidebar .eyebrow {
+  color: rgba(225, 235, 255, 0.72);
+}
+
+.villa-original .nav-tabs {
+  display: grid;
+  gap: 8px;
+}
+
+.villa-original .nav-tab,
+.villa-original .icon-button,
+.villa-original .primary-action,
+.villa-original .row-action {
+  border: 0;
+  border-radius: var(--radius);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.villa-original .nav-tab {
+  justify-content: flex-start;
+  padding: 12px 14px;
+  color: rgba(238, 245, 255, 0.78);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.villa-original .nav-tab:hover,
+.villa-original .nav-tab.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+.villa-original i[data-lucide] {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.villa-original .project-meta {
+  margin-top: auto;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  padding-top: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.villa-original .project-meta div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(225, 235, 255, 0.72);
+  font-size: 0.88rem;
+}
+
+.villa-original .project-meta strong {
+  color: #ffffff;
+  font-weight: 700;
+  text-align: right;
+}
+
+.villa-original .workspace {
+  padding: 26px;
+  background: transparent;
+  display: grid;
+  gap: 20px;
+  align-content: start;
+}
+
+.villa-original .topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+
+.villa-original .topbar h2 {
+  font-size: 1.85rem;
+  color: #ffffff;
+  text-shadow: 0 10px 40px rgba(0, 0, 0, 0.36);
+}
+
+.villa-original .topbar .eyebrow {
+  color: rgba(225, 235, 255, 0.72);
+}
+
+.villa-original .toolbar,
+.villa-original .inline-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.villa-original .icon-button,
+.villa-original .primary-action {
+  background: linear-gradient(145deg, #7da0ff, #665cff);
+  color: #ffffff;
+  padding: 0 14px;
+  font-weight: 700;
+}
+
+.villa-original .icon-button:hover,
+.villa-original .primary-action:hover {
+  background: linear-gradient(145deg, #9ab4ff, #756dff);
+  transform: translateY(-1px);
+}
+
+.villa-original .icon-button.secondary {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.villa-original .icon-button.secondary:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.villa-original .icon-button.secondary.armed {
+  background: rgba(200, 72, 58, 0.12);
+  color: #9d2c22;
+}
+
+.villa-original .topbar .icon-button {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(18px);
+}
+
+.villa-original .topbar .icon-button:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.villa-original .topbar .icon-button.secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.villa-original .topbar .icon-button.secondary:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.villa-original .topbar .icon-button.secondary.armed {
+  background: rgba(200, 72, 58, 0.28);
+  color: #ffffff;
+  border-color: rgba(200, 72, 58, 0.75);
+}
+
+.villa-original .kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.villa-original .metric {
+  min-height: 136px;
+  padding: 18px;
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(24px) saturate(150%);
+  display: grid;
+  align-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.villa-original .metric:focus-visible {
+  outline: 3px solid rgba(135, 170, 255, 0.55);
+  outline-offset: 3px;
+}
+
+.villa-original .metric:hover,
+.villa-original .phase-card:hover,
+.villa-original .issue-card:hover,
+.villa-original .budget-card:hover,
+.villa-original .voucher-card:hover,
+.villa-original .compact-item:hover,
+.villa-original .zone-tile:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.villa-original .metric span,
+.villa-original .metric small {
+  color: var(--muted);
+}
+
+.villa-original .metric strong {
+  font-size: 2rem;
+  line-height: 1;
+  color: #ffffff;
+}
+
+.villa-original .metric-icon {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius);
+  color: #fff;
+}
+
+.villa-original .metric-icon.green {
+  background: linear-gradient(145deg, #68e8aa, #1e8a65);
+}
+
+.villa-original .metric-icon.amber {
+  background: linear-gradient(145deg, #ffd47b, #c77b17);
+}
+
+.villa-original .metric-icon.red {
+  background: linear-gradient(145deg, #ff8585, #c83c56);
+}
+
+.villa-original .metric-icon.blue {
+  background: linear-gradient(145deg, #83a8ff, #4357ff);
+}
+
+.villa-original .view {
+  display: none;
+  gap: 20px;
+}
+
+.villa-original .view.active {
+  display: grid;
+}
+
+.villa-original .overview-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+  gap: 20px;
+}
+
+.villa-original .section-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(28px) saturate(150%);
+}
+
+.villa-original .section-panel::before {
+  content: "";
+  display: block;
+  height: 1px;
+  margin: -18px -18px 17px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+}
+
+.villa-original .section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.villa-original .section-head h3 {
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+.villa-original select,
+.villa-original input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  padding: 0 11px;
+  outline: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.villa-original input::placeholder {
+  color: rgba(225, 235, 255, 0.46);
+}
+
+.villa-original select option {
+  background: #18233d;
+  color: #ffffff;
+}
+
+.villa-original select:focus,
+.villa-original input:focus {
+  border-color: rgba(135, 170, 255, 0.8);
+  box-shadow: 0 0 0 3px rgba(108, 140, 255, 0.24);
+}
+
+.villa-original .villa-map {
+  min-height: 520px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  align-items: stretch;
+  gap: 12px;
+  padding: 12px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(15, 24, 48, 0.45), rgba(4, 8, 18, 0.35));
+  background-size: 28px 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.villa-original .zone-tile {
+  position: relative;
+  min-height: 174px;
+  padding: 14px;
+  display: grid;
+  align-content: space-between;
+  gap: 14px;
+  text-align: left;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.07));
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(20px);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.villa-original .zone-tile::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: var(--fill, 0%);
+  background: linear-gradient(180deg, rgba(105, 139, 255, 0.22), rgba(105, 139, 255, 0.04));
+  pointer-events: none;
+}
+
+.villa-original .zone-tile strong,
+.villa-original .zone-tile span {
+  position: relative;
+  z-index: 1;
+}
+
+.villa-original .zone-tile strong {
+  font-size: 1.15rem;
+  color: #ffffff;
+}
+
+.villa-original .zone-tile span {
+  color: rgba(225, 235, 255, 0.76);
+  font-size: 0.88rem;
+}
+
+.villa-original .zone-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.villa-original .zone-progress {
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+.villa-original .room-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.villa-original .room-chip {
+  min-height: 26px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(245, 249, 255, 0.88);
+  line-height: 1.15;
+}
+
+.villa-original .compact-list {
+  display: grid;
+  gap: 10px;
+}
+
+.villa-original .compact-item,
+.villa-original .phase-card,
+.villa-original .issue-card,
+.villa-original .budget-card,
+.villa-original .voucher-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.075));
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(22px);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.villa-original .compact-item {
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.villa-original .compact-item strong {
+  display: block;
+}
+
+.villa-original .compact-item span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.villa-original .phase-list,
+.villa-original .issue-board,
+.villa-original .budget-grid,
+.villa-original .voucher-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.villa-original .phase-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.villa-original .issue-board,
+.villa-original .budget-grid,
+.villa-original .voucher-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.villa-original .phase-card,
+.villa-original .issue-card,
+.villa-original .budget-card,
+.villa-original .voucher-card {
+  padding: 15px;
+  display: grid;
+  gap: 12px;
+}
+
+.villa-original .phase-card-head,
+.villa-original .issue-card-head,
+.villa-original .budget-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.villa-original .phase-card h4,
+.villa-original .issue-card h4,
+.villa-original .budget-card h4,
+.villa-original .voucher-card h4 {
+  margin: 0 0 6px;
+  font-size: 1rem;
+  line-height: 1.35;
+  color: #ffffff;
+}
+
+.villa-original .meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.villa-original .badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.villa-original .badge.green {
+  background: rgba(87, 217, 154, 0.16);
+  color: #baf5d6;
+}
+
+.villa-original .badge.blue {
+  background: rgba(109, 143, 255, 0.18);
+  color: #d2ddff;
+}
+
+.villa-original .badge.amber {
+  background: rgba(245, 185, 87, 0.17);
+  color: #ffe0a6;
+}
+
+.villa-original .badge.red {
+  background: rgba(255, 107, 107, 0.18);
+  color: #ffd0d0;
+}
+
+.villa-original .progress-track {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.11);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.villa-original .progress-bar {
+  height: 100%;
+  width: var(--value, 0%);
+  background: linear-gradient(90deg, #85a6ff, #7c5cff);
+  box-shadow: 0 0 22px rgba(124, 92, 255, 0.46);
+}
+
+.villa-original .phase-controls,
+.villa-original .issue-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  gap: 10px;
+  align-items: center;
+}
+
+.villa-original input[type="range"] {
+  padding: 0;
+  accent-color: var(--accent);
+}
+
+.villa-original .note {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+  font-size: 0.92rem;
+}
+
+.villa-original .entry-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.villa-original .entry-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.villa-original .entry-form .wide {
+  grid-column: span 2;
+}
+
+.villa-original .primary-action {
+  min-height: 40px;
+}
+
+.villa-original .budget-card strong {
+  font-size: 1.35rem;
+  color: var(--ink);
+}
+
+.villa-original .budget-numbers {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.villa-original .budget-edit {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  color: rgba(225, 235, 255, 0.76);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.villa-original .voucher-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.villa-original .voucher-amount {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.villa-original .table-wrap {
+  overflow-x: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.villa-original table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 920px;
+}
+
+.villa-original th,
+.villa-original td {
+  padding: 12px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.11);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.villa-original th {
+  color: rgba(225, 235, 255, 0.7);
+  font-size: 0.84rem;
+  font-weight: 800;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.villa-original td {
+  font-size: 0.92rem;
+  color: #edf4ff;
+}
+
+.villa-original td small {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.villa-original .expense-amount-input {
+  min-width: 124px;
+  min-height: 34px;
+}
+
+.villa-original .row-action {
+  min-height: 32px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.villa-original .row-action:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.villa-original .empty {
+  padding: 24px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  text-align: center;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.villa-original .toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  min-width: 220px;
+  max-width: 360px;
+  transform: translateY(18px);
+  opacity: 0;
+  pointer-events: none;
+  background: rgba(11, 17, 32, 0.88);
+  color: #ffffff;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.villa-original .toast.show {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+@media (max-width: 1180px) {
+  .villa-original .kpi-grid,
+  .villa-original .issue-board,
+  .villa-original .budget-grid,
+  .villa-original .voucher-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .villa-original .overview-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .villa-original .entry-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .villa-original .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .villa-original .sidebar {
+    position: static;
+    height: auto;
+    padding: 18px;
+  }
+
+  .villa-original .nav-tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .villa-original .nav-tab {
+    justify-content: center;
+    padding: 10px 8px;
+  }
+
+  .villa-original .project-meta {
+    display: none;
+  }
+
+  .villa-original .workspace {
+    padding: 18px;
+  }
+
+  .villa-original .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .villa-original .kpi-grid,
+  .villa-original .phase-list,
+  .villa-original .issue-board,
+  .villa-original .budget-grid,
+  .villa-original .voucher-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .villa-original .villa-map {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .villa-original .brand {
+    align-items: flex-start;
+  }
+
+  .villa-original .nav-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .villa-original .toolbar,
+  .villa-original .inline-filters,
+  .villa-original .section-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .villa-original .toolbar .icon-button {
+    width: 100%;
+  }
+
+  .villa-original .villa-map {
+    grid-template-columns: 1fr;
+  }
+
+  .villa-original .entry-form {
+    grid-template-columns: 1fr;
+  }
+
+  .villa-original .entry-form .wide {
+    grid-column: span 1;
+  }
+
+  .villa-original .phase-controls,
+  .villa-original .issue-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .villa-original .topbar h2 {
+    font-size: 1.45rem;
+  }
+
+  .villa-original .metric strong {
+    font-size: 1.65rem;
+  }
+}
+
+/* Reference visual pass: light neumorphic shell + black cyan digital displays. */
+.villa-original {
+  --bg: #e9e9ec;
+  --surface: #f3f3f5;
+  --surface-strong: #f7f7f8;
+  --ink: #303136;
+  --muted: #62646c;
+  --line: rgba(255, 255, 255, 0.72);
+  --accent: #63d8e4;
+  --accent-dark: #3bbbc9;
+  --blue: #5ecfe0;
+  --amber: #3f4148;
+  --red: #3f4148;
+  --green: #5ecfe0;
+  --shadow: 10px 12px 26px rgba(151, 151, 157, 0.52), -8px -8px 18px rgba(255, 255, 255, 0.82);
+  --glass-shadow: 10px 12px 26px rgba(151, 151, 157, 0.48), -8px -8px 18px rgba(255, 255, 255, 0.9);
+  --radius: 24px;
+}
+
+.villa-original {
+  background:
+    radial-gradient(circle at 18% 8%, rgba(255, 255, 255, 0.86), transparent 34%),
+    linear-gradient(145deg, #f6f6f8 0%, #e2e2e6 48%, #d8d8dd 100%);
+  color: var(--ink);
+}
+
+.villa-original::before {
+  background: none;
+}
+
+.villa-original .sidebar,
+.villa-original .section-panel,
+.villa-original .metric,
+.villa-original .compact-item,
+.villa-original .phase-card,
+.villa-original .issue-card,
+.villa-original .budget-card,
+.villa-original .voucher-card,
+.villa-original .zone-tile,
+.villa-original .table-wrap {
+  backdrop-filter: none;
+}
+
+.villa-original .sidebar {
+  background: #ececef;
+  color: var(--ink);
+  border-right: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow: var(--glass-shadow);
+}
+
+.villa-original .brand-mark {
+  background: #0a0b0d;
+  color: #65d9e4;
+  border-radius: 16px;
+  box-shadow: inset 0 1px 4px rgba(255, 255, 255, 0.08), 6px 8px 18px rgba(132, 132, 138, 0.45);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+.villa-original .brand h1,
+.villa-original .project-meta strong,
+.villa-original .topbar h2,
+.villa-original .section-head h3,
+.villa-original .phase-card h4,
+.villa-original .issue-card h4,
+.villa-original .budget-card h4,
+.villa-original .voucher-card h4,
+.villa-original .zone-tile strong {
+  color: var(--ink);
+  text-shadow: none;
+}
+
+.villa-original .eyebrow,
+.villa-original .sidebar .eyebrow,
+.villa-original .project-meta div,
+.villa-original .topbar .eyebrow,
+.villa-original .meta-line,
+.villa-original .note,
+.villa-original .metric span,
+.villa-original .metric small,
+.villa-original .budget-numbers,
+.villa-original .budget-edit,
+.villa-original td small {
+  color: var(--muted);
+}
+
+.villa-original .project-meta {
+  border-top: 1px solid rgba(255, 255, 255, 0.82);
+}
+
+.villa-original .workspace {
+  background: transparent;
+}
+
+.villa-original .nav-tab {
+  color: var(--ink);
+  background: #f2f2f4;
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  box-shadow: 5px 6px 13px rgba(151, 151, 157, 0.38), -5px -5px 12px rgba(255, 255, 255, 0.92);
+}
+
+.villa-original .nav-tab:hover,
+.villa-original .nav-tab.active {
+  background: #0a0b0d;
+  color: #65d9e4;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.76), 5px 6px 13px rgba(151, 151, 157, 0.32);
+}
+
+.villa-original .topbar .icon-button,
+.villa-original .topbar .icon-button.secondary,
+.villa-original .icon-button,
+.villa-original .icon-button.secondary,
+.villa-original .primary-action,
+.villa-original .row-action {
+  background: #f3f3f5;
+  color: var(--ink);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  box-shadow: 6px 7px 16px rgba(151, 151, 157, 0.42), -6px -6px 15px rgba(255, 255, 255, 0.9);
+}
+
+.villa-original .topbar .icon-button:hover,
+.villa-original .topbar .icon-button.secondary:hover,
+.villa-original .icon-button:hover,
+.villa-original .icon-button.secondary:hover,
+.villa-original .primary-action:hover,
+.villa-original .row-action:hover {
+  background: #fafafa;
+  color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.villa-original .topbar .icon-button.secondary.armed,
+.villa-original .icon-button.secondary.armed {
+  background: #0a0b0d;
+  color: #65d9e4;
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.villa-original .metric {
+  background: #0a0b0d;
+  border: 1px solid rgba(0, 0, 0, 0.7);
+  box-shadow: inset 0 2px 10px rgba(255, 255, 255, 0.06), 8px 10px 22px rgba(126, 126, 134, 0.52);
+}
+
+.villa-original .metric span,
+.villa-original .metric small {
+  color: rgba(100, 216, 228, 0.82);
+}
+
+.villa-original .metric strong,
+.villa-original .voucher-amount {
+  color: #65d9e4;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 10px rgba(100, 216, 228, 0.38);
+}
+
+.villa-original .metric-icon {
+  color: #65d9e4;
+  background: #101114 !important;
+  border-radius: 13px;
+  box-shadow: inset 0 1px 6px rgba(100, 216, 228, 0.18);
+}
+
+.villa-original .section-panel {
+  background: #f1f1f3;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  box-shadow: var(--glass-shadow);
+}
+
+.villa-original .section-panel::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.95), transparent);
+}
+
+.villa-original select,
+.villa-original input {
+  background: #f8f8fa;
+  color: var(--ink);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  box-shadow: inset 3px 3px 7px rgba(171, 171, 178, 0.34), inset -3px -3px 7px rgba(255, 255, 255, 0.95);
+}
+
+.villa-original select option {
+  background: #f8f8fa;
+  color: var(--ink);
+}
+
+.villa-original input::placeholder {
+  color: #8a8c95;
+}
+
+.villa-original select:focus,
+.villa-original input:focus {
+  border-color: rgba(99, 216, 228, 0.9);
+  box-shadow: 0 0 0 3px rgba(99, 216, 228, 0.18), inset 3px 3px 7px rgba(171, 171, 178, 0.28);
+}
+
+.villa-original .villa-map {
+  background: #ededf0;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  box-shadow: inset 5px 5px 13px rgba(173, 173, 181, 0.34), inset -5px -5px 13px rgba(255, 255, 255, 0.85);
+}
+
+.villa-original .zone-tile,
+.villa-original .compact-item,
+.villa-original .phase-card,
+.villa-original .issue-card,
+.villa-original .budget-card,
+.villa-original .voucher-card {
+  background: #f3f3f5;
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  box-shadow: 7px 9px 20px rgba(151, 151, 157, 0.42), -7px -7px 18px rgba(255, 255, 255, 0.9);
+}
+
+.villa-original .zone-tile::after {
+  background: linear-gradient(180deg, rgba(99, 216, 228, 0.68), rgba(99, 216, 228, 0.2));
+}
+
+.villa-original .zone-tile span {
+  color: var(--muted);
+}
+
+.villa-original .zone-progress {
+  color: #0a0b0d !important;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+.villa-original .room-chip,
+.villa-original .badge {
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  background: #eeeeF1;
+  color: #484a51;
+  box-shadow: inset 1px 1px 3px rgba(170, 170, 176, 0.3), inset -1px -1px 3px rgba(255, 255, 255, 0.92);
+}
+
+.villa-original .badge.green,
+.villa-original .badge.blue {
+  background: #0a0b0d;
+  color: #65d9e4;
+}
+
+.villa-original .badge.amber,
+.villa-original .badge.red {
+  background: #3f4148;
+  color: #f4f4f6;
+}
+
+.villa-original .progress-track {
+  background: #0a0b0d;
+  box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.82);
+}
+
+.villa-original .progress-bar {
+  background: #65d9e4;
+  box-shadow: 0 0 14px rgba(100, 216, 228, 0.62);
+}
+
+.villa-original .table-wrap {
+  background: #f3f3f5;
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  box-shadow: inset 3px 3px 9px rgba(174, 174, 181, 0.3), inset -3px -3px 9px rgba(255, 255, 255, 0.92);
+}
+
+.villa-original th {
+  background: #0a0b0d;
+  color: #65d9e4;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+.villa-original td {
+  color: var(--ink);
+  border-bottom: 1px solid rgba(190, 190, 197, 0.45);
+}
+
+.villa-original .empty {
+  background: #efeff2;
+  color: var(--muted);
+}
+
+.villa-original .toast {
+  background: #0a0b0d;
+  color: #65d9e4;
+  box-shadow: 8px 10px 22px rgba(126, 126, 134, 0.52);
+}
+
+
+.villa-original {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 0;
+}
+
+.villa-original svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.villa-original .app-shell {
+  width: 100%;
+}
+
+.villa-original .villa-back-button {
+  background: #f3f3f5;
+}
+
+.villa-original .toast.show {
+  z-index: 20;
+}
+
+.subcompany-shell .villa-original .sidebar {
+  display: flex;
+}

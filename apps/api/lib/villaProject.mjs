@@ -4,7 +4,7 @@ import { clone } from './state.mjs';
 const phaseStatuses = new Set(['未开始', '施工中', '待验收', '已完成']);
 const issueStatuses = new Set(['待整改', '整改中', '待复验', '已关闭']);
 const severities = new Set(['高', '中', '低']);
-const expenseStatuses = new Set(['已付', '合同', '待付', '已取消']);
+const expenseStatuses = new Set(['已付', '合同', '待付', '预留', '已取消']);
 
 export function getVillaProject(data, actor) {
   requireVillaProjectRead(data, actor);
@@ -21,7 +21,7 @@ export function addVillaPhase(data, body, actor) {
   requireVillaProjectWrite(data, actor);
   const project = villaProjectState(data);
   const phase = normalizePhase(body, nextId('phase'));
-  project.phases = [phase, ...project.phases];
+  project.phases = [...project.phases, phase];
   data.villaProject = project;
   const auditLog = addAudit(data, actor, 'villa_project.phase.create', 'villa_project_phase', phase.id, '-', JSON.stringify(phase), `${actor.name} 新增别墅施工任务`);
   return { phase, auditLog, villaProject: getVillaProject(data, actor) };
@@ -43,7 +43,7 @@ export function addVillaIssue(data, body, actor) {
   requireVillaProjectWrite(data, actor);
   const project = villaProjectState(data);
   const issue = normalizeIssue(body, nextId('issue'));
-  project.issues = [issue, ...project.issues];
+  project.issues = [...project.issues, issue];
   data.villaProject = project;
   const auditLog = addAudit(data, actor, 'villa_project.issue.create', 'villa_project_issue', issue.id, '-', JSON.stringify(issue), `${actor.name} 新增别墅整改问题`);
   return { issue, auditLog, villaProject: getVillaProject(data, actor) };
@@ -68,10 +68,53 @@ export function addVillaExpense(data, body, actor) {
   if (!project.budgets.some((item) => item.category === expense.category)) {
     project.budgets = [{ category: expense.category, budget: 0 }, ...project.budgets];
   }
-  project.expenses = [expense, ...project.expenses];
+  project.expenses = [...project.expenses, expense];
   data.villaProject = project;
   const auditLog = addAudit(data, actor, 'villa_project.expense.create', 'villa_project_expense', expense.id, '-', JSON.stringify(expense), `${actor.name} 新增别墅预算支出`);
   return { expense, auditLog, villaProject: getVillaProject(data, actor) };
+}
+
+export function updateVillaExpense(data, id, body, actor) {
+  requireVillaProjectWrite(data, actor);
+  const project = villaProjectState(data);
+  const expense = project.expenses.find((item) => item.id === id);
+  if (!expense) fail(404, 'expense_not_found', '预算支出不存在');
+  const before = JSON.stringify(expense);
+  Object.assign(expense, normalizeExpense({ ...expense, ...body }, expense.id));
+  if (!project.budgets.some((item) => item.category === expense.category)) {
+    project.budgets = [{ category: expense.category, budget: 0 }, ...project.budgets];
+  }
+  data.villaProject = project;
+  const auditLog = addAudit(data, actor, 'villa_project.expense.update', 'villa_project_expense', expense.id, before, JSON.stringify(expense), `${actor.name} 更新别墅预算支出`);
+  return { expense, auditLog, villaProject: getVillaProject(data, actor) };
+}
+
+export function deleteVillaExpense(data, id, actor) {
+  requireVillaProjectWrite(data, actor);
+  const project = villaProjectState(data);
+  const index = project.expenses.findIndex((item) => item.id === id);
+  if (index < 0) fail(404, 'expense_not_found', '预算支出不存在');
+  const [expense] = project.expenses.splice(index, 1);
+  data.villaProject = project;
+  const auditLog = addAudit(data, actor, 'villa_project.expense.delete', 'villa_project_expense', expense.id, JSON.stringify(expense), '-', `${actor.name} 删除别墅预算支出`);
+  return { expense, auditLog, villaProject: getVillaProject(data, actor) };
+}
+
+export function updateVillaBudget(data, category, body, actor) {
+  requireVillaProjectWrite(data, actor);
+  const project = villaProjectState(data);
+  const name = clean(category);
+  if (!name) fail(400, 'invalid_budget', '预算分类不能为空');
+  let budget = project.budgets.find((item) => item.category === name);
+  const before = budget ? JSON.stringify(budget) : '-';
+  if (!budget) {
+    budget = { category: name, budget: 0 };
+    project.budgets = [...project.budgets, budget];
+  }
+  budget.budget = Math.max(0, finiteNumber(body?.budget));
+  data.villaProject = project;
+  const auditLog = addAudit(data, actor, 'villa_project.budget.update', 'villa_project_budget', name, before, JSON.stringify(budget), `${actor.name} 更新别墅预算额度`);
+  return { budget, auditLog, villaProject: getVillaProject(data, actor) };
 }
 
 export function syncVillaProjectFromSeed(data, seed, actor) {

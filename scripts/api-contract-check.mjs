@@ -129,6 +129,31 @@ try {
   assert(villaExpenseCreate.body.villaProject.budgets.some((item) => item.category === '契约测试'), 'new villa expense category should appear in budgets');
   assert(villaExpenseCreate.body.auditLog?.action === 'villa_project.expense.create', 'villa expense create should audit');
 
+  const villaBudgetUpdate = await request('/villa-project/budgets/%E5%A5%91%E7%BA%A6%E6%B5%8B%E8%AF%95', {
+    method: 'PATCH',
+    headers: pmoAuth,
+    body: JSON.stringify({ budget: 66000 }),
+  });
+  assert(villaBudgetUpdate.status === 200, 'PMO should update villa budget limit');
+  assert(villaBudgetUpdate.body.budget.budget === 66000, 'villa budget limit should update');
+  assert(villaBudgetUpdate.body.auditLog?.action === 'villa_project.budget.update', 'villa budget update should audit');
+
+  const villaExpenseUpdate = await request(`/villa-project/expenses/${villaExpenseCreate.body.expense.id}`, {
+    method: 'PATCH',
+    headers: pmoAuth,
+    body: JSON.stringify({ ...villaExpenseCreate.body.expense, amount: 999, status: '预留' }),
+  });
+  assert(villaExpenseUpdate.status === 200, 'PMO should update villa expense');
+  assert(villaExpenseUpdate.body.expense.amount === 999, 'villa expense amount should update');
+  assert(villaExpenseUpdate.body.auditLog?.action === 'villa_project.expense.update', 'villa expense update should audit');
+
+  const villaExpenseDelete = await request(`/villa-project/expenses/${villaExpenseCreate.body.expense.id}`, {
+    method: 'DELETE',
+    headers: pmoAuth,
+  });
+  assert(villaExpenseDelete.status === 200, 'PMO should delete villa expense');
+  assert(villaExpenseDelete.body.auditLog?.action === 'villa_project.expense.delete', 'villa expense delete should audit');
+
   const workOrderUpdate = await request('/commercial-system/work-orders/WO-001', {
     method: 'PATCH',
     headers: pmoAuth,
@@ -350,6 +375,9 @@ try {
           villaPhaseAudit: villaPhaseCreate.body.auditLog.action,
           villaIssueAudit: villaIssueCreate.body.auditLog.action,
           villaExpenseAudit: villaExpenseCreate.body.auditLog.action,
+          villaBudgetAudit: villaBudgetUpdate.body.auditLog.action,
+          villaExpenseUpdateAudit: villaExpenseUpdate.body.auditLog.action,
+          villaExpenseDeleteAudit: villaExpenseDelete.body.auditLog.action,
           workOrderAudit: workOrderUpdate.body.auditLog.action,
           contactAudit: contactUpdate.body.auditLog.action,
           operatingTaskStatus: taskUpdate.body.task.status,

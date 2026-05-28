@@ -92,6 +92,9 @@ Implemented API routes:
 - `POST /api/villa-project/issues`
 - `PATCH /api/villa-project/issues/:id`
 - `POST /api/villa-project/expenses`
+- `PATCH /api/villa-project/expenses/:id`
+- `DELETE /api/villa-project/expenses/:id`
+- `PATCH /api/villa-project/budgets/:category`
 - `POST /api/villa-project/sync-source`
 - `GET /api/dashboard`
 - `GET /api/subsidiaries/:id`

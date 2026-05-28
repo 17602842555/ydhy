@@ -53,6 +53,8 @@
 - Updated the standalone task-calendar account flow so the group account opens a read-only `全部子公司` view, while each subsidiary account can switch into its own company-only fill page and save only that company's data.
 - Added a `别墅项目目标` third-level page under `JOSMAN目标金字塔 -> 专项项目分支`: imported `huage-villa-dashboard-package.zip` into backend `villaProject` seed data and rebuilt the villa dashboard as a unified light-neumorphic React page.
 - Added villa project backend endpoints for reading the dashboard, adding/updating施工节点, adding/updating整改问题, adding预算支出, and syncing the seed source into the Cloudflare D1-backed runtime state.
+- Reworked the villa project third-level page to follow `huage-villa-dashboard-package.zip` 1:1 structure: sidebar module tabs, top toolbar, clickable KPI cards, overview heat zones, upcoming nodes, issue queue, construction filters/range controls, inspection filters, budget cards, voucher ledger, expense table, and entry forms.
+- Extended villa project backend writes to support budget-limit updates, expense amount/status updates, and expense deletion so the restored original UI controls persist to the backend instead of localStorage.
 - Reworked the web app into a multi-module management console covering 总览, 系统全景, 目标金字塔, 子公司监管, 数据导入, 组织人物, 主数据, 品牌经营, 财税合规, 供应链, 审批工单, 集成中心, 风险预警, 决策包, 经营报告, 系统设置, 软件端, and 审计日志.
 - Added role-switch validation UI so PMO, owner, finance, and boss sessions expose allowed actions, disabled buttons, and server-side 403 behavior.
 - Extended the PostgreSQL target schema and deterministic seed SQL for operating modules, goal branches, person profiles, contacts, module responsibilities, reporting lines, handover events, brand progress, operating tasks, risk items, decision packages, supply costs, tax cards, commercial modules, master data records, approval flows, commercial work orders, integration connectors, report packs, client targets, and system policies.
@@ -74,6 +76,7 @@
 - API self-check now verifies the villa project payload from the imported dashboard seed, including phase count, issue count, and 400万 budget total.
 - Isolated API contract check now verifies people/contact mutation, task audit, commercial-system payload, work-order audit, risk escalation, decision-package idempotency, and finance/owner 403 boundaries.
 - Isolated API contract check now verifies villa project read, construction phase creation, inspection issue creation, budget expense creation, category rollup, and audit writes.
+- Isolated API contract check now verifies villa budget updates, villa expense updates, and villa expense deletion audit writes.
 - `npm run check` now includes the PostgreSQL schema gate, PostgreSQL seed check, migration dry-run, isolated API contract check, Web build, and API self-check.
 - Browser QA: `http://127.0.0.1:5173/` loaded with API online, dirty import preview returned raw errors, validated batch `BATCH-20260528-004` was created and published, KPI/table/audit state refreshed.
 - Browser QA: `http://127.0.0.1:5173/` rendered the neumorphic digital UI, showed `后端联动` and `Cloudflare D1`, kept 6 KPI cards and 12 contact rows, and had no console warnings/errors.

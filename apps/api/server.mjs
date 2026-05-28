@@ -24,8 +24,11 @@ import {
   addVillaExpense,
   addVillaIssue,
   addVillaPhase,
+  deleteVillaExpense,
   getVillaProject,
   syncVillaProjectFromSeed,
+  updateVillaBudget,
+  updateVillaExpense,
   updateVillaIssue,
   updateVillaPhase,
 } from './lib/villaProject.mjs';
@@ -50,7 +53,7 @@ function json(res, status, body) {
     'Content-Type': 'application/json; charset=utf-8',
     'Content-Length': Buffer.byteLength(payload),
     'Access-Control-Allow-Origin': runtimeConfig.api.corsOrigin,
-    'Access-Control-Allow-Methods': 'GET,POST,PATCH,OPTIONS',
+    'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
     'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Role, X-Actor, X-Subsidiary-Id',
     'Access-Control-Expose-Headers': 'Content-Disposition, X-Object-Key',
   });
@@ -303,6 +306,28 @@ const server = createServer(async (req, res) => {
       const body = await readBody(req);
       const result = store.transaction((data) => addVillaExpense(data, body, resolveActor(data, req)));
       json(res, 201, result);
+      return;
+    }
+
+    const villaExpenseMatch = url.pathname.match(/^\/api\/villa-project\/expenses\/([^/]+)$/);
+    if (villaExpenseMatch && req.method === 'PATCH') {
+      const body = await readBody(req);
+      const result = store.transaction((data) => updateVillaExpense(data, villaExpenseMatch[1], body, resolveActor(data, req)));
+      json(res, 200, result);
+      return;
+    }
+
+    if (villaExpenseMatch && req.method === 'DELETE') {
+      const result = store.transaction((data) => deleteVillaExpense(data, villaExpenseMatch[1], resolveActor(data, req)));
+      json(res, 200, result);
+      return;
+    }
+
+    const villaBudgetMatch = url.pathname.match(/^\/api\/villa-project\/budgets\/([^/]+)$/);
+    if (villaBudgetMatch && req.method === 'PATCH') {
+      const body = await readBody(req);
+      const result = store.transaction((data) => updateVillaBudget(data, decodeURIComponent(villaBudgetMatch[1]), body, resolveActor(data, req)));
+      json(res, 200, result);
       return;
     }
 

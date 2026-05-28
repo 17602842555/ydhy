@@ -19,8 +19,11 @@ import {
   addVillaExpense,
   addVillaIssue,
   addVillaPhase,
+  deleteVillaExpense,
   getVillaProject,
   syncVillaProjectFromSeed,
+  updateVillaBudget,
+  updateVillaExpense,
   updateVillaIssue,
   updateVillaPhase,
 } from './lib/villaProject.mjs';
@@ -237,6 +240,25 @@ async function handleRequest(request, env, store) {
       return json(request, env, 201, result);
     }
 
+    const villaExpenseMatch = url.pathname.match(/^\/api\/villa-project\/expenses\/([^/]+)$/);
+    if (villaExpenseMatch && request.method === 'PATCH') {
+      const body = await readBody(request);
+      const result = await store.transaction((data) => updateVillaExpense(data, villaExpenseMatch[1], body, resolveActor(data, request, env)));
+      return json(request, env, 200, result);
+    }
+
+    if (villaExpenseMatch && request.method === 'DELETE') {
+      const result = await store.transaction((data) => deleteVillaExpense(data, villaExpenseMatch[1], resolveActor(data, request, env)));
+      return json(request, env, 200, result);
+    }
+
+    const villaBudgetMatch = url.pathname.match(/^\/api\/villa-project\/budgets\/([^/]+)$/);
+    if (villaBudgetMatch && request.method === 'PATCH') {
+      const body = await readBody(request);
+      const result = await store.transaction((data) => updateVillaBudget(data, decodeURIComponent(villaBudgetMatch[1]), body, resolveActor(data, request, env)));
+      return json(request, env, 200, result);
+    }
+
     if (url.pathname === '/api/villa-project/sync-source' && request.method === 'POST') {
       const result = await store.transaction((data) => syncVillaProjectFromSeed(data, seed, resolveActor(data, request, env)));
       return json(request, env, 200, result);
@@ -346,7 +368,7 @@ function json(request, env, status, body) {
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
       'Access-Control-Allow-Origin': allowedOrigin(request, env),
-      'Access-Control-Allow-Methods': 'GET,POST,PATCH,OPTIONS',
+      'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
       'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Role, X-Actor, X-Subsidiary-Id',
       'Access-Control-Expose-Headers': 'Content-Disposition, X-Object-Key',
       Vary: 'Origin',
