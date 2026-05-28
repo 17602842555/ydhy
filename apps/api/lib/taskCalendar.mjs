@@ -164,6 +164,48 @@ export function addTaskCalendarUnit(data, body, actor) {
   return { unit, taskCalendar: getTaskCalendar(data, actor, { month: body?.month }) };
 }
 
+export function syncTaskCalendarFromSeed(data, seed, actor) {
+  requirePermission(data, actor, 'system.manage');
+  data.taskCalendar = clone(seed.taskCalendar ?? { companies: [], units: [], metrics: [], entries: [], monthlyTargets: [] });
+  const seedSubsidiaries = new Map((seed.subsidiaries ?? []).map((item) => [item.id, item]));
+  data.subsidiaries = (data.subsidiaries ?? []).map((item) => {
+    const seeded = seedSubsidiaries.get(item.id);
+    if (!seeded) return item;
+    return {
+      ...item,
+      target: seeded.target,
+      actual: seeded.actual,
+      forecastRate: seeded.forecastRate,
+      threeDayRate: seeded.threeDayRate,
+      weekRate: seeded.weekRate,
+      riskLevel: seeded.riskLevel,
+      dataState: seeded.dataState,
+      sourceBatchId: seeded.sourceBatchId,
+      summary: seeded.summary,
+    };
+  });
+  const auditLog = addAudit(
+    data,
+    actor,
+    'task_calendar.seed.sync',
+    'task_calendar',
+    'seed',
+    '-',
+    JSON.stringify({
+      companies: data.taskCalendar.companies?.length ?? 0,
+      units: data.taskCalendar.units?.length ?? 0,
+      metrics: data.taskCalendar.metrics?.length ?? 0,
+      entries: data.taskCalendar.entries?.length ?? 0,
+      monthlyTargets: data.taskCalendar.monthlyTargets?.length ?? 0,
+    }),
+    `${actor.name} 从内置数据源同步任务日历`,
+  );
+  return {
+    auditLog,
+    taskCalendar: getTaskCalendar(data, actor, { month: '2026-05' }),
+  };
+}
+
 function taskCalendarState(data) {
   const taskCalendar = data.taskCalendar ?? {};
   const companies = Array.isArray(taskCalendar.companies) ? taskCalendar.companies.map(String) : [];
@@ -173,6 +215,10 @@ function taskCalendarState(data) {
   const monthlyTargets = Array.isArray(taskCalendar.monthlyTargets) ? taskCalendar.monthlyTargets : [];
   data.taskCalendar = { companies, units, metrics, entries, monthlyTargets };
   return data.taskCalendar;
+}
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
 function requireTaskCalendarRead(data, actor) {

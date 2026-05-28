@@ -14,7 +14,7 @@ import {
 import { getOperatingSystem, updateOperatingTask } from './lib/operatingSystem.mjs';
 import { getPeopleGraph, updatePrimaryContact } from './lib/people.mjs';
 import { updateRiskItem } from './lib/risks.mjs';
-import { addTaskCalendarUnit, getTaskCalendar, upsertTaskCalendarMetric, upsertTaskCalendarMonthlyTarget } from './lib/taskCalendar.mjs';
+import { addTaskCalendarUnit, getTaskCalendar, syncTaskCalendarFromSeed, upsertTaskCalendarMetric, upsertTaskCalendarMonthlyTarget } from './lib/taskCalendar.mjs';
 import { updateWorkflowState, workflowConfigs } from './lib/workflows.mjs';
 
 const maxBodyBytes = 15_000_000;
@@ -177,6 +177,14 @@ async function handleRequest(request, env, store) {
     if (url.pathname === '/api/task-calendar/monthly-targets' && request.method === 'POST') {
       const body = await readBody(request);
       const result = await store.transaction((data) => upsertTaskCalendarMonthlyTarget(data, body, resolveActor(data, request, env)));
+      return json(request, env, 200, {
+        ...result,
+        dashboard: calculateDashboard(await store.read()),
+      });
+    }
+
+    if (url.pathname === '/api/task-calendar/sync-source' && request.method === 'POST') {
+      const result = await store.transaction((data) => syncTaskCalendarFromSeed(data, seed, resolveActor(data, request, env)));
       return json(request, env, 200, {
         ...result,
         dashboard: calculateDashboard(await store.read()),

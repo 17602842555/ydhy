@@ -19,7 +19,7 @@ import { getPeopleGraph, updatePrimaryContact } from './lib/people.mjs';
 import { updateRiskItem } from './lib/risks.mjs';
 import { LocalSourceFileStore } from './lib/sourceFiles.mjs';
 import { JsonFileStore, prepareInitialData } from './lib/store.mjs';
-import { addTaskCalendarUnit, getTaskCalendar, upsertTaskCalendarMetric, upsertTaskCalendarMonthlyTarget } from './lib/taskCalendar.mjs';
+import { addTaskCalendarUnit, getTaskCalendar, syncTaskCalendarFromSeed, upsertTaskCalendarMetric, upsertTaskCalendarMonthlyTarget } from './lib/taskCalendar.mjs';
 import { updateWorkflowState, workflowConfigs } from './lib/workflows.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -238,6 +238,15 @@ const server = createServer(async (req, res) => {
     if (url.pathname === '/api/task-calendar/monthly-targets' && req.method === 'POST') {
       const body = await readBody(req);
       const result = store.transaction((data) => upsertTaskCalendarMonthlyTarget(data, body, resolveActor(data, req)));
+      json(res, 200, {
+        ...result,
+        dashboard: calculateDashboard(store.read()),
+      });
+      return;
+    }
+
+    if (url.pathname === '/api/task-calendar/sync-source' && req.method === 'POST') {
+      const result = store.transaction((data) => syncTaskCalendarFromSeed(data, seed, resolveActor(data, req)));
       json(res, 200, {
         ...result,
         dashboard: calculateDashboard(store.read()),
