@@ -10,6 +10,7 @@ export function getTaskCalendar(data, actor, options = {}) {
   const scopedCompanies = scopeCompanies(data, actor, state.companies);
   const metrics = state.metrics.filter((metric) => scopedCompanies.includes(metric.company) && String(metric.date || '').startsWith(`${month}-`));
   const entries = state.entries.filter((entry) => scopedCompanies.includes(entry.company) && String(entry.date || '').startsWith(`${month}-`));
+  const actionPlans = state.actionPlans.filter((plan) => scopedCompanies.includes(plan.company) && String(plan.date || '').startsWith(`${month}-`));
   const units = state.units.filter((unit) => scopedCompanies.includes(unit.company));
   const monthlyTargets = state.monthlyTargets.filter((target) => scopedCompanies.includes(target.company) && target.month === month);
   const summaries = buildCompanySummaries(data, state, month, scopedCompanies);
@@ -24,6 +25,7 @@ export function getTaskCalendar(data, actor, options = {}) {
     units,
     metrics,
     entries,
+    actionPlans,
     monthlyTargets,
     summaries,
     supervisionDashboard: buildSupervisionDashboard(data, summaries, month),
@@ -78,6 +80,205 @@ export function upsertTaskCalendarMonthlyTarget(data, body, actor) {
   return {
     target,
     rollup,
+    auditLog,
+    taskCalendar: getTaskCalendar(data, actor, { month }),
+  };
+}
+
+export function upsertTaskCalendarDailyTarget(data, body, actor) {
+  requireTaskCalendarWrite(data, actor);
+  const state = taskCalendarState(data);
+  const company = normalizeCompanyForActor(data, actor, body?.company);
+  const date = normalizeDate(body?.date);
+  const revenueTarget = finiteNumber(body?.revenueTarget);
+  if (!date) fail(400, 'invalid_date', 'date must be YYYY-MM-DD');
+  if (revenueTarget <= 0) fail(400, 'invalid_daily_target', '当日目标必须大于 0');
+  if (!state.companies.includes(company)) state.companies = [...state.companies, company];
+
+  const id = `daily-target-${slug(company)}-${date}`;
+  const existing = state.entries.find((entry) => entry.id === id);
+  const beforeText = existing ? JSON.stringify(existing) : '-';
+  const targetEntry = {
+    id,
+    company,
+    date,
+    task: '当日总体营业额目标',
+    status: '未开始',
+    revenueTarget,
+    revenueActual: 0,
+    progress: 0,
+    action: '手动设置当日目标。',
+    owner: actor.name,
+    risk: '',
+    source: 'daily-target',
+    updatedAt: new Date().toISOString(),
+  };
+  state.entries = state.entries.filter((entry) => {
+    if (entry.company !== company || entry.date !== date) return true;
+    return entry.id !== id && entry.source !== 'monthly-target' && entry.source !== 'daily-target';
+  });
+  state.entries = [targetEntry, ...state.entries];
+  data.taskCalendar = state;
+
+  const month = date.slice(0, 7);
+  const rollup = applyTaskCalendarRollup(data, company, month, actor);
+  const auditLog = addAudit(
+    data,
+    actor,
+    existing ? 'task_calendar.daily_target.update' : 'task_calendar.daily_target.create',
+    'task_calendar_daily_target',
+    targetEntry.id,
+    beforeText,
+    JSON.stringify(targetEntry),
+    `${actor.name} 设置 ${company} ${date} 当日目标`,
+  );
+  return {
+    target: targetEntry,
+    rollup,
+    auditLog,
+    taskCalendar: getTaskCalendar(data, actor, { month }),
+  };
+}
+
+export function upsertTaskCalendarActionPlan(data, body, actor) {
+  requireTaskCalendarWrite(data, actor);
+  const state = taskCalendarState(data);
+  const company = normalizeCompanyForActor(data, actor, body?.company);
+  const date = normalizeDate(body?.date);
+  const action = String(body?.action || '').trim();
+  const expectedGmvGrowthRate = finiteNumber(body?.expectedGmvGrowthRate);
+  const expectation = String(body?.expectation || '').trim();
+  if (!date) fail(400, 'invalid_date', 'date must be YYYY-MM-DD');
+  if (!action) fail(400, 'invalid_action', '当日动作不能为空');
+  if (!Number.isFinite(expectedGmvGrowthRate) || expectedGmvGrowthRate <= 0) {
+    fail(400, 'invalid_expected_growth', '预期 GMV 涨幅必须大于 0');
+  }
+  if (!state.companies.includes(company)) state.companies = [...state.companies, company];
+
+  const id = `daily-action-${slug(company)}-${date}`;
+  const existing = state.actionPlans.find((plan) => plan.id === id);
+  const beforeText = existing ? JSON.stringify(existing) : '-';
+  const plan = {
+    id,
+    company,
+    date,
+    action,
+    expectedGmvGrowthRate,
+    expectation,
+    owner: actor.name,
+    updatedAt: new Date().toISOString(),
+  };
+  if (existing) Object.assign(existing, plan);
+  else state.actionPlans = [plan, ...state.actionPlans];
+  data.taskCalendar = state;
+
+  const auditLog = addAudit(
+    data,
+    actor,
+    existing ? 'task_calendar.action_plan.update' : 'task_calendar.action_plan.create',
+    'task_calendar_action_plan',
+    plan.id,
+    beforeText,
+    JSON.stringify(plan),
+    `${actor.name} 填写 ${company} ${date} 当日动作和预期`,
+  );
+  return {
+    actionPlan: plan,
+    auditLog,
+    taskCalendar: getTaskCalendar(data, actor, { month: date.slice(0, 7) }),
+  };
+}
+
+export function clearTaskCalendarFutureTargets(data, body, actor) {
+  requireTaskCalendarWrite(data, actor);
+  const state = taskCalendarState(data);
+  const afterMonth = normalizeMonth(body?.afterMonth || body?.month);
+  if (!afterMonth) fail(400, 'invalid_month', 'afterMonth must be YYYY-MM');
+  const companies = resolveWritableCompanies(data, actor, state, body?.company);
+  const before = {
+    monthlyTargets: state.monthlyTargets.length,
+    entries: state.entries.length,
+  };
+  state.monthlyTargets = state.monthlyTargets.filter((target) => {
+    if (!companies.includes(target.company)) return true;
+    return String(target.month || '') <= afterMonth;
+  });
+  state.entries = state.entries.filter((entry) => {
+    if (!companies.includes(entry.company)) return true;
+    const entryMonth = String(entry.date || '').slice(0, 7);
+    if (entryMonth <= afterMonth) return true;
+    return !isTargetEntry(entry);
+  });
+  data.taskCalendar = state;
+  const cleared = {
+    monthlyTargets: before.monthlyTargets - state.monthlyTargets.length,
+    entries: before.entries - state.entries.length,
+  };
+  const auditLog = addAudit(
+    data,
+    actor,
+    'task_calendar.future_targets.clear',
+    'task_calendar',
+    `future-targets-${afterMonth}`,
+    JSON.stringify(before),
+    JSON.stringify({ afterMonth, companies, cleared }),
+    `${actor.name} 清空 ${afterMonth} 之后的任务日历目标`,
+  );
+  return {
+    afterMonth,
+    companies,
+    cleared,
+    auditLog,
+    taskCalendar: getTaskCalendar(data, actor, { month: afterMonth }),
+  };
+}
+
+export function clearTaskCalendarMonthData(data, body, actor) {
+  requireTaskCalendarWrite(data, actor);
+  const state = taskCalendarState(data);
+  const month = normalizeMonth(body?.month);
+  if (!month) fail(400, 'invalid_month', 'month must be YYYY-MM');
+  const companies = resolveWritableCompanies(data, actor, state, body?.company);
+  const before = {
+    monthlyTargets: state.monthlyTargets.length,
+    metrics: state.metrics.length,
+    entries: state.entries.length,
+    actionPlans: state.actionPlans.length,
+  };
+  state.monthlyTargets = state.monthlyTargets.filter((target) => !companies.includes(target.company) || target.month !== month);
+  state.metrics = state.metrics.filter((metric) => !companies.includes(metric.company) || !String(metric.date || '').startsWith(`${month}-`));
+  state.entries = state.entries.filter((entry) => !companies.includes(entry.company) || !String(entry.date || '').startsWith(`${month}-`));
+  state.actionPlans = state.actionPlans.filter((plan) => !companies.includes(plan.company) || !String(plan.date || '').startsWith(`${month}-`));
+  for (const company of companies) {
+    const subsidiary = data.subsidiaries?.find((item) => item.name === company);
+    if (subsidiary) {
+      subsidiary.target = 0;
+      subsidiary.sourceBatchId = `TASK-CALENDAR-${month}`;
+    }
+  }
+  data.taskCalendar = state;
+  const rollups = companies.map((company) => applyTaskCalendarRollup(data, company, month, actor));
+  const cleared = {
+    monthlyTargets: before.monthlyTargets - state.monthlyTargets.length,
+    metrics: before.metrics - state.metrics.length,
+    entries: before.entries - state.entries.length,
+    actionPlans: before.actionPlans - state.actionPlans.length,
+  };
+  const auditLog = addAudit(
+    data,
+    actor,
+    'task_calendar.month_data.clear',
+    'task_calendar',
+    `month-data-${month}`,
+    JSON.stringify(before),
+    JSON.stringify({ month, companies, cleared }),
+    `${actor.name} 清空 ${month} 任务日历当月数据和目标`,
+  );
+  return {
+    month,
+    companies,
+    cleared,
+    rollups,
     auditLog,
     taskCalendar: getTaskCalendar(data, actor, { month }),
   };
@@ -166,7 +367,7 @@ export function addTaskCalendarUnit(data, body, actor) {
 
 export function syncTaskCalendarFromSeed(data, seed, actor) {
   requirePermission(data, actor, 'system.manage');
-  data.taskCalendar = clone(seed.taskCalendar ?? { companies: [], units: [], metrics: [], entries: [], monthlyTargets: [] });
+  data.taskCalendar = clone(seed.taskCalendar ?? { companies: [], units: [], metrics: [], entries: [], actionPlans: [], monthlyTargets: [] });
   const seedSubsidiaries = new Map((seed.subsidiaries ?? []).map((item) => [item.id, item]));
   data.subsidiaries = (data.subsidiaries ?? []).map((item) => {
     const seeded = seedSubsidiaries.get(item.id);
@@ -196,6 +397,7 @@ export function syncTaskCalendarFromSeed(data, seed, actor) {
       units: data.taskCalendar.units?.length ?? 0,
       metrics: data.taskCalendar.metrics?.length ?? 0,
       entries: data.taskCalendar.entries?.length ?? 0,
+      actionPlans: data.taskCalendar.actionPlans?.length ?? 0,
       monthlyTargets: data.taskCalendar.monthlyTargets?.length ?? 0,
     }),
     `${actor.name} 从内置数据源同步任务日历`,
@@ -212,8 +414,9 @@ function taskCalendarState(data) {
   const units = Array.isArray(taskCalendar.units) ? taskCalendar.units : [];
   const metrics = Array.isArray(taskCalendar.metrics) ? taskCalendar.metrics : [];
   const entries = Array.isArray(taskCalendar.entries) ? taskCalendar.entries : [];
+  const actionPlans = Array.isArray(taskCalendar.actionPlans) ? taskCalendar.actionPlans : [];
   const monthlyTargets = Array.isArray(taskCalendar.monthlyTargets) ? taskCalendar.monthlyTargets : [];
-  data.taskCalendar = { companies, units, metrics, entries, monthlyTargets };
+  data.taskCalendar = { companies, units, metrics, entries, actionPlans, monthlyTargets };
   return data.taskCalendar;
 }
 
@@ -252,10 +455,21 @@ function normalizeCompanyForActor(data, actor, requestedCompany) {
   return company;
 }
 
+function resolveWritableCompanies(data, actor, state, requestedCompany) {
+  if (actor.role === 'subsidiary_owner') return [normalizeCompanyForActor(data, actor, requestedCompany)];
+  const company = String(requestedCompany || '').trim();
+  if (company) return [normalizeCompanyForActor(data, actor, company)];
+  return scopeCompanies(data, actor, state.companies);
+}
+
 function canWriteCompany(data, actor, company) {
   if (actor.role !== 'subsidiary_owner') return true;
   const subsidiary = data.subsidiaries?.find((item) => item.id === actor.subsidiaryId);
   return subsidiary?.name === company;
+}
+
+function isTargetEntry(entry) {
+  return ['monthly-target', 'daily-target', 'day-target'].includes(String(entry?.source || ''));
 }
 
 function normalizeMetricPayload(body, unit, actor, date, fields) {
@@ -362,29 +576,111 @@ function buildSupervisionDashboard(data, summaries, month) {
         item.gapWan > 0 ? `${formatNumber(item.gapWan)}万` : '0',
       ],
     })),
-    companies: summaries.map((item) => ({
-      name: item.company,
-      status: item.status === 'good' ? 'good' : item.status === 'watch' ? 'warn' : item.status === 'risk' ? 'bad' : 'empty',
-      score: formatPercent(item.completionRate),
-      metrics: [
-        { label: '月目标', value: item.targetWan > 0 ? `${formatNumber(item.targetWan)}万` : '待定' },
-        { label: '月完成', value: `${formatNumber(item.actualWan)}万` },
-        { label: '预计完成率', value: formatPercent(item.forecastRate) },
-        { label: '3天完成率', value: formatPercent(item.threeDayRate) },
-        { label: '周完成率', value: formatPercent(item.weekRate) },
-      ],
-      summary: item.summary,
-      bars: [
-        { label: '月度进度', value: `${formatNumber(item.actualWan)}万 / ${formatNumber(item.targetWan)}万`, width: percentWidth(item.completionRate) },
-        { label: '预计完成率', value: formatPercent(item.forecastRate), width: percentWidth(item.forecastRate) },
-        { label: '3天监管', value: item.gapWan > 0 ? `缺口 ${formatNumber(item.gapWan)}万` : '达标', width: percentWidth(item.threeDayRate) },
-        { label: '周监管', value: `日均需 ${formatNumber(item.dailyNeedWan)}万`, width: percentWidth(item.weekRate) },
-      ],
-      fillModules: [],
-      dailyHeaders: ['日期', '经营主体数', '数据行数', '月完成'],
-      dailyRows: [],
-    })),
+    companies: summaries.map((item) => buildSupervisionCompanyCard(data, item, month)),
   };
+}
+
+function buildSupervisionCompanyCard(data, item, month) {
+  return {
+    name: item.company,
+    status: item.status === 'good' ? 'good' : item.status === 'watch' ? 'warn' : item.status === 'risk' ? 'bad' : 'empty',
+    score: formatPercent(item.completionRate),
+    metrics: [
+      { label: '月目标', value: item.targetWan > 0 ? `${formatNumber(item.targetWan)}万` : '待定' },
+      { label: '月完成', value: `${formatNumber(item.actualWan)}万` },
+      { label: '预计完成率', value: formatPercent(item.forecastRate) },
+      { label: '3天完成率', value: formatPercent(item.threeDayRate) },
+      { label: '周完成率', value: formatPercent(item.weekRate) },
+    ],
+    summary: item.summary,
+    bars: [
+      { label: '月度进度', value: `${formatNumber(item.actualWan)}万 / ${formatNumber(item.targetWan)}万`, width: percentWidth(item.completionRate) },
+      { label: '预计完成率', value: formatPercent(item.forecastRate), width: percentWidth(item.forecastRate) },
+      { label: '3天监管', value: item.gapWan > 0 ? `缺口 ${formatNumber(item.gapWan)}万` : '达标', width: percentWidth(item.threeDayRate) },
+      { label: '周监管', value: `日均需 ${formatNumber(item.dailyNeedWan)}万`, width: percentWidth(item.weekRate) },
+    ],
+    actionVerification: buildCompanyActionVerification(data, item.company, month),
+    fillModules: [],
+    dailyHeaders: ['日期', '经营主体数', '数据行数', '月完成'],
+    dailyRows: [],
+  };
+}
+
+function buildCompanyActionVerification(data, company, month) {
+  const state = taskCalendarState(data);
+  const plans = state.actionPlans
+    .filter((plan) => plan.company === company && String(plan.date || '').startsWith(`${month}-`))
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+  const plan = plans[0];
+  if (!plan) {
+    return {
+      status: 'empty',
+      label: '待填写动作',
+      action: '暂无当日动作和预期。',
+      expectedGmvGrowthRate: null,
+      actualGmvGrowthRate: null,
+      complianceRate: null,
+    };
+  }
+
+  const verifyDate = dateOffset(plan.date, 1);
+  const baseRows = dayRowsForCompany(state, company, plan.date);
+  const verifyRows = dayRowsForCompany(state, company, verifyDate);
+  const baseGmv = dayRevenueFromRows(baseRows);
+  const verifyGmv = dayRevenueFromRows(verifyRows);
+  const expectedGmvGrowthRate = Number(plan.expectedGmvGrowthRate || 0);
+  const hasVerificationData = verifyRows.metrics.length > 0 || verifyRows.entries.length > 0;
+  const actualGmvGrowthRate = hasVerificationData
+    ? (baseGmv > 0 ? ((verifyGmv - baseGmv) / baseGmv) * 100 : (verifyGmv > 0 ? 100 : 0))
+    : null;
+  const complianceRate = Number.isFinite(Number(actualGmvGrowthRate)) && expectedGmvGrowthRate > 0
+    ? (Number(actualGmvGrowthRate) / expectedGmvGrowthRate) * 100
+    : null;
+  const status = actionVerificationStatus(complianceRate, actualGmvGrowthRate);
+
+  return {
+    status,
+    label: actionVerificationLabel(status),
+    date: plan.date,
+    verifyDate,
+    action: plan.action,
+    expectation: plan.expectation,
+    expectedGmvGrowthRate,
+    actualGmvGrowthRate,
+    complianceRate,
+    baseGmv,
+    verifyGmv,
+    owner: plan.owner,
+    updatedAt: plan.updatedAt,
+  };
+}
+
+function dayRowsForCompany(state, company, date) {
+  return {
+    metrics: state.metrics.filter((metric) => metric.company === company && metric.date === date),
+    entries: state.entries.filter((entry) => entry.company === company && entry.date === date),
+  };
+}
+
+function dayRevenueFromRows(rows) {
+  if (rows.metrics.length) return sumMetricRevenue(rows.metrics);
+  return sumEntryRevenue(rows.entries, 'revenueActual');
+}
+
+function actionVerificationStatus(complianceRate, actualGrowthRate) {
+  if (!Number.isFinite(Number(complianceRate)) || !Number.isFinite(Number(actualGrowthRate))) return 'empty';
+  if (Number(actualGrowthRate) <= 0 || Number(complianceRate) < 20) return 'bad';
+  if (Number(complianceRate) < 60) return 'invalid';
+  if (Number(complianceRate) < 90) return 'warn';
+  return 'good';
+}
+
+function actionVerificationLabel(status) {
+  if (status === 'good') return '前日动作有效';
+  if (status === 'warn') return '需要优化';
+  if (status === 'invalid') return '动作基本无效';
+  if (status === 'bad') return '动作无效需要预警';
+  return '待验证';
 }
 
 function applyTaskCalendarRollup(data, company, month, actor) {
@@ -465,10 +761,15 @@ function syncMetricEntry(state, metric, actor) {
 }
 
 function syncMonthlyTargetEntries(state, target) {
-  if (target.allocationMode !== 'daily') return;
   const [year, monthNumber] = target.month.split('-').map(Number);
   const days = daysInMonth(target.month);
-  state.entries = state.entries.filter((entry) => !(entry.source === 'monthly-target' && entry.company === target.company && String(entry.date || '').startsWith(`${target.month}-`)));
+  state.entries = state.entries.filter((entry) => {
+    if (entry.company !== target.company || !String(entry.date || '').startsWith(`${target.month}-`)) return true;
+    if (entry.source === 'monthly-target' || entry.source === 'day-target') return false;
+    if (String(entry.id || '').startsWith(`${target.id}-`)) return false;
+    return !(entry.task === '月度营业额目标' && String(entry.action || '').includes('按月度目标自动拆分'));
+  });
+  if (target.allocationMode !== 'daily') return;
   const generated = Array.from({ length: days }, (_, index) => {
     const day = String(index + 1).padStart(2, '0');
     return {

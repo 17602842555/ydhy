@@ -14,7 +14,17 @@ import {
 import { getOperatingSystem, updateOperatingTask } from './lib/operatingSystem.mjs';
 import { getPeopleGraph, updatePrimaryContact } from './lib/people.mjs';
 import { updateRiskItem } from './lib/risks.mjs';
-import { addTaskCalendarUnit, getTaskCalendar, syncTaskCalendarFromSeed, upsertTaskCalendarMetric, upsertTaskCalendarMonthlyTarget } from './lib/taskCalendar.mjs';
+import {
+  addTaskCalendarUnit,
+  clearTaskCalendarFutureTargets,
+  clearTaskCalendarMonthData,
+  getTaskCalendar,
+  syncTaskCalendarFromSeed,
+  upsertTaskCalendarActionPlan,
+  upsertTaskCalendarDailyTarget,
+  upsertTaskCalendarMetric,
+  upsertTaskCalendarMonthlyTarget,
+} from './lib/taskCalendar.mjs';
 import {
   addVillaExpense,
   addVillaIssue,
@@ -194,6 +204,42 @@ async function handleRequest(request, env, store) {
     if (url.pathname === '/api/task-calendar/monthly-targets' && request.method === 'POST') {
       const body = await readBody(request);
       const result = await store.transaction((data) => upsertTaskCalendarMonthlyTarget(data, body, resolveActor(data, request, env)));
+      return json(request, env, 200, {
+        ...result,
+        dashboard: calculateDashboard(await store.read()),
+      });
+    }
+
+    if (url.pathname === '/api/task-calendar/daily-targets' && request.method === 'POST') {
+      const body = await readBody(request);
+      const result = await store.transaction((data) => upsertTaskCalendarDailyTarget(data, body, resolveActor(data, request, env)));
+      return json(request, env, 200, {
+        ...result,
+        dashboard: calculateDashboard(await store.read()),
+      });
+    }
+
+    if (url.pathname === '/api/task-calendar/action-plans' && request.method === 'POST') {
+      const body = await readBody(request);
+      const result = await store.transaction((data) => upsertTaskCalendarActionPlan(data, body, resolveActor(data, request, env)));
+      return json(request, env, 200, {
+        ...result,
+        dashboard: calculateDashboard(await store.read()),
+      });
+    }
+
+    if (url.pathname === '/api/task-calendar/future-targets/clear' && request.method === 'POST') {
+      const body = await readBody(request);
+      const result = await store.transaction((data) => clearTaskCalendarFutureTargets(data, body, resolveActor(data, request, env)));
+      return json(request, env, 200, {
+        ...result,
+        dashboard: calculateDashboard(await store.read()),
+      });
+    }
+
+    if (url.pathname === '/api/task-calendar/month-data/clear' && request.method === 'POST') {
+      const body = await readBody(request);
+      const result = await store.transaction((data) => clearTaskCalendarMonthData(data, body, resolveActor(data, request, env)));
       return json(request, env, 200, {
         ...result,
         dashboard: calculateDashboard(await store.read()),

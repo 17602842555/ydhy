@@ -5,6 +5,20 @@ type RankRow = { status: string; cells: string[] }
 type BarItem = { label: string; value: string; width: string }
 type FillField = { label: string; value: string; placeholder: string }
 type FillModule = { title: string; hint?: string; fields: FillField[] }
+type ActionVerification = {
+  status: string
+  label: string
+  date?: string
+  verifyDate?: string
+  action: string
+  expectation?: string
+  expectedGmvGrowthRate?: number | null
+  actualGmvGrowthRate?: number | null
+  complianceRate?: number | null
+  baseGmv?: number | null
+  verifyGmv?: number | null
+  owner?: string
+}
 type CompanyCard = {
   name: string
   status: string
@@ -12,6 +26,7 @@ type CompanyCard = {
   metrics: Metric[]
   summary: string
   bars: BarItem[]
+  actionVerification?: ActionVerification | null
   fillModules: FillModule[]
   dailyHeaders: string[]
   dailyRows: RankRow[]
@@ -128,6 +143,27 @@ function statusLabel(status: string) {
   return STATUS_LABELS[status] ?? '待定'
 }
 
+function formatPercentValue(value?: number | null) {
+  if (!Number.isFinite(Number(value))) return '待验证'
+  const number = Number(value)
+  if (Math.abs(number) >= 100) return `${number.toFixed(0)}%`
+  if (Math.abs(number) >= 10) return `${number.toFixed(1).replace(/\.0$/, '')}%`
+  return `${number.toFixed(1).replace(/\.0$/, '')}%`
+}
+
+function formatMoneyValue(value?: number | null) {
+  const number = Number(value || 0)
+  if (Math.abs(number) >= 10000) return `${formatCompactNumber(number / 10000)}万`
+  return `¥${formatCompactNumber(number)}`
+}
+
+function formatCompactNumber(value?: number | null) {
+  const number = Number(value || 0)
+  if (Math.abs(number) >= 100) return number.toFixed(0)
+  if (Math.abs(number) >= 10) return number.toFixed(1).replace(/\.0$/, '')
+  return number.toFixed(1).replace(/\.0$/, '')
+}
+
 function companyAnchor(name: string) {
   return `subcompany-${encodeURIComponent(name)}`
 }
@@ -191,6 +227,8 @@ function CompanySection({ company }: { company: CompanyCard }) {
         ))}
       </div>
 
+      <ActionVerificationCard verification={company.actionVerification} />
+
       {company.fillModules.length ? (
         <details className="subcompany-details">
           <summary>每日填写模块</summary>
@@ -218,6 +256,44 @@ function CompanySection({ company }: { company: CompanyCard }) {
         </details>
       ) : null}
     </article>
+  )
+}
+
+function ActionVerificationCard({ verification }: { verification?: ActionVerification | null }) {
+  const item = verification ?? {
+    status: 'empty',
+    label: '待填写动作',
+    action: '暂无当日动作和预期。',
+  }
+  return (
+    <section className={`subcompany-action-card status-${item.status}`}>
+      <div className="subcompany-action-card-head">
+        <div>
+          <span>动作与验证</span>
+          <strong>{item.label}</strong>
+        </div>
+        <em>{item.date && item.verifyDate ? `${item.date} → ${item.verifyDate}` : '等待填报'}</em>
+      </div>
+      <p>{item.action}</p>
+      {item.expectation ? <small>{item.expectation}</small> : null}
+      <div className="subcompany-action-metrics">
+        <div>
+          <span>预期GMV涨幅</span>
+          <strong>{formatPercentValue(item.expectedGmvGrowthRate)}</strong>
+        </div>
+        <div>
+          <span>实际GMV涨幅</span>
+          <strong>{formatPercentValue(item.actualGmvGrowthRate)}</strong>
+        </div>
+        <div>
+          <span>符合预期</span>
+          <strong>{formatPercentValue(item.complianceRate)}</strong>
+        </div>
+      </div>
+      {Number.isFinite(Number(item.baseGmv)) || Number.isFinite(Number(item.verifyGmv)) ? (
+        <footer>前日 GMV {formatMoneyValue(item.baseGmv)} · 当日 GMV {formatMoneyValue(item.verifyGmv)}</footer>
+      ) : null}
+    </section>
   )
 }
 

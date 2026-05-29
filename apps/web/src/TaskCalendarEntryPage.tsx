@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
-import { Building2, ChevronLeft, ChevronRight, LogOut, Save, Target } from 'lucide-react'
+import { Building2, ChevronLeft, ChevronRight, ClipboardCheck, LogOut, Save, Target } from 'lucide-react'
 
 type BusinessUnit = { id: string; company: string; type: 'store' | 'business'; name: string }
 type BusinessMetric = {
@@ -45,6 +45,16 @@ type CalendarEntry = {
   source?: string
   businessMetricId?: string
 }
+type DailyActionPlan = {
+  id: string
+  company: string
+  date: string
+  action: string
+  expectedGmvGrowthRate: number
+  expectation?: string
+  owner?: string
+  updatedAt?: string
+}
 type CompanySummary = {
   company: string
   targetWan: number
@@ -66,6 +76,7 @@ type TaskCalendarData = {
   units: BusinessUnit[]
   metrics: BusinessMetric[]
   entries: CalendarEntry[]
+  actionPlans?: DailyActionPlan[]
   monthlyTargets: MonthlyTarget[]
   summaries: CompanySummary[]
 }
@@ -121,6 +132,12 @@ function shiftMonth(month: string, offset: number) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }
 
+function shiftDate(date: string, offset: number) {
+  const nextDate = new Date(`${date}T00:00:00`)
+  nextDate.setDate(nextDate.getDate() + offset)
+  return dateKey(nextDate)
+}
+
 function dateKey(date: Date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
@@ -154,6 +171,38 @@ function formatNumber(value?: number | null) {
   return number.toFixed(1).replace(/\.0$/, '')
 }
 
+function performanceTone(rate: number, target = 0, actual = 0) {
+  if (target <= 0) return 'is-empty'
+  if (actual <= 0) return 'is-idle'
+  if (rate >= 100) return 'is-good'
+  if (rate >= 80) return 'is-watch'
+  return 'is-risk'
+}
+
+function performanceLabel(rate: number, target = 0, actual = 0) {
+  if (target <= 0) return '未设置'
+  if (actual <= 0) return '未填报'
+  if (rate >= 100) return '已达成'
+  if (rate >= 80) return '跟进中'
+  return '需关注'
+}
+
+function actionValidationTone(complianceRate: number | null, actualGrowthRate: number | null) {
+  if (!Number.isFinite(Number(complianceRate)) || !Number.isFinite(Number(actualGrowthRate))) return 'is-empty'
+  if (Number(actualGrowthRate) <= 0 || Number(complianceRate) < 20) return 'is-risk'
+  if (Number(complianceRate) < 60) return 'is-invalid'
+  if (Number(complianceRate) < 90) return 'is-watch'
+  return 'is-good'
+}
+
+function actionValidationLabel(complianceRate: number | null, actualGrowthRate: number | null) {
+  if (!Number.isFinite(Number(complianceRate)) || !Number.isFinite(Number(actualGrowthRate))) return '待验证'
+  if (Number(actualGrowthRate) <= 0 || Number(complianceRate) < 20) return '动作无效需要预警'
+  if (Number(complianceRate) < 60) return '动作基本无效'
+  if (Number(complianceRate) < 90) return '需要优化'
+  return '前日动作有效'
+}
+
 function metricRevenue(metric: BusinessMetric) {
   if (Number.isFinite(Number(metric.revenueAmount))) return Number(metric.revenueAmount || 0)
   if (metric.unitType === 'business') return Number(metric.revenue || metric.income || 0)
@@ -182,6 +231,18 @@ function weekDays(selectedDate: string) {
     date.setDate(start.getDate() + index)
     return dateKey(date)
   })
+}
+
+function shortDateLabel(date: string) {
+  const parsed = new Date(`${date}T00:00:00`)
+  return `${parsed.getMonth() + 1}/${parsed.getDate()}`
+}
+
+function weekRangeLabel(dates: string[]) {
+  const start = dates[0]
+  const end = dates[dates.length - 1]
+  if (!start || !end) return '周趋势'
+  return `${shortDateLabel(start)} - ${shortDateLabel(end)} 周趋势`
 }
 
 function metricForm(metric?: BusinessMetric) {
@@ -229,6 +290,37 @@ async function fetchTaskCalendar(apiBaseUrl: string, sessionToken: string, month
   return (await response.json()) as TaskCalendarData
 }
 
+async function fetchTaskCalendarWindow(apiBaseUrl: string, sessionToken: string, month: string, signal?: AbortSignal) {
+  const [previous, current, next] = await Promise.all([
+    fetchTaskCalendar(apiBaseUrl, sessionToken, shiftMonth(month, -1), signal),
+    fetchTaskCalendar(apiBaseUrl, sessionToken, month, signal),
+    fetchTaskCalendar(apiBaseUrl, sessionToken, shiftMonth(month, 1), signal),
+  ])
+  return mergeTaskCalendarWindow(current, [previous, next])
+}
+
+function mergeTaskCalendarWindow(current: TaskCalendarData, adjacent: TaskCalendarData[]): TaskCalendarData {
+  return {
+    ...current,
+    companies: uniqueValues([current, ...adjacent].flatMap((data) => data.companies)),
+    units: mergeById([current, ...adjacent].flatMap((data) => data.units)),
+    metrics: mergeById([current, ...adjacent].flatMap((data) => data.metrics)),
+    entries: mergeById([current, ...adjacent].flatMap((data) => data.entries)),
+    actionPlans: mergeById([current, ...adjacent].flatMap((data) => data.actionPlans ?? [])),
+    monthlyTargets: mergeById([current, ...adjacent].flatMap((data) => data.monthlyTargets)),
+  }
+}
+
+function mergeById<T extends { id: string }>(items: T[]) {
+  const map = new Map<string, T>()
+  for (const item of items) map.set(item.id, item)
+  return [...map.values()]
+}
+
+function uniqueValues(values: string[]) {
+  return [...new Set(values)]
+}
+
 export function TaskCalendarEntryPage({
   apiBaseUrl,
   onBack,
@@ -255,10 +347,17 @@ export function TaskCalendarEntryPage({
   const [forms, setForms] = useState<Record<string, Record<string, string>>>({})
   const [unitDraft, setUnitDraft] = useState('')
   const [unitType, setUnitType] = useState<'store' | 'business'>('store')
-  const [targetOpen, setTargetOpen] = useState(false)
+  const [targetEditor, setTargetEditor] = useState<'monthly' | 'daily' | null>(null)
   const [targetAmount, setTargetAmount] = useState('')
   const [targetMode, setTargetMode] = useState<'daily' | 'none'>('daily')
+  const [actionEditor, setActionEditor] = useState(false)
+  const [actionText, setActionText] = useState('')
+  const [actionExpectedGrowth, setActionExpectedGrowth] = useState('')
+  const [actionExpectation, setActionExpectation] = useState('')
+  const [actionSaving, setActionSaving] = useState(false)
   const [savingUnitId, setSavingUnitId] = useState('')
+  const [clearingMonth, setClearingMonth] = useState(false)
+  const [businessDetailOpen, setBusinessDetailOpen] = useState(false)
   const [notice, setNotice] = useState('')
 
   useEffect(() => {
@@ -296,13 +395,10 @@ export function TaskCalendarEntryPage({
   )
   const companyUnits = useMemo(() => activeData?.units.filter((unit) => targetCompanies.includes(unit.company)) ?? [], [activeData, targetCompanies])
   const monthMetrics = useMemo(
-    () => activeData?.metrics.filter((metric) => targetCompanies.includes(metric.company)) ?? [],
-    [activeData, targetCompanies],
+    () => activeData?.metrics.filter((metric) => targetCompanies.includes(metric.company) && monthOf(metric.date) === visibleMonth) ?? [],
+    [activeData, targetCompanies, visibleMonth],
   )
-  const selectedEntries = useMemo(
-    () => activeData?.entries.filter((entry) => targetCompanies.includes(entry.company) && entry.date === selectedDate) ?? [],
-    [activeData, targetCompanies, selectedDate],
-  )
+  const selectedDateMetrics = monthMetrics.filter((metric) => metric.date === selectedDate)
   const selectedSummary = activeData?.summaries.find((item) => item.company === selectedCompany)
   const selectedTarget = activeData?.monthlyTargets.find((target) => target.company === selectedCompany && target.month === visibleMonth)
   const monthTarget = targetCompanies.reduce((sum, company) => sum + targetForCompany(company), 0)
@@ -324,15 +420,30 @@ export function TaskCalendarEntryPage({
   function openTargetEditor() {
     setTargetAmount(selectedTarget?.monthlyTarget ? String(selectedTarget.monthlyTarget) : '')
     setTargetMode(selectedTarget?.allocationMode ?? 'daily')
-    setTargetOpen(true)
+    setTargetEditor('monthly')
+  }
+
+  function openDailyTargetEditor() {
+    const currentTarget = dayTarget(selectedDate)
+    setTargetAmount(currentTarget > 0 ? String(Math.round(currentTarget * 100) / 100) : '')
+    setTargetMode('none')
+    setTargetEditor('daily')
+  }
+
+  function openActionEditor() {
+    const existing = actionPlanForDate(selectedDate, selectedCompany)
+    setActionText(existing?.action || '')
+    setActionExpectedGrowth(existing?.expectedGmvGrowthRate ? String(existing.expectedGmvGrowthRate) : '')
+    setActionExpectation(existing?.expectation || '')
+    setActionEditor(true)
   }
 
   function metricRowsForCompany(company: string) {
-    return activeData?.metrics.filter((metric) => metric.company === company) ?? []
+    return activeData?.metrics.filter((metric) => metric.company === company && monthOf(metric.date) === visibleMonth) ?? []
   }
 
   function entryRowsForCompany(company: string) {
-    return activeData?.entries.filter((entry) => entry.company === company) ?? []
+    return activeData?.entries.filter((entry) => entry.company === company && monthOf(entry.date) === visibleMonth) ?? []
   }
 
   function targetForCompany(company: string) {
@@ -355,6 +466,18 @@ export function TaskCalendarEntryPage({
     return activeData?.entries.filter((entry) => targetCompanies.includes(entry.company) && entry.date === date) ?? []
   }
 
+  function actionPlansForDate(date: string) {
+    return (activeData?.actionPlans ?? []).filter((plan) => targetCompanies.includes(plan.company) && plan.date === date)
+  }
+
+  function actionPlanForDate(date: string, company: string) {
+    return (activeData?.actionPlans ?? []).find((plan) => plan.company === company && plan.date === date)
+  }
+
+  function monthlyTargetForCompany(company: string, month = visibleMonth) {
+    return activeData?.monthlyTargets.find((target) => target.company === company && target.month === month)
+  }
+
   function dayActual(date: string) {
     const metrics = dayMetricRows(date)
     if (metrics.length) return metrics.reduce((sum, metric) => sum + metricRevenue(metric), 0)
@@ -364,10 +487,11 @@ export function TaskCalendarEntryPage({
   function dayTarget(date: string) {
     const entryTarget = dayEntryRows(date).reduce((sum, entry) => sum + Number(entry.revenueTarget || 0), 0)
     if (entryTarget > 0) return entryTarget
-    if (!monthTarget) return 0
-    return selectedTarget?.allocationMode === 'daily' && selectedTarget.dailyTarget > 0 && selectedCompany !== allCompaniesLabel
-      ? selectedTarget.dailyTarget
-      : monthTarget / daysInMonth(visibleMonth)
+    const targetMonth = monthOf(date)
+    return targetCompanies.reduce((sum, company) => {
+      const target = monthlyTargetForCompany(company, targetMonth)
+      return sum + (target?.allocationMode === 'daily' && target.dailyTarget > 0 ? target.dailyTarget : 0)
+    }, 0)
   }
 
   async function saveUnitMetric(unit: BusinessUnit) {
@@ -439,9 +563,96 @@ export function TaskCalendarEntryPage({
     }
     const result = await response.json() as { taskCalendar: TaskCalendarData }
     setLoadState({ status: 'ready', data: result.taskCalendar })
-    setTargetOpen(false)
+    setTargetEditor(null)
     setNotice('月度目标已保存，并同步重算监管看板。')
     onSaved?.()
+  }
+
+  async function saveDailyTarget() {
+    if (!token || !canEdit) return
+    const amount = Number(targetAmount)
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setNotice('请填写正确的当日目标')
+      return
+    }
+    const response = await fetch(`${apiBaseUrl}/task-calendar/daily-targets`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ company: selectedCompany, date: selectedDate, revenueTarget: amount }),
+    })
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      setNotice(error.reason || error.error || '保存当日目标失败')
+      return
+    }
+    const result = await response.json() as { taskCalendar: TaskCalendarData }
+    setLoadState({ status: 'ready', data: result.taskCalendar })
+    setTargetEditor(null)
+    setNotice('当日目标已保存，并同步重算监管看板。')
+    onSaved?.()
+  }
+
+  async function saveActionPlan() {
+    if (!token || !canEdit || actionSaving) return
+    const expectedGmvGrowthRate = Number(actionExpectedGrowth)
+    if (!actionText.trim() || !Number.isFinite(expectedGmvGrowthRate) || expectedGmvGrowthRate <= 0) {
+      setNotice('请填写当日动作，并设置大于 0 的预期 GMV 涨幅。')
+      return
+    }
+    setActionSaving(true)
+    try {
+      const response = await fetch(`${apiBaseUrl}/task-calendar/action-plans`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company: selectedCompany,
+          date: selectedDate,
+          action: actionText,
+          expectedGmvGrowthRate,
+          expectation: actionExpectation,
+        }),
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        setNotice(error.reason || error.error || '保存当日动作失败')
+        return
+      }
+      const result = await response.json() as { taskCalendar: TaskCalendarData }
+      setLoadState((current) => current.status === 'ready'
+        ? { status: 'ready', data: mergeTaskCalendarWindow(current.data, [result.taskCalendar]) }
+        : { status: 'ready', data: result.taskCalendar })
+      setActionEditor(false)
+      setNotice(`已保存 ${formatDate(selectedDate)} 的动作和预期。`)
+    } finally {
+      setActionSaving(false)
+    }
+  }
+
+  async function clearCurrentMonthData() {
+    if (!token || !canEdit || clearingMonth) return
+    const confirmed = window.confirm(`确定清空 ${selectedCompany} ${monthLabel(visibleMonth)} 的全部数据和目标吗？这个操作会删除月度目标、当日目标和填报数据。`)
+    if (!confirmed) return
+    setClearingMonth(true)
+    setNotice('')
+    try {
+      const response = await fetch(`${apiBaseUrl}/task-calendar/month-data/clear`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ company: selectedCompany, month: visibleMonth }),
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error.reason || error.error || '清空当月数据失败')
+      }
+      const result = await response.json() as { taskCalendar: TaskCalendarData; cleared?: { monthlyTargets?: number; metrics?: number; entries?: number } }
+      setLoadState({ status: 'ready', data: result.taskCalendar })
+      setNotice(`已清空 ${monthLabel(visibleMonth)}：${result.cleared?.monthlyTargets ?? 0} 个目标、${result.cleared?.metrics ?? 0} 条填报、${result.cleared?.entries ?? 0} 条日历记录。`)
+      onSaved?.()
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '清空当月数据失败')
+    } finally {
+      setClearingMonth(false)
+    }
   }
 
   function updateForm(unitId: string, key: string, value: string) {
@@ -460,6 +671,27 @@ export function TaskCalendarEntryPage({
     if (token && activeUser) void refreshCalendar(nextMonth)
   }
 
+  function changeDate(nextDate: string) {
+    const nextMonth = monthOf(nextDate)
+    setSelectedDate(nextDate)
+    if (nextMonth !== visibleMonth) {
+      setVisibleMonth(nextMonth)
+      if (token && activeUser) void refreshCalendar(nextMonth)
+    }
+  }
+
+  function shiftToolbar(offset: number) {
+    if (viewMode === 'business') {
+      changeDate(shiftDate(selectedDate, offset))
+      return
+    }
+    if (viewMode === 'week') {
+      changeDate(shiftDate(selectedDate, offset * 7))
+      return
+    }
+    changeMonth(shiftMonth(visibleMonth, offset))
+  }
+
   function applyCalendarData(data: TaskCalendarData, user: AuthUser) {
     setLoadState({ status: 'ready', data })
     setSelectedCompany((current) => {
@@ -476,7 +708,7 @@ export function TaskCalendarEntryPage({
     if (!sessionToken || !sessionUser) return
     setLoadState({ status: 'loading' })
     try {
-      const data = await fetchTaskCalendar(apiBaseUrl, sessionToken, month)
+      const data = await fetchTaskCalendarWindow(apiBaseUrl, sessionToken, month)
       applyCalendarData(data, sessionUser)
     } catch (error) {
       setLoadState({ status: 'error', message: error instanceof Error ? error.message : '读取填报数据失败' })
@@ -492,7 +724,7 @@ export function TaskCalendarEntryPage({
     setLoadState({ status: 'loading' })
     try {
       const session = await login(apiBaseUrl, loginUserId, loginPassword)
-      const data = await fetchTaskCalendar(apiBaseUrl, session.token, visibleMonth)
+      const data = await fetchTaskCalendarWindow(apiBaseUrl, session.token, visibleMonth)
       setToken(session.token)
       setActiveUser(session.user)
       setLoginPassword('')
@@ -584,6 +816,35 @@ export function TaskCalendarEntryPage({
   const selectedDateActual = dayActual(selectedDate)
   const selectedDateTarget = dayTarget(selectedDate)
   const selectedDateRate = selectedDateTarget > 0 ? (selectedDateActual / selectedDateTarget) * 100 : 0
+  const previousActionDate = shiftDate(selectedDate, -1)
+  const previousDateActual = dayActual(previousActionDate)
+  const previousActionPlans = actionPlansForDate(previousActionDate)
+  const expectedGmvGrowthRate = previousActionPlans.length
+    ? previousActionPlans.reduce((sum, plan) => sum + Number(plan.expectedGmvGrowthRate || 0), 0) / previousActionPlans.length
+    : null
+  const actualGmvGrowthRate = previousDateActual > 0 ? ((selectedDateActual - previousDateActual) / previousDateActual) * 100 : (selectedDateActual > 0 ? 100 : 0)
+  const actionComplianceRate = expectedGmvGrowthRate && expectedGmvGrowthRate > 0 ? (actualGmvGrowthRate / expectedGmvGrowthRate) * 100 : null
+  const actionVerificationTone = actionValidationTone(actionComplianceRate, actualGmvGrowthRate)
+  const actionVerificationLabel = actionValidationLabel(actionComplianceRate, actualGmvGrowthRate)
+  const selectedWeekDates = weekDays(selectedDate)
+  const toolbarTitle = viewMode === 'business'
+    ? `${selectedDate} 经营数据`
+    : viewMode === 'week'
+      ? weekRangeLabel(selectedWeekDates)
+      : monthLabel(visibleMonth)
+  const previousLabel = viewMode === 'business' ? '前一天' : viewMode === 'week' ? '上一周' : '上个月'
+  const nextLabel = viewMode === 'business' ? '后一天' : viewMode === 'week' ? '下一周' : '下个月'
+  const monthTone = performanceTone(monthRate, monthTarget, monthActual)
+  const selectedDateTone = performanceTone(selectedDateRate, selectedDateTarget, selectedDateActual)
+  const allocatedTarget = activeData.entries
+    .filter((entry) => targetCompanies.includes(entry.company) && monthOf(entry.date) === visibleMonth)
+    .reduce((sum, entry) => sum + Number(entry.revenueTarget || 0), 0)
+  const unallocatedTarget = Math.max(monthTarget - allocatedTarget, 0)
+  const targetAmountValue = Number.isFinite(Number(targetAmount)) && Number(targetAmount) > 0 ? Number(targetAmount) : 0
+  const projectedAllocatedTarget = targetEditor === 'daily'
+    ? Math.max(allocatedTarget - selectedDateTarget + targetAmountValue, 0)
+    : allocatedTarget
+  const projectedUnallocatedTarget = Math.max(monthTarget - projectedAllocatedTarget, 0)
 
   return (
     <section className={`task-calendar-shell ${standalone ? 'task-calendar-standalone' : ''}`} id="taskCalendarEntryPage">
@@ -615,6 +876,10 @@ export function TaskCalendarEntryPage({
             <button className="task-calendar-primary full" type="button" disabled={!canEdit} onClick={openTargetEditor}>
               <Target size={16} /> 填写月度目标
             </button>
+            <button className="task-calendar-danger full" type="button" disabled={!canEdit || clearingMonth} onClick={clearCurrentMonthData}>
+              {clearingMonth ? '清空中' : '清空当月数据'}
+            </button>
+            <p className="task-calendar-clear-note">清除当月月度目标、当日目标、填报与同步数据。</p>
           </section>
 
           <section className="task-calendar-panel">
@@ -648,15 +913,41 @@ export function TaskCalendarEntryPage({
             <div className="task-calendar-progress-line"><i style={{ width: `${Math.min(monthRate, 100)}%` }} /></div>
             <p>{selectedSummary?.summary || `${selectedCompany} 月完成 ${formatMoney(monthActual)}，完成率 ${formatPercent(monthRate)}。`}</p>
           </section>
+
+          <section className={`task-calendar-panel compact task-calendar-action-verify ${actionVerificationTone}`}>
+            <div className="task-calendar-section-title"><ClipboardCheck size={14} /> 前日动作验证</div>
+            <div className="task-calendar-action-verify-head">
+              <span>{previousActionDate} 动作 → {selectedDate} 结果</span>
+              <b>{previousActionPlans.length ? actionVerificationLabel : '未填写前日动作'}</b>
+            </div>
+            <div className="task-calendar-action-verify-metrics">
+              <article>
+                <span>当日GMV涨幅</span>
+                <strong>{formatPercent(actualGmvGrowthRate)}</strong>
+              </article>
+              <article>
+                <span>符合预期</span>
+                <strong>{previousActionPlans.length ? formatPercent(actionComplianceRate) : '待填'}</strong>
+              </article>
+            </div>
+            {previousActionPlans.length ? (
+              <>
+                <p className="task-calendar-action-verify-copy">{previousActionPlans.map((plan) => plan.action).join(' / ')}</p>
+                <p>预期 GMV 涨幅 {formatPercent(expectedGmvGrowthRate)}；前日 GMV {formatMoney(previousDateActual)}，当日 GMV {formatMoney(selectedDateActual)}。</p>
+              </>
+            ) : (
+              <p>选择日期后，这里会用前一天填写的动作和预期，验证当天 GMV 涨幅是否达标。</p>
+            )}
+          </section>
         </aside>
 
         <section className="task-calendar-main-panel">
           <div className="task-calendar-toolbar">
-            <button className="task-calendar-icon-button" type="button" onClick={() => changeMonth(shiftMonth(visibleMonth, -1))} aria-label="上个月">
+            <button className="task-calendar-icon-button" type="button" onClick={() => shiftToolbar(-1)} aria-label={previousLabel}>
               <ChevronLeft size={18} />
             </button>
             <div>
-              <h2>{viewMode === 'business' ? `${visibleMonth} 经营数据` : monthLabel(visibleMonth)}</h2>
+              <h2>{toolbarTitle}</h2>
               <div className="task-calendar-tabs">
                 {[
                   ['month', '月'],
@@ -668,9 +959,32 @@ export function TaskCalendarEntryPage({
                 ))}
               </div>
             </div>
-            <button className="task-calendar-icon-button" type="button" onClick={() => changeMonth(shiftMonth(visibleMonth, 1))} aria-label="下个月">
+            <button className="task-calendar-icon-button" type="button" onClick={() => shiftToolbar(1)} aria-label={nextLabel}>
               <ChevronRight size={18} />
             </button>
+          </div>
+
+          <div className="task-calendar-overview-strip">
+            <article className={monthTone}>
+              <span>本月完成率</span>
+              <strong>{formatPercent(monthRate)}</strong>
+              <em>{formatMoney(monthActual)} / {formatMoney(monthTarget)}</em>
+            </article>
+            <article className={selectedDateTone}>
+              <span>当前日期完成</span>
+              <strong>{formatPercent(selectedDateRate)}</strong>
+              <em>{formatMoney(selectedDateActual)} / {formatMoney(selectedDateTarget)}</em>
+            </article>
+            <article>
+              <span>经营主体</span>
+              <strong>{companyUnits.length}</strong>
+              <em>{selectedCompany} 已接入主体</em>
+            </article>
+            <article>
+              <span>填报记录</span>
+              <strong>{monthMetrics.length}</strong>
+              <em>{selectedDateMetrics.length} 条当天业务数据</em>
+            </article>
           </div>
 
           {viewMode === 'business' ? (
@@ -692,13 +1006,13 @@ export function TaskCalendarEntryPage({
               unitType={unitType}
             />
           ) : viewMode === 'week' ? (
-            <CalendarGrid dates={weekDays(selectedDate)} month={visibleMonth} selectedDate={selectedDate} mode="week" dayActual={dayActual} dayTarget={dayTarget} onSelectDate={setSelectedDate} />
+            <WeekTrendBoard dates={selectedWeekDates} month={visibleMonth} selectedDate={selectedDate} dayActual={dayActual} dayTarget={dayTarget} onSelectDate={changeDate} />
           ) : viewMode === 'year' ? (
             <YearBoard month={visibleMonth} monthActual={monthActual} monthTarget={monthTarget} company={selectedCompany} />
           ) : (
             <>
               <div className="task-calendar-weekdays">{weekdays.map((day) => <span key={day}>{day}</span>)}</div>
-              <CalendarGrid dates={calendarDays(visibleMonth)} month={visibleMonth} selectedDate={selectedDate} mode="month" dayActual={dayActual} dayTarget={dayTarget} onSelectDate={setSelectedDate} />
+              <CalendarGrid dates={calendarDays(visibleMonth)} month={visibleMonth} selectedDate={selectedDate} mode="month" dayActual={dayActual} dayTarget={dayTarget} onSelectDate={changeDate} />
             </>
           )}
         </section>
@@ -710,60 +1024,240 @@ export function TaskCalendarEntryPage({
                 <p>当前日期</p>
                 <h2>{formatDate(selectedDate)}</h2>
               </div>
-              <button className="task-calendar-primary" type="button" disabled={!canEdit} onClick={openTargetEditor}>设置目标</button>
+              <div className="task-calendar-date-actions">
+                <button className="task-calendar-primary" type="button" disabled={!canEdit} onClick={openDailyTargetEditor}>设置当日目标</button>
+                <button className="task-calendar-light-button" type="button" disabled={!canEdit} onClick={openActionEditor}>
+                  <ClipboardCheck size={15} /> 填写当日动作和预期
+                </button>
+              </div>
+              <p className="task-calendar-allocation-hint">
+                当月未分配目标：{formatMoney(unallocatedTarget)} · 已分配 {formatMoney(allocatedTarget)}
+              </p>
             </div>
-            <div className="task-calendar-target-card">
-              <strong>当日总体营业额目标</strong>
+            <div className={`task-calendar-target-card ${selectedDateTone}`}>
+              <div className="task-calendar-target-title">
+                <strong>当日总体营业额目标</strong>
+                <b>{performanceLabel(selectedDateRate, selectedDateTarget, selectedDateActual)}</b>
+              </div>
               <span>{selectedCompany} · {activeUser?.displayName || '填报账号'}</span>
               <p>目标营业额：{formatMoney(selectedDateTarget)} · 已完成：{formatMoney(selectedDateActual)} · 完成率：{formatPercent(selectedDateRate)}</p>
               <div className="task-calendar-progress-line"><i style={{ width: `${Math.min(selectedDateRate, 100)}%` }} /></div>
+              <button className="task-calendar-business-toggle" type="button" onClick={() => setBusinessDetailOpen((current) => !current)}>
+                {businessDetailOpen ? '收起业务明细' : `展开业务明细（${selectedDateMetrics.length}）`}
+              </button>
             </div>
-            <div className="task-calendar-entry-list">
-              {selectedEntries.length ? selectedEntries.slice(0, 14).map((entry) => (
-                <article key={entry.id}>
-                  <strong>{entry.task}</strong>
-                  <span>{entry.company} · {entry.owner || '填报账号'} · {formatMoney(entry.revenueActual || 0)}</span>
-                  <em>目标 {formatMoney(entry.revenueTarget || 0)}{entry.risk ? ` · 风险：${entry.risk}` : entry.action ? ` · ${entry.action}` : ''}</em>
-                </article>
-              )) : <p className="task-calendar-empty">当天暂无经营数据，切换到“经营数据”填报。</p>}
-            </div>
+            {businessDetailOpen ? (
+              <div className="task-calendar-business-detail-list">
+                {selectedDateMetrics.length ? selectedDateMetrics
+                  .slice()
+                  .sort((a, b) => metricRevenue(b) - metricRevenue(a))
+                  .map((metric) => (
+                    <article className="task-calendar-business-metric-row" key={metric.id}>
+                      <strong>{metric.unitName}</strong>
+                      <dl>
+                        <div><dt>GMV</dt><dd>{formatMoney(metric.gmv || metric.revenue || metric.revenueAmount || 0)}</dd></div>
+                        <div><dt>GSV</dt><dd>{formatMoney(metric.gsv ?? metric.estimatedGsv ?? 0)}</dd></div>
+                        <div><dt>退货率</dt><dd>{formatPercent(metric.returnRate)}</dd></div>
+                      </dl>
+                    </article>
+                  )) : <p className="task-calendar-empty">当天暂无业务销售数据，切换到“经营数据”填报。</p>}
+              </div>
+            ) : null}
           </section>
         </aside>
       </main>
 
-      {targetOpen ? (
+      {targetEditor ? (
         <div className="task-calendar-modal" role="dialog" aria-modal="true">
           <div className="task-calendar-modal-card">
             <div className="task-calendar-modal-head">
               <Target size={20} />
               <div>
-                <h2>填写月度目标</h2>
-                <p>{selectedCompany} / {monthLabel(visibleMonth)}</p>
+                <h2>{targetEditor === 'daily' ? '设置当日目标' : '填写月度目标'}</h2>
+                <p>{selectedCompany} / {targetEditor === 'daily' ? formatDate(selectedDate) : monthLabel(visibleMonth)}</p>
               </div>
             </div>
             <label className="task-calendar-field">
-              月度目标营业额（元）
-              <input type="number" min="1" step="1" value={targetAmount} onChange={(event) => setTargetAmount(event.currentTarget.value)} placeholder="例如：1000000" />
+              {targetEditor === 'daily' ? '当日目标营业额（元）' : '月度目标营业额（元）'}
+              <input type="number" min="1" step="1" value={targetAmount} onChange={(event) => setTargetAmount(event.currentTarget.value)} placeholder={targetEditor === 'daily' ? '例如：40000' : '例如：1000000'} />
             </label>
-            <label className="task-calendar-field">
-              分配方式
-              <select value={targetMode} onChange={(event) => setTargetMode(event.currentTarget.value as 'daily' | 'none')}>
-                <option value="daily">平均分到每日</option>
-                <option value="none">只保存月度目标</option>
-              </select>
-            </label>
+            {targetEditor === 'monthly' ? (
+              <label className="task-calendar-field">
+                分配方式
+                <select value={targetMode} onChange={(event) => setTargetMode(event.currentTarget.value as 'daily' | 'none')}>
+                  <option value="daily">平均分到每日</option>
+                  <option value="none">只保存月度目标</option>
+                </select>
+              </label>
+            ) : null}
+            {targetEditor === 'daily' ? (
+              <div className="task-calendar-target-balance">
+                <article>
+                  <span>当月目标</span>
+                  <strong>{formatMoney(monthTarget)}</strong>
+                </article>
+                <article>
+                  <span>当前已分配</span>
+                  <strong>{formatMoney(allocatedTarget)}</strong>
+                </article>
+                <article>
+                  <span>保存后未分配剩余</span>
+                  <strong>{formatMoney(projectedUnallocatedTarget)}</strong>
+                </article>
+              </div>
+            ) : null}
             <p className="task-calendar-target-preview">
-              {targetAmount ? `保存后本月目标 ${formatMoney(Number(targetAmount))}，日历会按 ${formatMoney(Number(targetAmount) / daysInMonth(visibleMonth))} 估算每日进度。` : '填写后将自动重算月目标、完成额和监管看板完成率。'}
+              {targetEditor === 'daily'
+                ? (targetAmount
+                    ? `保存后 ${formatDate(selectedDate)} 的目标为 ${formatMoney(Number(targetAmount))}，当月未分配目标额剩余 ${formatMoney(projectedUnallocatedTarget)}。`
+                    : `填写后只修改 ${formatDate(selectedDate)} 的目标，不改变月度目标总额。当前未分配 ${formatMoney(unallocatedTarget)}。`)
+                : (targetAmount
+                    ? (targetMode === 'daily'
+                        ? `保存后本月目标 ${formatMoney(Number(targetAmount))}，日历会按 ${formatMoney(Number(targetAmount) / daysInMonth(visibleMonth))} 自动拆到每日。`
+                        : `保存后本月目标 ${formatMoney(Number(targetAmount))}，不会自动填写每天目标。`)
+                    : '填写后将自动重算月目标、完成额和监管看板完成率。')}
             </p>
             <div className="task-calendar-modal-actions">
-              <button className="task-calendar-light-button" type="button" onClick={() => setTargetOpen(false)}>取消</button>
-              <button className="task-calendar-primary" type="button" onClick={saveMonthlyTarget}><Save size={16} /> 保存目标</button>
+              <button className="task-calendar-light-button" type="button" onClick={() => setTargetEditor(null)}>取消</button>
+              <button className="task-calendar-primary" type="button" onClick={targetEditor === 'daily' ? saveDailyTarget : saveMonthlyTarget}><Save size={16} /> 保存目标</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {actionEditor ? (
+        <div className="task-calendar-modal" role="dialog" aria-modal="true">
+          <div className="task-calendar-modal-card">
+            <div className="task-calendar-modal-head">
+              <ClipboardCheck size={20} />
+              <div>
+                <h2>填写当日动作和预期</h2>
+                <p>{selectedCompany} / {formatDate(selectedDate)}</p>
+              </div>
+            </div>
+            <label className="task-calendar-field">
+              当日动作
+              <textarea value={actionText} onChange={(event) => setActionText(event.currentTarget.value)} placeholder="例如：加大直播间投放、补达人短视频、调整货盘主推款" />
+            </label>
+            <label className="task-calendar-field">
+              预期 GMV 涨幅（%）
+              <input type="number" min="1" step="1" value={actionExpectedGrowth} onChange={(event) => setActionExpectedGrowth(event.currentTarget.value)} placeholder="例如：30" />
+            </label>
+            <label className="task-calendar-field">
+              预期说明
+              <textarea value={actionExpectation} onChange={(event) => setActionExpectation(event.currentTarget.value)} placeholder="可填写预期来源、关键业务或负责人" />
+            </label>
+            <p className="task-calendar-target-preview">
+              保存后，点到下一天时会在“前日动作验证”里用当天 GMV 涨幅对比该预期：90%以上为有效，60-90为需要优化，20-60为基本无效，低于20或负增长会预警。
+            </p>
+            <div className="task-calendar-modal-actions">
+              <button className="task-calendar-light-button" type="button" onClick={() => setActionEditor(false)}>取消</button>
+              <button className="task-calendar-primary" type="button" disabled={actionSaving} onClick={saveActionPlan}><Save size={16} /> {actionSaving ? '保存中' : '保存动作'}</button>
             </div>
           </div>
         </div>
       ) : null}
 
       {notice ? <div className="task-calendar-toast" role="status">{notice}</div> : null}
+    </section>
+  )
+}
+
+function WeekTrendBoard({
+  dates,
+  month,
+  selectedDate,
+  dayActual,
+  dayTarget,
+  onSelectDate,
+}: {
+  dates: string[]
+  month: string
+  selectedDate: string
+  dayActual: (date: string) => number
+  dayTarget: (date: string) => number
+  onSelectDate: (date: string) => void
+}) {
+  const rows = dates.map((date, index) => {
+    const actual = dayActual(date)
+    const target = dayTarget(date)
+    const rate = target > 0 ? (actual / target) * 100 : 0
+    return { actual, date, index, rate, target }
+  })
+  const weekActual = rows.reduce((sum, row) => sum + row.actual, 0)
+  const weekTarget = rows.reduce((sum, row) => sum + row.target, 0)
+  const weekRate = weekTarget > 0 ? (weekActual / weekTarget) * 100 : 0
+  const bestDay = rows.reduce((best, row) => (row.actual > best.actual ? row : best), rows[0] ?? { actual: 0, date: selectedDate, index: 0, rate: 0, target: 0 })
+  const maxValue = Math.max(1, ...rows.flatMap((row) => [row.actual, row.target]))
+  const chart = { height: 260, left: 48, right: 24, top: 24, bottom: 48, width: 720 }
+  const innerWidth = chart.width - chart.left - chart.right
+  const innerHeight = chart.height - chart.top - chart.bottom
+  const xFor = (index: number) => chart.left + (rows.length <= 1 ? innerWidth / 2 : (innerWidth / (rows.length - 1)) * index)
+  const yFor = (value: number) => chart.top + (1 - Math.min(value / maxValue, 1)) * innerHeight
+  const pathFor = (key: 'actual' | 'target') => rows.map((row, index) => `${index === 0 ? 'M' : 'L'} ${xFor(row.index).toFixed(1)} ${yFor(row[key]).toFixed(1)}`).join(' ')
+
+  return (
+    <section className="task-calendar-week-trend-board">
+      <div className="task-calendar-week-trend-head">
+        <article>
+          <span>本周完成额</span>
+          <strong>{formatMoney(weekActual)}</strong>
+          <em>目标 {formatMoney(weekTarget)} · 完成率 {formatPercent(weekRate)}</em>
+        </article>
+        <article>
+          <span>最高完成日</span>
+          <strong>{shortDateLabel(bestDay.date)}</strong>
+          <em>{formatMoney(bestDay.actual)} · {formatPercent(bestDay.rate)}</em>
+        </article>
+        <div className="task-calendar-week-legend" aria-hidden="true">
+          <span><i className="actual" />完成额</span>
+          <span><i className="target" />目标额</span>
+        </div>
+      </div>
+      <div className="task-calendar-week-chart">
+        <svg viewBox={`0 0 ${chart.width} ${chart.height}`} role="img" aria-label="一周营业额趋势图">
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+            const y = chart.top + ratio * innerHeight
+            const value = maxValue * (1 - ratio)
+            return (
+              <g key={ratio}>
+                <line className="grid" x1={chart.left} x2={chart.width - chart.right} y1={y} y2={y} />
+                <text className="axis-label" x={chart.left - 10} y={y + 4} textAnchor="end">{formatMoney(value)}</text>
+              </g>
+            )
+          })}
+          {rows.map((row) => {
+            const x = xFor(row.index)
+            const y = yFor(row.actual)
+            const targetY = yFor(row.target)
+            return (
+              <g key={row.date}>
+                <line className="day-guide" x1={x} x2={x} y1={chart.top} y2={chart.height - chart.bottom} />
+                <rect className="actual-bar" x={x - 10} y={y} width="20" height={chart.height - chart.bottom - y} rx="8" />
+                <circle className={row.date === selectedDate ? 'actual-point active' : 'actual-point'} cx={x} cy={y} r={row.date === selectedDate ? 6 : 4.5} />
+                <circle className="target-point" cx={x} cy={targetY} r="3.5" />
+                <text className={row.date === selectedDate ? 'date-label active' : 'date-label'} x={x} y={chart.height - 18} textAnchor="middle">{shortDateLabel(row.date)}</text>
+              </g>
+            )
+          })}
+          <path className="target-line" d={pathFor('target')} />
+          <path className="actual-line" d={pathFor('actual')} />
+        </svg>
+      </div>
+      <div className="task-calendar-week-day-list">
+        {rows.map((row) => {
+          const tone = performanceTone(row.rate, row.target, row.actual)
+          const isMuted = monthOf(row.date) !== month
+          const isSelected = row.date === selectedDate
+          return (
+            <button className={`${tone} ${isMuted ? 'muted' : ''} ${isSelected ? 'selected' : ''}`} type="button" key={row.date} onClick={() => onSelectDate(row.date)}>
+              <span>{weekdays[row.index]}</span>
+              <strong>{shortDateLabel(row.date)}</strong>
+              <em>{formatMoney(row.actual)} / {formatMoney(row.target)}</em>
+            </button>
+          )
+        })}
+      </div>
     </section>
   )
 }
@@ -794,14 +1288,15 @@ function CalendarGrid({
         const isMuted = monthOf(date) !== month
         const isSelected = date === selectedDate
         const isToday = date === today()
+        const tone = performanceTone(rate, target, actual)
         return (
-          <button className={`${isMuted ? 'muted' : ''} ${isSelected ? 'selected' : ''}`} type="button" key={date} onClick={() => onSelectDate(date)}>
+          <button className={`${tone} ${isMuted ? 'muted' : ''} ${isSelected ? 'selected' : ''}`} type="button" key={date} onClick={() => onSelectDate(date)}>
             <div className="task-calendar-day-number">
               <strong>{Number(date.slice(8, 10))}</strong>
               {isToday ? <span>今天</span> : null}
             </div>
             <div className="task-calendar-day-card">
-              <span>目标 {formatMoney(target)}</span>
+              <span>{performanceLabel(rate, target, actual)} · 目标 {formatMoney(target)}</span>
               <strong>{formatPercent(rate)}</strong>
               <i><em style={{ width: `${Math.min(rate, 100)}%` }} /></i>
               <small>完成 {formatMoney(actual)}</small>
