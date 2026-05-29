@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { BarChart3, CircleDot, ClipboardCheck, LayoutGrid, PackageCheck, ReceiptText, ShieldAlert, Triangle } from 'lucide-react'
+import { BarChart3, CircleDot, ClipboardCheck, LayoutGrid, PackageCheck, ReceiptText, ShieldAlert, SquareKanban, Triangle } from 'lucide-react'
 import './App.css'
+import { DailyWorkPage } from './DailyWorkPage'
 import { SubcompanySupervisionPage } from './SubcompanySupervisionPage'
 import { TaskCalendarEntryPage } from './TaskCalendarEntryPage'
 import { VillaProjectPage } from './VillaProjectPage'
 
-type ViewKey = 'overview' | 'pyramid' | 'brand' | 'tax' | 'supply' | 'org' | 'risk' | 'decision'
+type ViewKey = 'overview' | 'pyramid' | 'daily' | 'brand' | 'tax' | 'supply' | 'org' | 'risk' | 'decision'
 type TaskStatus = '待办' | '进行中' | '已完成'
 type Kpi = { label: string; value: string; prefix?: string; unit?: string; trend?: string; trendType?: 'up' | 'down'; target: string; progress: number }
 type PyramidItem = { level: string; title: string; desc: string }
@@ -108,6 +109,7 @@ type BranchTarget = {
 const NAV_ITEMS: Array<{ key: ViewKey; label: string; icon: ReactNode }> = [
   { key: 'overview', label: '总览', icon: <LayoutGrid /> },
   { key: 'pyramid', label: 'JOSMAN目标金字塔', icon: <Triangle /> },
+  { key: 'daily', label: 'JN每日工作跟进', icon: <SquareKanban /> },
   { key: 'brand', label: '品牌经营', icon: <BarChart3 /> },
   { key: 'tax', label: '财税合规', icon: <ReceiptText /> },
   { key: 'supply', label: '供应链', icon: <PackageCheck /> },
@@ -497,6 +499,7 @@ const FALLBACK_GOAL_GROUPS: GoalGroup[] = [
 const VIEW_COPY: Record<ViewKey, { title: string; desc: string }> = {
   overview: { title: '总览', desc: '集团经营核心指标、运行状态和对齐规则。' },
   pyramid: { title: '目标金字塔', desc: '从华哥战略目标向下拆到模块、品牌、负责人和周任务。' },
+  daily: { title: 'JN每日工作跟进', desc: '每日目标、网页清单、任务拆解和项目空间节点跟进。' },
   brand: { title: '品牌经营', desc: '集中查看品牌目标完成度和本周推进事项。' },
   tax: { title: '财税合规', desc: '区分供应链公司与运营公司的财税模型、开票、税负和现金流要点。' },
   supply: { title: '供应链', desc: '查看各品牌真实成本、物流成本和规格拆解。' },
@@ -1487,6 +1490,8 @@ function App() {
             <p>{viewCopy.desc}</p>
           </section>
         ) : null}
+
+        {activeView === 'daily' ? <DailyWorkPage /> : null}
 
         {activeView === 'overview' ? <KpiGrid kpis={data.kpis} /> : null}
 

@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JNN每日工作跟进</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="icon-rail" aria-label="主导航">
+        <div class="rail-mark">＊</div>
+        <nav>
+          <button class="rail-button is-active" title="首页" aria-label="首页">⌂</button>
+          <button class="rail-button" title="目标" aria-label="目标">◎</button>
+          <button class="rail-button" title="进度" aria-label="进度">✦</button>
+          <button class="rail-button" title="协同" aria-label="协同">⌘</button>
+          <button class="rail-button" title="资料" aria-label="资料">▣</button>
+        </nav>
+        <button class="rail-button rail-bottom" title="设置" aria-label="设置">⚙</button>
+      </aside>
+
+      <aside class="workspace-nav" aria-label="项目导航">
+        <div class="window-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+        <section class="profile-card">
+          <div class="avatar">J</div>
+          <div>
+            <strong>JNN每日工作跟进</strong>
+            <small>Daily Work Tracker</small>
+          </div>
+        </section>
+
+        <section class="nav-group">
+          <p>Projects</p>
+          <button class="nav-item is-active" data-nav-target="dashboard"><span>☷</span>驾驶舱<em id="sideGoalTotal">0</em></button>
+          <button class="nav-item" data-nav-target="pages"><span>▤</span>网页清单<em id="sidePageTotal">0</em></button>
+          <button class="nav-item" data-nav-target="tasks"><span>◫</span>目标拆解<em id="sideTaskTotal">0</em></button>
+        </section>
+
+        <section class="nav-group">
+          <p>Status</p>
+          <button class="nav-item" data-nav-status="待启动"><span>○</span>待启动<em id="sidePending">0</em></button>
+          <button class="nav-item" data-nav-status="进行中"><span>◐</span>进行中<em id="sideDoing">0</em></button>
+          <button class="nav-item" data-nav-status="已完成"><span>●</span>已完成<em id="sideDone">0</em></button>
+        </section>
+
+        <section class="nav-group documents">
+          <p>Documents</p>
+          <div class="mini-search">⌕  搜索目标 / 空间 / 负责人</div>
+          <div class="doc-tree">
+            <strong>System Management</strong>
+            <span data-doc-search="集团 OS 系统搭建">集团 OS 系统搭建</span>
+            <span data-doc-search="别墅项目节点管理">别墅项目节点管理</span>
+            <span data-doc-search="别墅软装采购">别墅软装采购</span>
+            <span data-doc-search="刘老师直播复盘跟进">刘老师直播复盘</span>
+            <span data-doc-search="AI 工厂规划">AI 工厂规划</span>
+            <span data-doc-search="12 楼办公室规划">12 楼办公室规划</span>
+          </div>
+        </section>
+      </aside>
+
+      <section class="main-stage">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">每日工作管理</p>
+        <h1>JNN每日工作跟进</h1>
+      </div>
+      <div class="top-actions">
+        <button class="icon-button" id="resetBtn" title="恢复初始数据" aria-label="恢复初始数据">
+          <span>↺</span>
+        </button>
+        <button class="primary-button" id="exportBtn">导出数据</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="summary-grid" id="dashboard" aria-label="项目总览">
+        <article class="metric">
+          <span class="metric-label">目标总数</span>
+          <strong id="metricGoals">0</strong>
+          <small>集团重点推进事项</small>
+        </article>
+        <article class="metric">
+          <span class="metric-label">平均进度</span>
+          <strong id="metricAvg">0%</strong>
+          <small>按目标权重平均</small>
+        </article>
+        <article class="metric">
+          <span class="metric-label">进行中</span>
+          <strong id="metricDoing">0</strong>
+          <small>需要持续跟进</small>
+        </article>
+        <article class="metric alert">
+          <span class="metric-label">待启动</span>
+          <strong id="metricPending">0</strong>
+          <small>需要明确责任人与时间</small>
+        </article>
+      </section>
+
+      <section class="toolbar" aria-label="筛选工具">
+        <div class="tabs" id="statusTabs">
+          <button class="tab is-active" data-status="全部">全部</button>
+          <button class="tab" data-status="进行中">进行中</button>
+          <button class="tab" data-status="待启动">待启动</button>
+          <button class="tab" data-status="待确认">待确认</button>
+          <button class="tab" data-status="已完成">已完成</button>
+        </div>
+        <label class="search">
+          <span>搜索</span>
+          <input id="searchInput" type="search" placeholder="输入目标、网页、空间或负责人" />
+        </label>
+      </section>
+
+      <section class="goals" id="goalGrid" aria-label="目标进度"></section>
+
+      <section class="content-grid">
+        <article class="panel wide" id="pages">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Page List</p>
+              <h2>网页清单</h2>
+            </div>
+            <span class="count" id="pageCount">0 项</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>网页</th>
+                  <th>所属目标</th>
+                  <th>优先级</th>
+                  <th>状态</th>
+                  <th>下一步</th>
+                </tr>
+              </thead>
+              <tbody id="pageTable"></tbody>
+            </table>
+          </div>
+        </article>
+
+        <aside class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Focus</p>
+              <h2>本周推进</h2>
+            </div>
+          </div>
+          <div class="focus-list" id="focusList"></div>
+        </aside>
+      </section>
+
+      <section class="panel" id="tasks">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Work Breakdown</p>
+            <h2>目标详细拆解</h2>
+          </div>
+          <span class="count" id="taskCount">0 项</span>
+        </div>
+        <div class="task-board" id="taskBoard"></div>
+      </section>
+
+      <section class="panel" id="spaces">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Villa Nodes</p>
+            <h2>别墅项目空间节点</h2>
+          </div>
+          <span class="count" id="spaceCount">0 个空间</span>
+        </div>
+        <div class="space-grid" id="spaceGrid"></div>
+      </section>
+    </main>
+      </section>
+    </div>
+
+    <div class="modal" id="editModal" aria-hidden="true">
+      <div class="modal-backdrop" data-close="true"></div>
+      <section class="editor" role="dialog" aria-modal="true" aria-labelledby="editorTitle">
+        <div class="editor-header">
+          <div>
+            <p class="eyebrow" id="editorType">Edit</p>
+            <h2 id="editorTitle">编辑进度</h2>
+          </div>
+          <div class="editor-tools">
+            <button type="button" class="secondary-button compact" id="aiAnalyzeBtn">AI 分析</button>
+            <button class="icon-button" id="closeEditor" title="关闭" aria-label="关闭">×</button>
+          </div>
+        </div>
+
+        <form id="editorForm" class="editor-form">
+          <label>
+            <span>名称</span>
+            <input id="editName" name="name" required />
+          </label>
+
+          <label>
+            <span>状态</span>
+            <select id="editStatus" name="status">
+              <option>待启动</option>
+              <option>进行中</option>
+              <option>待确认</option>
+              <option>待验收</option>
+              <option>已完成</option>
+            </select>
+          </label>
+
+          <label class="progress-editor" id="progressEditor">
+            <span>进度</span>
+            <div>
+              <input id="editProgress" name="progress" type="range" min="0" max="100" step="5" />
+              <input id="editProgressNumber" type="number" min="0" max="100" step="5" />
+              <strong>%</strong>
+            </div>
+          </label>
+
+          <label>
+            <span>负责人</span>
+            <input id="editOwner" name="owner" />
+          </label>
+
+          <label>
+            <span>截止时间</span>
+            <div class="date-control">
+              <select id="editDueMode" aria-label="截止时间类型">
+                <option value="待排期">待排期</option>
+                <option value="具体日期">具体日期</option>
+                <option value="本周">本周</option>
+                <option value="本月">本月</option>
+              </select>
+              <input id="editDue" name="due" type="date" />
+            </div>
+          </label>
+
+          <label>
+            <span>所属/分组</span>
+            <input id="editGroup" name="group" />
+          </label>
+
+          <label class="full">
+            <span>说明</span>
+            <textarea id="editSummary" name="summary" rows="4"></textarea>
+          </label>
+
+          <label class="full">
+            <span>下一步</span>
+            <textarea id="editNext" name="next" rows="3"></textarea>
+          </label>
+
+          <section class="image-uploader full" id="imageUploader">
+            <div class="image-uploader-head">
+              <div>
+                <span>图片资料</span>
+                <small>上传现场图、平面图、座位图或车位图，保存后跟随当前模块留档</small>
+              </div>
+              <label class="upload-button">
+                <input id="editImages" type="file" accept="image/*" multiple />
+                上传图片
+              </label>
+            </div>
+            <div class="image-list" id="imageList"></div>
+          </section>
+
+          <section class="ai-panel full" id="aiPanel">
+            <div class="ai-panel-head">
+              <span>AI 分析建议</span>
+              <button type="button" class="secondary-button compact" id="applyAiBtn">套用到说明/下一步</button>
+            </div>
+            <div class="ai-output" id="aiOutput">点击右上角 AI 分析，基于当前模块数据生成建议。</div>
+          </section>
+
+          <section class="step-editor full" id="stepEditor">
+            <div class="step-editor-head">
+              <div>
+                <span>环节拆分进度</span>
+                <small>保存后总进度按环节平均自动汇总</small>
+              </div>
+              <button type="button" class="secondary-button compact" id="addStepBtn">新增环节</button>
+            </div>
+            <div class="step-list" id="stepList"></div>
+          </section>
+
+          <div class="editor-actions">
+            <button type="button" class="secondary-button" id="cancelEditor">取消</button>
+            <button type="submit" class="primary-button">保存修改</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <template id="goalTemplate">
+      <article class="goal-card">
+        <div class="goal-top">
+          <span class="badge"></span>
+          <span class="goal-status"></span>
+        </div>
+        <h3></h3>
+        <p></p>
+        <div class="progress-row">
+          <div class="progress"><span></span></div>
+          <strong></strong>
+        </div>
+        <dl></dl>
+        <div class="goal-media"></div>
+      </article>
+    </template>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
