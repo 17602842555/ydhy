@@ -54,7 +54,7 @@ button {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 96px 360px minmax(0, 1fr);
+  grid-template-columns: 360px minmax(0, 1fr);
   gap: 22px;
   min-height: 100vh;
   padding: 30px;
@@ -70,9 +70,9 @@ button {
 }
 
 .icon-rail {
+  display: none;
   position: sticky;
   top: 20px;
-  display: flex;
   flex-direction: column;
   align-items: center;
   height: calc(100vh - 40px);
@@ -1216,11 +1216,7 @@ tbody tr:hover {
 
 @media (max-width: 1120px) {
   .app-shell {
-    grid-template-columns: 88px minmax(0, 1fr);
-  }
-
-  .workspace-nav {
-    display: none;
+    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
   }
 
   .summary-grid,
