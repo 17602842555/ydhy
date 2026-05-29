@@ -47,6 +47,9 @@ export const DEFAULT_ARK_BASE_URL = 'https://ark.cn-beijing.volces.com/api/codin
 export const DEFAULT_ARK_MODEL = 'ark-code-latest'
 export const AI_SETTINGS_STORAGE_KEY = 'huage:ark-ai-settings:v1'
 
+let cachedAuthToken = ''
+let pendingAuthToken: Promise<string> | null = null
+
 export const SECTION_AI_PRESETS: Record<AiSectionKey, { title: string; prompt: string; source: string }> = {
   'overview-kpis': {
     title: '核心指标诊断',
@@ -156,12 +159,33 @@ export function clearAiSettings() {
   window.localStorage.removeItem(AI_SETTINGS_STORAGE_KEY)
 }
 
+export function clearCachedAuthToken() {
+  cachedAuthToken = ''
+  pendingAuthToken = null
+}
+
 export async function loginForToken(apiBaseUrl: string, signal: AbortSignal) {
+  if (signal.aborted) throw new DOMException('The operation was aborted.', 'AbortError')
+  if (cachedAuthToken) return cachedAuthToken
+  if (pendingAuthToken) return pendingAuthToken
+
+  pendingAuthToken = requestLoginToken(apiBaseUrl)
+    .then((token) => {
+      cachedAuthToken = token
+      return token
+    })
+    .finally(() => {
+      pendingAuthToken = null
+    })
+
+  return pendingAuthToken
+}
+
+async function requestLoginToken(apiBaseUrl: string) {
   const loginResponse = await fetch(`${apiBaseUrl}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId: 'user-lijinning', password: '123456' }),
-    signal,
   })
   if (!loginResponse.ok) throw new Error(`登录后端失败：${loginResponse.status}`)
   const login = (await loginResponse.json()) as { token?: string }
@@ -175,21 +199,13 @@ export async function loadAiInsights(
   signal: AbortSignal,
   request: { section?: AiSectionKey; context?: AiSectionContext } = {},
 ): Promise<AiInsights> {
-  const token = await loginForToken(apiBaseUrl, signal)
   const settings = normalizeAiSettings(aiSettings)
-  const response = await fetch(`${apiBaseUrl}/ai/insights`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      section: request.section,
-      context: request.context,
-      aiSettings: settings.apiKey ? settings : { model: settings.model, baseUrl: settings.baseUrl },
-    }),
-    signal,
+  const body = JSON.stringify({
+    section: request.section,
+    context: request.context,
+    aiSettings: settings.apiKey ? settings : { model: settings.model, baseUrl: settings.baseUrl },
   })
+  const response = await fetchWithAuthRetry(apiBaseUrl, '/ai/insights', signal, { method: 'POST', body })
   if (!response.ok) throw new Error(`读取 Ark Coding Plan 分析失败：${response.status}`)
   return (await response.json()) as AiInsights
 }
@@ -199,16 +215,10 @@ export async function testAiConnection(
   aiSettings: AiSettings,
   signal: AbortSignal,
 ): Promise<AiConnectionTestResult> {
-  const token = await loginForToken(apiBaseUrl, signal)
   const settings = normalizeAiSettings(aiSettings)
-  const response = await fetch(`${apiBaseUrl}/ai/test-connection`, {
+  const response = await fetchWithAuthRetry(apiBaseUrl, '/ai/test-connection', signal, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
     body: JSON.stringify({ aiSettings: settings }),
-    signal,
   })
   const result = (await response.json().catch(() => ({}))) as AiConnectionTestResult
   if (!response.ok) {
@@ -222,4 +232,26 @@ export async function testAiConnection(
     }
   }
   return result
+}
+
+export async function fetchWithAuthRetry(apiBaseUrl: string, path: string, signal: AbortSignal, init: RequestInit = {}) {
+  let token = await loginForToken(apiBaseUrl, signal)
+  let response = await fetchWithToken(apiBaseUrl, path, token, signal, init)
+  if (response.status !== 401) return response
+
+  clearCachedAuthToken()
+  token = await loginForToken(apiBaseUrl, signal)
+  response = await fetchWithToken(apiBaseUrl, path, token, signal, init)
+  return response
+}
+
+function fetchWithToken(apiBaseUrl: string, path: string, token: string, signal: AbortSignal, init: RequestInit) {
+  const headers = new Headers(init.headers)
+  headers.set('Content-Type', headers.get('Content-Type') || 'application/json')
+  headers.set('Authorization', `Bearer ${token}`)
+  return fetch(`${apiBaseUrl}${path}`, {
+    ...init,
+    headers,
+    signal,
+  })
 }

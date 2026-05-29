@@ -9,6 +9,7 @@ import { TaskCalendarEntryPage } from './TaskCalendarEntryPage'
 import { VillaProjectPage } from './VillaProjectPage'
 import {
   clearAiSettings,
+  clearCachedAuthToken,
   defaultAiSettings,
   loadAiInsights,
   loadSavedAiSettings,
@@ -598,12 +599,20 @@ function getApiBaseUrl() {
 
 async function loadOperatingSystem(signal: AbortSignal): Promise<LoadedDashboardState> {
   const apiBaseUrl = getApiBaseUrl()
-  const token = await loginForToken(apiBaseUrl, signal)
+  let token = await loginForToken(apiBaseUrl, signal)
 
-  const response = await fetch(`${apiBaseUrl}/operating-system`, {
+  let response = await fetch(`${apiBaseUrl}/operating-system`, {
     headers: { Authorization: `Bearer ${token}` },
     signal,
   })
+  if (response.status === 401) {
+    clearCachedAuthToken()
+    token = await loginForToken(apiBaseUrl, signal)
+    response = await fetch(`${apiBaseUrl}/operating-system`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    })
+  }
   if (!response.ok) throw new Error(`读取经营系统失败：${response.status}`)
   return normalizeOperatingSystem((await response.json()) as OperatingSystemResponse)
 }
