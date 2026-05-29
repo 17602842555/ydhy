@@ -188,7 +188,7 @@ button {
 }
 
 .profile-card small,
-.doc-tree span,
+.doc-button,
 .count,
 .metric small,
 dt,
@@ -266,14 +266,49 @@ dt,
 
 .doc-tree {
   display: grid;
-  gap: 10px;
+  gap: 7px;
   margin-top: 14px;
   padding: 14px;
 }
 
-.doc-tree span {
-  padding-left: 18px;
+.doc-button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 34px;
+  border: 0;
+  border-radius: 12px;
+  padding: 7px 10px;
+  background: linear-gradient(145deg, #f7f7f7, #e6e6e6);
+  cursor: pointer;
   font-size: 14px;
+  font-weight: 800;
+  text-align: left;
+  box-shadow: 4px 5px 12px rgba(0, 0, 0, 0.1), -4px -4px 10px rgba(255, 255, 255, 0.76);
+  transition: 0.16s ease;
+}
+
+.doc-button::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(37, 174, 185, 0.75);
+  box-shadow: 0 0 10px rgba(98, 212, 220, 0.42);
+}
+
+.doc-button:hover,
+.doc-button.is-active {
+  background: #f4f4f4;
+  color: var(--ink);
+  box-shadow: var(--inset);
+}
+
+.doc-button:active {
+  transform: translateY(1px);
+  box-shadow: inset 4px 4px 10px rgba(0, 0, 0, 0.12), inset -4px -4px 10px rgba(255, 255, 255, 0.82);
 }
 
 .main-stage {
@@ -724,6 +759,61 @@ dd {
 
 .content-grid .panel {
   margin-top: 0;
+}
+
+.layout > .summary-grid,
+.layout > .toolbar,
+.layout > .goals,
+.layout > .content-grid,
+.layout > #tasks,
+.layout > #spaces {
+  display: none;
+}
+
+.layout[data-active-view="dashboard"] > .summary-grid,
+.layout[data-active-view="dashboard"] > .goals {
+  display: grid;
+}
+
+.layout[data-active-view="dashboard"] > .toolbar,
+.layout[data-active-view="pages"] > .toolbar,
+.layout[data-active-view="tasks"] > .toolbar,
+.layout[data-active-view="spaces"] > .toolbar {
+  display: flex;
+}
+
+.layout[data-active-view="pages"] > .content-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.layout[data-active-view="pages"] > .content-grid > .panel:not(.wide) {
+  display: none;
+}
+
+.layout[data-active-view="tasks"] > #tasks,
+.layout[data-active-view="spaces"] > #spaces {
+  display: block;
+}
+
+.layout[data-active-view="dashboard"] > .summary-grid,
+.layout[data-active-view="dashboard"] > .goals,
+.layout[data-active-view="pages"] > .content-grid,
+.layout[data-active-view="tasks"] > #tasks,
+.layout[data-active-view="spaces"] > #spaces {
+  animation: page-swap 0.18s ease both;
+}
+
+@keyframes page-swap {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .panel-header {

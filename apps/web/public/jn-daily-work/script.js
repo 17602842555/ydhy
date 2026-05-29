@@ -378,10 +378,13 @@ const schemaVersion = 4;
 
 let data = ensureData(JSON.parse(localStorage.getItem(storageKey) || "null") || structuredClone(seedData));
 let activeStatus = "全部";
+let activeView = "dashboard";
+let activeSideKey = "view:dashboard";
 let keyword = "";
 let editing = null;
 let currentAttachments = [];
 
+const layout = document.querySelector(".layout");
 const goalGrid = document.querySelector("#goalGrid");
 const pageTable = document.querySelector("#pageTable");
 const taskBoard = document.querySelector("#taskBoard");
@@ -1726,18 +1729,28 @@ function syncProgressInputs(source) {
   fields.progressNumber.value = value;
 }
 
-function scrollToSection(id) {
-  const target = document.querySelector(`#${id}`);
-  if (!target) return;
-  target.scrollIntoView({ behavior: "smooth", block: "start" });
+function updateSideNav() {
+  document.querySelectorAll(".workspace-nav .nav-item").forEach((item) => {
+    const key = item.dataset.navTarget ? `view:${item.dataset.navTarget}` : `status:${item.dataset.navStatus}`;
+    item.classList.toggle("is-active", key === activeSideKey);
+  });
 }
 
-function setActiveStatus(status) {
+function setActiveView(view, sideKey = `view:${view}`) {
+  activeView = view;
+  activeSideKey = sideKey;
+  layout.dataset.activeView = activeView;
+  updateSideNav();
+}
+
+function setActiveStatus(status, options = {}) {
   activeStatus = status;
+  if (options.sideKey) activeSideKey = options.sideKey;
   document.querySelectorAll(".tab").forEach((tab) => {
     tab.classList.toggle("is-active", tab.dataset.status === status);
   });
   renderAll();
+  updateSideNav();
 }
 
 document.querySelector(".workspace-nav").addEventListener("click", (event) => {
@@ -1745,25 +1758,31 @@ document.querySelector(".workspace-nav").addEventListener("click", (event) => {
   const docItem = event.target.closest("[data-doc-search]");
 
   if (navButton) {
-    document.querySelectorAll(".workspace-nav .nav-item").forEach((item) => item.classList.toggle("is-active", item === navButton));
+    document.querySelectorAll(".doc-button").forEach((item) => item.classList.remove("is-active"));
 
     if (navButton.dataset.navStatus) {
-      setActiveStatus(navButton.dataset.navStatus);
-      scrollToSection("dashboard");
+      const sideKey = `status:${navButton.dataset.navStatus}`;
+      setActiveView("dashboard", sideKey);
+      setActiveStatus(navButton.dataset.navStatus, { sideKey });
       return;
     }
 
     if (navButton.dataset.navTarget) {
-      if (navButton.dataset.navTarget === "dashboard") setActiveStatus("全部");
-      scrollToSection(navButton.dataset.navTarget);
+      const view = navButton.dataset.navTarget;
+      const sideKey = `view:${view}`;
+      setActiveView(view, sideKey);
+      setActiveStatus("全部", { sideKey });
       return;
     }
   }
 
   if (docItem) {
-    searchInput.value = docItem.dataset.docSearch;
-    setActiveStatus("全部");
-    scrollToSection("dashboard");
+    const view = docItem.dataset.docView || "tasks";
+    const sideKey = `view:${view}`;
+    searchInput.value = docItem.dataset.docFilter || "";
+    document.querySelectorAll(".doc-button").forEach((item) => item.classList.toggle("is-active", item === docItem));
+    setActiveView(view, sideKey);
+    setActiveStatus("全部", { sideKey });
   }
 });
 

@@ -54,12 +54,12 @@
           <div class="mini-search">⌕  搜索目标 / 空间 / 负责人</div>
           <div class="doc-tree">
             <strong>System Management</strong>
-            <span data-doc-search="集团 OS 系统搭建">集团 OS 系统搭建</span>
-            <span data-doc-search="别墅项目节点管理">别墅项目节点管理</span>
-            <span data-doc-search="别墅软装采购">别墅软装采购</span>
-            <span data-doc-search="刘老师直播复盘跟进">刘老师直播复盘</span>
-            <span data-doc-search="AI 工厂规划">AI 工厂规划</span>
-            <span data-doc-search="12 楼办公室规划">12 楼办公室规划</span>
+            <button type="button" class="doc-button" data-doc-search="集团 OS 系统搭建" data-doc-view="tasks" data-doc-filter="集团 OS">集团 OS 系统搭建</button>
+            <button type="button" class="doc-button" data-doc-search="别墅项目节点管理" data-doc-view="spaces" data-doc-filter="">别墅项目节点管理</button>
+            <button type="button" class="doc-button" data-doc-search="别墅软装采购" data-doc-view="tasks" data-doc-filter="软装">别墅软装采购</button>
+            <button type="button" class="doc-button" data-doc-search="刘老师直播复盘跟进" data-doc-view="tasks" data-doc-filter="直播">刘老师直播复盘</button>
+            <button type="button" class="doc-button" data-doc-search="AI 工厂规划" data-doc-view="tasks" data-doc-filter="AI 工厂">AI 工厂规划</button>
+            <button type="button" class="doc-button" data-doc-search="12 楼办公室规划" data-doc-view="tasks" data-doc-filter="12 楼">12 楼办公室规划</button>
           </div>
         </section>
       </aside>
@@ -78,7 +78,7 @@
       </div>
     </header>
 
-    <main class="layout">
+    <main class="layout" data-active-view="dashboard">
       <section class="summary-grid" id="dashboard" aria-label="项目总览">
         <article class="metric">
           <span class="metric-label">目标总数</span>
