@@ -51,6 +51,7 @@ references    Original static prototypes extracted from the provided zip files
 - Primary contact updates through `/api/people/contacts/:id`, with distinct handover events and audit logs
 - Risk status/escalation updates through `/api/risks/:id`
 - Evidence-bound risk escalation that creates idempotent decision packages instead of local-only frontend decisions
+- Ark Coding Plan-backed read-only analysis through `/api/ai/insights`, with per-section prompt presets and source-bound local fallback when `ARK_API_KEY` is not configured
 - Development role switcher for validating PMO, owner, finance, boss, disabled action states, and server-side 403 responses
 - Session-based login stub through `/api/auth/login` and Bearer-token API calls
 - Data lifecycle states: `raw`, `validated`, `published`, `corrected`, `archived`
@@ -90,6 +91,30 @@ curl -X POST http://127.0.0.1:8787/api/admin/reset
 The JSON repository is a temporary persistence adapter. The API/domain boundary is structured so the next commercial step can replace it with PostgreSQL using `docs/schema.sql`.
 
 Runtime configuration is documented in `docs/ENVIRONMENT.md` and exposed through `GET /api/health`.
+
+## Ark Coding Plan Analysis
+
+The dashboard calls the local API, not Ark directly. Add the key only to the API process:
+
+```bash
+ARK_API_KEY=your_volcengine_ark_key npm run dev
+```
+
+Optional overrides:
+
+```text
+ARK_MODEL=ark-code-latest
+ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/coding/v3
+ARK_TIMEOUT_MS=75000
+```
+
+`GET /api/ai/insights` logs in through the same Bearer-token/RBAC boundary as other data APIs, builds a section-scoped snapshot from published/source-bound records, calls Ark's OpenAI-compatible `/chat/completions` endpoint, and returns structured advice, warnings, next actions, a decision-package draft, and source references. Without a key, the endpoint still returns deterministic local analysis so the UI remains usable.
+
+The same endpoint also accepts `POST` with `section`, `context`, and `aiSettings`. The frontend uses that path for panel-level analysis, so KPI, target pyramid, branch detail, contacts, brand, tasks, risk, supply, tax, daily work, decision package, and subsidiary-supervision panels each run with their own preset prompt and current panel data.
+
+`POST /api/ai/test-connection` uses the same Bearer-token/RBAC boundary and sends a minimal Ark `/chat/completions` probe. It returns a structured success/failure result with model, base URL, latency, HTTP status, and Ark error code/message without exposing the API key.
+
+For local browser testing, the dashboard also has a bottom-left settings gear where an operator can enter an Ark API key, model, and base URL. These values are stored in that browser and sent to the API in the `/api/ai/insights` or `/api/ai/test-connection` request body for that analysis/test call only. Use the settings panel's `测试连接` button before saving or refreshing panel analysis when diagnosing Key/model/Base URL problems.
 
 ## Deployment
 

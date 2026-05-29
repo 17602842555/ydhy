@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import { AiSectionPanel } from './AiSectionPanel'
+import type { AiSettings } from './aiClient'
 
 type Metric = { label: string; value: string; note?: string }
 type RankRow = { status: string; cells: string[] }
@@ -199,7 +201,7 @@ function TableView({ headers, rows, compact = false }: { headers: readonly strin
   )
 }
 
-function CompanySection({ company }: { company: CompanyCard }) {
+function CompanySection({ company, apiBaseUrl, aiSettings }: { company: CompanyCard; apiBaseUrl: string; aiSettings: AiSettings }) {
   return (
     <article className={`subcompany-card status-${company.status}`} id={companyAnchor(company.name)}>
       <header className="subcompany-card-head">
@@ -234,6 +236,14 @@ function CompanySection({ company }: { company: CompanyCard }) {
       </div>
 
       <ActionVerificationCard verification={company.actionVerification} verifications={company.actionVerifications} />
+
+      <AiSectionPanel
+        compact
+        section="subcompany-company"
+        apiBaseUrl={apiBaseUrl}
+        aiSettings={aiSettings}
+        context={{ label: `${company.name}经营卡片`, companyName: company.name, company }}
+      />
 
       {company.fillModules.length ? (
         <details className="subcompany-details">
@@ -321,11 +331,13 @@ function ActionVerificationCard({ verification, verifications }: { verification?
 export function SubcompanySupervisionPage({
   sourceUrl,
   apiBaseUrl,
+  aiSettings,
   onBack,
   onOpenEntry,
 }: {
   sourceUrl: string
   apiBaseUrl: string
+  aiSettings: AiSettings
   onBack: () => void
   onOpenEntry: () => void
 }) {
@@ -398,6 +410,12 @@ export function SubcompanySupervisionPage({
           </article>
         ))}
       </section>
+      <AiSectionPanel
+        section="subcompany-metrics"
+        apiBaseUrl={apiBaseUrl}
+        aiSettings={aiSettings}
+        context={{ label: '子公司监管总指标', metrics: data.metrics, title: data.title, subtitle: data.subtitle }}
+      />
 
       <section className="panel subcompany-rank-panel">
         <div className="panel-header">
@@ -408,6 +426,12 @@ export function SubcompanySupervisionPage({
         </div>
         <div className="panel-body">
           <TableView headers={data.rankHeaders} rows={data.rankRows} />
+          <AiSectionPanel
+            section="subcompany-rank"
+            apiBaseUrl={apiBaseUrl}
+            aiSettings={aiSettings}
+            context={{ label: '子公司监管排行', headers: data.rankHeaders, rows: data.rankRows }}
+          />
         </div>
       </section>
 
@@ -429,7 +453,7 @@ export function SubcompanySupervisionPage({
 
       <div className="subcompany-card-grid">
         {filteredCompanies.map((company) => (
-          <CompanySection company={company} key={company.name} />
+          <CompanySection company={company} apiBaseUrl={apiBaseUrl} aiSettings={aiSettings} key={company.name} />
         ))}
       </div>
     </section>

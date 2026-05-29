@@ -1,11 +1,26 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { BarChart3, CircleDot, ClipboardCheck, LayoutGrid, PackageCheck, ReceiptText, ShieldAlert, SquareKanban, Triangle } from 'lucide-react'
+import { BarChart3, CircleDot, ClipboardCheck, LayoutGrid, PackageCheck, ReceiptText, Settings, ShieldAlert, SquareKanban, Triangle } from 'lucide-react'
 import './App.css'
+import { AiSectionPanel } from './AiSectionPanel'
 import { DailyWorkPage } from './DailyWorkPage'
 import { SubcompanySupervisionPage } from './SubcompanySupervisionPage'
 import { TaskCalendarEntryPage } from './TaskCalendarEntryPage'
 import { VillaProjectPage } from './VillaProjectPage'
+import {
+  clearAiSettings,
+  defaultAiSettings,
+  loadAiInsights,
+  loadSavedAiSettings,
+  loginForToken,
+  normalizeAiSettings,
+  saveAiSettings,
+  testAiConnection,
+  type AiConnectionTestResult,
+  type AiInsightItem,
+  type AiInsights,
+  type AiSettings,
+} from './aiClient'
 
 type ViewKey = 'overview' | 'pyramid' | 'daily' | 'brand' | 'tax' | 'supply' | 'org' | 'risk' | 'decision'
 type TaskStatus = '待办' | '进行中' | '已完成'
@@ -18,6 +33,15 @@ type Risk = { type: 'local' | 'decision'; text: string }
 type Cost = { brand: string; product: number; logistics: number; total: number; spec: string }
 type TaxCard = { title: string; desc: string }
 type GoalGroup = { no: string; name: string; summary: string; goals: string[] }
+type AiLoadState =
+  | { status: 'loading'; insights: AiInsights }
+  | { status: 'ready'; insights: AiInsights }
+  | { status: 'error'; insights: AiInsights; message: string }
+type AiConnectionTestState =
+  | { status: 'idle' }
+  | { status: 'testing' }
+  | { status: 'success'; result: AiConnectionTestResult }
+  | { status: 'failure'; result: AiConnectionTestResult }
 type DashboardData = {
   kpis: Kpi[]
   pyramid: PyramidItem[]
@@ -574,18 +598,10 @@ function getApiBaseUrl() {
 
 async function loadOperatingSystem(signal: AbortSignal): Promise<LoadedDashboardState> {
   const apiBaseUrl = getApiBaseUrl()
-  const loginResponse = await fetch(`${apiBaseUrl}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId: 'user-lijinning', password: '123456' }),
-    signal,
-  })
-  if (!loginResponse.ok) throw new Error(`登录后端失败：${loginResponse.status}`)
-  const login = (await loginResponse.json()) as { token?: string }
-  if (!login.token) throw new Error('后端没有返回登录 token')
+  const token = await loginForToken(apiBaseUrl, signal)
 
   const response = await fetch(`${apiBaseUrl}/operating-system`, {
-    headers: { Authorization: `Bearer ${login.token}` },
+    headers: { Authorization: `Bearer ${token}` },
     signal,
   })
   if (!response.ok) throw new Error(`读取经营系统失败：${response.status}`)
@@ -739,27 +755,34 @@ function toCsv(rows: readonly Contact[]) {
   return [header, ...body].map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
 }
 
-function buildAiInsights(data: DashboardData, tasks: readonly Task[]) {
+function insightItem(text: string, sourceRefs: string[] = ['dashboard.subsidiaries']): AiInsightItem {
+  return { text, sourceRefs }
+}
+
+function buildAiInsights(data: DashboardData, tasks: readonly Task[]): AiInsights {
   const lowBrands = data.brands.filter((brand) => brand.completion < 70).map((brand) => brand.name)
   const decisionRisks = data.risks.filter((risk) => risk.type === 'decision')
   const openHighTasks = tasks.filter((task) => task.priority === '高' && task.status !== '已完成')
 
   return {
+    provider: { status: 'client_fallback', reason: 'local_rule_analysis' },
+    summary: '后端 AI 分析暂不可用，当前显示前端本地规则拆解。',
     advice: [
-      `将${lowBrands.join('、') || '低完成度品牌'}列为下周经营复盘重点，先拆GMV缺口、毛利缺口、渠道缺口。`,
-      '所有品牌统一提交“售价-佣金-广告-产品成本-物流-税费-退款损耗-净利润”单品模型。',
-      '一级对接人表需在本周内最终确认，未指定唯一接口的公司不得直接向华哥汇报执行问题。',
+      insightItem(`将${lowBrands.join('、') || '低完成度品牌'}列为下周经营复盘重点，先拆GMV缺口、毛利缺口、渠道缺口。`, ['operatingSystem.brands']),
+      insightItem('所有品牌统一提交“售价-佣金-广告-产品成本-物流-税费-退款损耗-净利润”单品模型。', ['operatingSystem.costs']),
+      insightItem('一级对接人表需在本周内最终确认，未指定唯一接口的公司不得直接向华哥汇报执行问题。', ['operatingSystem.tasks']),
     ],
     warnings: [
-      ...lowBrands.map((name) => `${name}目标完成度低于70%，需形成专项纠偏动作。`),
-      `${decisionRisks.length}项事项需要形成华哥决策包，不能口头越级请示。`,
-      `${openHighTasks.length}个高优先级任务未完成，建议纳入周会第一议题。`,
+      ...lowBrands.map((name) => insightItem(`${name}目标完成度低于70%，需形成专项纠偏动作。`, ['operatingSystem.brands'])),
+      insightItem(`${decisionRisks.length}项事项需要形成华哥决策包，不能口头越级请示。`, ['operatingSystem.risks']),
+      insightItem(`${openHighTasks.length}个高优先级任务未完成，建议纳入周会第一议题。`, ['operatingSystem.tasks']),
     ],
     next: [
-      '确认每家公司/品牌唯一一级对接人及替补对接人。',
-      '完成五大品牌Q2目标差距分析，并拆到周任务。',
-      '提交财税、供应链、BD资源三个专项风险清单。',
+      insightItem('确认每家公司/品牌唯一一级对接人及替补对接人。', ['operatingSystem.tasks']),
+      insightItem('完成五大品牌Q2目标差距分析，并拆到周任务。', ['operatingSystem.brands']),
+      insightItem('提交财税、供应链、BD资源三个专项风险清单。', ['operatingSystem.risks']),
     ],
+    decisionPackage: buildDecisionPackage(data, tasks),
   }
 }
 
@@ -771,7 +794,7 @@ function buildDecisionPackage(data: DashboardData, tasks: readonly Task[]) {
   return `《华哥决策包》\n\n一、需华哥拍板事项\n${decisionRisks || '无'}\n\n二、低于70%目标完成度品牌\n${lowBrands || '无'}\n\n三、未完成高优先级任务\n${highTasks || '无'}\n\n四、李锦宁建议\n1. 执行类事项继续由李锦宁统一收口。\n2. 预算、人事、股权、重大合作、财税法务风险形成书面决策包后再上报。\n3. 各公司一级对接人每周固定提交经营数据、风险清单、资源需求。`
 }
 
-function KpiGrid({ kpis }: { kpis: readonly Kpi[] }) {
+function KpiGrid({ kpis, apiBaseUrl, aiSettings }: { kpis: readonly Kpi[]; apiBaseUrl: string; aiSettings: AiSettings }) {
   return (
     <section className="grid kpi-grid" id="kpiGrid">
       {kpis.map((kpi) => (
@@ -793,6 +816,13 @@ function KpiGrid({ kpis }: { kpis: readonly Kpi[] }) {
           </div>
         </article>
       ))}
+      <AiSectionPanel
+        compact
+        section="overview-kpis"
+        apiBaseUrl={apiBaseUrl}
+        aiSettings={aiSettings}
+        context={{ label: '总览核心指标', kpis }}
+      />
     </section>
   )
 }
@@ -815,12 +845,16 @@ function PyramidPanel({
   selectedGroup,
   showBranches,
   onSelectGroup,
+  apiBaseUrl,
+  aiSettings,
 }: {
   pyramid: readonly PyramidItem[]
   goalGroups: readonly GoalGroup[]
   selectedGroup: string
   showBranches: boolean
   onSelectGroup: (group: string) => void
+  apiBaseUrl: string
+  aiSettings: AiSettings
 }) {
   return (
     <div className="panel pyramid-panel">
@@ -859,6 +893,13 @@ function PyramidPanel({
             })}
           </div>
         ) : null}
+        <AiSectionPanel
+          compact
+          section="pyramid"
+          apiBaseUrl={apiBaseUrl}
+          aiSettings={aiSettings}
+          context={{ label: selectedGroup || '目标金字塔', pyramid, goalGroups }}
+        />
       </div>
     </div>
   )
@@ -871,6 +912,8 @@ function BranchDetailPanel({
   ownerDirectory,
   onOpenSubcompany,
   onOpenVilla,
+  apiBaseUrl,
+  aiSettings,
 }: {
   groupName: string
   goalGroups: readonly GoalGroup[]
@@ -878,6 +921,8 @@ function BranchDetailPanel({
   ownerDirectory: Record<string, string>
   onOpenSubcompany: () => void
   onOpenVilla: () => void
+  apiBaseUrl: string
+  aiSettings: AiSettings
 }) {
   const group = goalGroups.find((item) => item.name === groupName) ?? goalGroups[0]
   const targets = branchTargets.filter((target) => target.group === group.name)
@@ -929,11 +974,31 @@ function BranchDetailPanel({
           </article>
         ))}
       </div>
+      <AiSectionPanel
+        section="branch-detail"
+        apiBaseUrl={apiBaseUrl}
+        aiSettings={aiSettings}
+        context={{ label: group.name, goalGroup: group, targets }}
+      />
     </section>
   )
 }
 
-function ContactsPanel({ keyword, rows, onKeywordChange, onExport }: { keyword: string; rows: readonly Contact[]; onKeywordChange: (value: string) => void; onExport: () => void }) {
+function ContactsPanel({
+  keyword,
+  rows,
+  onKeywordChange,
+  onExport,
+  apiBaseUrl,
+  aiSettings,
+}: {
+  keyword: string
+  rows: readonly Contact[]
+  onKeywordChange: (value: string) => void
+  onExport: () => void
+  apiBaseUrl: string
+  aiSettings: AiSettings
+}) {
   return (
     <div className="panel contact-panel section-anchor" id="org">
       <PanelHeader
@@ -948,46 +1013,55 @@ function ContactsPanel({ keyword, rows, onKeywordChange, onExport }: { keyword: 
           </>
         }
       />
-      <div className="panel-body table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>模块</th>
-              <th>公司/品牌</th>
-              <th>一级对接人</th>
-              <th>直接汇报对象</th>
-              <th>状态</th>
-              <th>备注</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((item) => (
-              <tr key={`${item.module}-${item.company}`}>
-                <td>{item.module}</td>
-                <td>
-                  <strong>{item.company}</strong>
-                </td>
-                <td>{item.contact}</td>
-                <td>
-                  <span className="pill pill-blue">{item.reportsTo}</span>
-                </td>
-                <td>
-                  <span className={`pill ${statusPillClass(item.status)}`}>
-                    <span className="dot" />
-                    {item.status}
-                  </span>
-                </td>
-                <td>{item.remark}</td>
+      <div className="panel-body contact-panel-body">
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>模块</th>
+                <th>公司/品牌</th>
+                <th>一级对接人</th>
+                <th>直接汇报对象</th>
+                <th>状态</th>
+                <th>备注</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((item) => (
+                <tr key={`${item.module}-${item.company}`}>
+                  <td>{item.module}</td>
+                  <td>
+                    <strong>{item.company}</strong>
+                  </td>
+                  <td>{item.contact}</td>
+                  <td>
+                    <span className="pill pill-blue">{item.reportsTo}</span>
+                  </td>
+                  <td>
+                    <span className={`pill ${statusPillClass(item.status)}`}>
+                      <span className="dot" />
+                      {item.status}
+                    </span>
+                  </td>
+                  <td>{item.remark}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <AiSectionPanel
+          compact
+          section="contacts"
+          apiBaseUrl={apiBaseUrl}
+          aiSettings={aiSettings}
+          context={{ label: '一级对接人总表', rows }}
+        />
       </div>
     </div>
   )
 }
 
-function BrandPanel({ brands }: { brands: readonly Brand[] }) {
+function BrandPanel({ brands, apiBaseUrl, aiSettings }: { brands: readonly Brand[]; apiBaseUrl: string; aiSettings: AiSettings }) {
   return (
     <div className="panel brand-progress-panel">
       <PanelHeader title="品牌经营进度" subtitle="五大核心品牌目标完成度" />
@@ -1003,12 +1077,33 @@ function BrandPanel({ brands }: { brands: readonly Brand[] }) {
             </div>
           ))}
         </div>
+        <AiSectionPanel
+          compact
+          section="brand"
+          apiBaseUrl={apiBaseUrl}
+          aiSettings={aiSettings}
+          context={{ label: '品牌经营进度', brands }}
+        />
       </div>
     </div>
   )
 }
 
-function TasksPanel({ tasks, activeStatus, onStatusChange, onTaskToggle }: { tasks: readonly Task[]; activeStatus: TaskStatus; onStatusChange: (status: TaskStatus) => void; onTaskToggle: (name: string, checked: boolean) => void }) {
+function TasksPanel({
+  tasks,
+  activeStatus,
+  onStatusChange,
+  onTaskToggle,
+  apiBaseUrl,
+  aiSettings,
+}: {
+  tasks: readonly Task[]
+  activeStatus: TaskStatus
+  onStatusChange: (status: TaskStatus) => void
+  onTaskToggle: (name: string, checked: boolean) => void
+  apiBaseUrl: string
+  aiSettings: AiSettings
+}) {
   const visibleTasks = tasks.filter((task) => task.status === activeStatus)
 
   return (
@@ -1038,12 +1133,19 @@ function TasksPanel({ tasks, activeStatus, onStatusChange, onTaskToggle }: { tas
             </div>
           )}
         </div>
+        <AiSectionPanel
+          compact
+          section="tasks"
+          apiBaseUrl={apiBaseUrl}
+          aiSettings={aiSettings}
+          context={{ label: `本周任务-${activeStatus}`, activeStatus, tasks, visibleTasks }}
+        />
       </div>
     </div>
   )
 }
 
-function RiskPanel({ risks }: { risks: readonly Risk[] }) {
+function RiskPanel({ risks, apiBaseUrl, aiSettings }: { risks: readonly Risk[]; apiBaseUrl: string; aiSettings: AiSettings }) {
   const localRisks = risks.filter((risk) => risk.type === 'local')
   const decisionRisks = risks.filter((risk) => risk.type === 'decision')
 
@@ -1055,6 +1157,13 @@ function RiskPanel({ risks }: { risks: readonly Risk[] }) {
           <RiskBox title="可由李锦宁协调（需关注）" risks={localRisks} countLabel={`共 ${localRisks.length} 项`} type="local" />
           <RiskBox title="需上报华哥决策（待决策）" risks={decisionRisks} countLabel={`共 ${decisionRisks.length} 项`} type="decision" />
         </div>
+        <AiSectionPanel
+          compact
+          section="risk"
+          apiBaseUrl={apiBaseUrl}
+          aiSettings={aiSettings}
+          context={{ label: '风险预警与待决策事项', localRisks, decisionRisks }}
+        />
       </div>
     </div>
   )
@@ -1074,7 +1183,7 @@ function RiskBox({ title, risks, countLabel, type }: { title: string; risks: rea
   )
 }
 
-function SupplyPanel({ costs }: { costs: readonly Cost[] }) {
+function SupplyPanel({ costs, apiBaseUrl, aiSettings }: { costs: readonly Cost[]; apiBaseUrl: string; aiSettings: AiSettings }) {
   return (
     <div className="panel">
       <PanelHeader title="供应链真实成本" subtitle="用于拆解“售价 - 佣金 - 成本 - 税费 - 净利”" />
@@ -1090,12 +1199,18 @@ function SupplyPanel({ costs }: { costs: readonly Cost[] }) {
             </div>
           ))}
         </div>
+        <AiSectionPanel
+          section="supply"
+          apiBaseUrl={apiBaseUrl}
+          aiSettings={aiSettings}
+          context={{ label: '供应链真实成本', costs }}
+        />
       </div>
     </div>
   )
 }
 
-function TaxPanel({ taxCards }: { taxCards: readonly TaxCard[] }) {
+function TaxPanel({ taxCards, apiBaseUrl, aiSettings }: { taxCards: readonly TaxCard[]; apiBaseUrl: string; aiSettings: AiSettings }) {
   return (
     <div className="panel section-anchor" id="tax">
       <PanelHeader title="财税合规拆解" subtitle="供应链公司与运营公司两条模型分开看" />
@@ -1108,47 +1223,263 @@ function TaxPanel({ taxCards }: { taxCards: readonly TaxCard[] }) {
             </div>
           ))}
         </div>
+        <AiSectionPanel
+          section="tax"
+          apiBaseUrl={apiBaseUrl}
+          aiSettings={aiSettings}
+          context={{ label: '财税合规拆解', taxCards }}
+        />
       </div>
     </div>
   )
 }
 
-function DecisionPanel({ data, tasks, onCopy }: { data: DashboardData; tasks: readonly Task[]; onCopy: () => void }) {
-  const insights = useMemo(() => buildAiInsights(data, tasks), [data, tasks])
+function DecisionPanel({
+  data,
+  tasks,
+  apiBaseUrl,
+  aiSettings,
+  onCopy,
+}: {
+  data: DashboardData
+  tasks: readonly Task[]
+  apiBaseUrl: string
+  aiSettings: AiSettings
+  onCopy: (text?: string) => void
+}) {
+  const localInsights = useMemo(() => buildAiInsights(data, tasks), [data, tasks])
+  const [loadState, setLoadState] = useState<AiLoadState>(() => ({ status: 'loading', insights: localInsights }))
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    loadAiInsights(apiBaseUrl, aiSettings, controller.signal, {
+      section: 'decision',
+      context: { label: '全局决策包', data, tasks },
+    })
+      .then((insights) => setLoadState({ status: 'ready', insights: normalizeAiInsights(insights, localInsights) }))
+      .catch((error: Error) => {
+        if (controller.signal.aborted) return
+        setLoadState({
+          status: 'error',
+          insights: {
+            ...localInsights,
+            provider: { status: 'client_fallback', reason: 'ai_endpoint_unavailable', error: error.message },
+          },
+          message: error.message,
+        })
+      })
+    return () => controller.abort()
+  }, [apiBaseUrl, aiSettings, data, tasks, localInsights, refreshKey])
+
+  const insights = loadState.insights
+  const sourceLookup = useMemo(() => {
+    return new Map((insights.sourceRefs ?? []).map((ref) => [ref.id, ref.label]))
+  }, [insights.sourceRefs])
+  const providerStatus = insights.provider?.status ?? 'client_fallback'
+  const providerLabel = providerStatus === 'ark'
+    ? `Ark ${insights.provider?.model ?? ''}`.trim()
+    : providerStatus === 'not_configured'
+      ? 'Ark 未配置'
+      : loadState.status === 'loading'
+        ? 'Ark 分析中'
+        : '本地兜底'
 
   return (
     <section className="panel decision-panel section-anchor" id="decision">
       <PanelHeader
         title="AI 拆解建议与下周关注重点"
-        subtitle="AI 只做拆解与预警；资源、预算、人事、股权等重大事项形成决策包"
+        subtitle={insights.summary}
         action={
-          <button className="btn" type="button" onClick={onCopy}>
-            复制华哥决策包
-          </button>
+          <>
+            <span className={`ai-status ai-status-${providerStatus}`}>{providerLabel}</span>
+            <button
+              className="btn secondary"
+              type="button"
+              disabled={loadState.status === 'loading'}
+              onClick={() => {
+                setLoadState({ status: 'loading', insights })
+                setRefreshKey((current) => current + 1)
+              }}
+            >
+              刷新分析
+            </button>
+            <button className="btn" type="button" onClick={() => onCopy(insights.decisionPackage)}>
+              复制华哥决策包
+            </button>
+          </>
         }
       />
       <div className="panel-body">
+        {loadState.status === 'error' ? <p className="ai-error">Ark 分析接口不可用：{loadState.message}</p> : null}
+        {insights.provider?.status === 'fallback' && insights.provider.error ? (
+          <p className="ai-error">Ark 请求失败，已切换本地兜底：{insights.provider.error}</p>
+        ) : null}
         <div className="ai-panel">
-          <div className="ai-orb"><span>AI</span></div>
-          <AiBlock title="经营建议" items={insights.advice} />
-          <AiBlock title="异常提醒" items={insights.warnings} tone="warn" />
-          <AiBlock title="下周关注重点" items={insights.next} tone="next" />
+          <div className="ai-orb"><span>{providerStatus === 'ark' ? 'ARK' : 'AI'}</span></div>
+          <AiBlock title="经营建议" items={insights.advice} sourceLookup={sourceLookup} />
+          <AiBlock title="异常提醒" items={insights.warnings} sourceLookup={sourceLookup} tone="warn" />
+          <AiBlock title="下周关注重点" items={insights.next} sourceLookup={sourceLookup} tone="next" />
         </div>
       </div>
     </section>
   )
 }
 
-function AiBlock({ title, items, tone = '' }: { title: string; items: readonly string[]; tone?: string }) {
+function normalizeAiInsights(payload: AiInsights, fallback: AiInsights): AiInsights {
+  return {
+    ...fallback,
+    ...payload,
+    advice: normalizeInsightItems(payload.advice, fallback.advice),
+    warnings: normalizeInsightItems(payload.warnings, fallback.warnings),
+    next: normalizeInsightItems(payload.next, fallback.next),
+  }
+}
+
+function normalizeInsightItems(items: readonly (AiInsightItem | string)[] | undefined, fallback: readonly AiInsightItem[]) {
+  if (!Array.isArray(items) || items.length === 0) return [...fallback]
+  return items.map((item) => (typeof item === 'string' ? { text: item } : item)).filter((item) => item.text)
+}
+
+function AiBlock({
+  title,
+  items,
+  sourceLookup,
+  tone = '',
+}: {
+  title: string
+  items: readonly AiInsightItem[]
+  sourceLookup: Map<string, string>
+  tone?: string
+}) {
   return (
     <div className={`ai-block ${tone}`}>
       <h4>{title}</h4>
       <ul>
         {items.map((item) => (
-          <li key={item}>{item}</li>
+          <li key={item.text}>
+            <span>{item.text}</span>
+            {item.sourceRefs?.length ? (
+              <small>{item.sourceRefs.map((ref) => sourceLookup.get(ref) ?? ref).join(' / ')}</small>
+            ) : null}
+          </li>
         ))}
       </ul>
     </div>
+  )
+}
+
+function ApiSettingsPanel({
+  open,
+  draft,
+  configured,
+  testState = { status: 'idle' },
+  onChange,
+  onSave,
+  onClear,
+  onTest,
+  onClose,
+}: {
+  open: boolean
+  draft: AiSettings
+  configured: boolean
+  testState: AiConnectionTestState
+  onChange: (settings: AiSettings) => void
+  onSave: () => void
+  onClear: () => void
+  onTest: () => void
+  onClose: () => void
+}) {
+  if (!open) return null
+  return (
+    <div className="api-settings-popover" role="dialog" aria-label="Ark API 设置">
+      <header>
+        <div>
+          <span>Ark Coding Plan</span>
+          <h3>API 设置</h3>
+        </div>
+        <button className="api-settings-close" type="button" onClick={onClose} aria-label="关闭 API 设置">×</button>
+      </header>
+      <label>
+        API Key
+        <input
+          autoComplete="off"
+          placeholder="输入 ARK_API_KEY"
+          type="password"
+          value={draft.apiKey}
+          onChange={(event) => onChange({ ...draft, apiKey: event.currentTarget.value })}
+        />
+      </label>
+      <label>
+        Model
+        <input
+          list="ark-model-options"
+          value={draft.model}
+          onChange={(event) => onChange({ ...draft, model: event.currentTarget.value })}
+        />
+      </label>
+      <datalist id="ark-model-options">
+        {[
+          'ark-code-latest',
+          'doubao-seed-2.0-code',
+          'doubao-seed-2.0-pro',
+          'doubao-seed-2.0-lite',
+          'doubao-seed-code',
+          'minimax-latest',
+          'glm-5.1',
+          'deepseek-v3.2',
+          'deepseek-v4-flash',
+          'deepseek-v4-pro',
+          'kimi-k2.6',
+        ].map((model) => (
+          <option key={model} value={model} />
+        ))}
+      </datalist>
+      <label>
+        Base URL
+        <input
+          value={draft.baseUrl}
+          onChange={(event) => onChange({ ...draft, baseUrl: event.currentTarget.value })}
+        />
+      </label>
+      <p className="api-settings-state">{configured ? '已保存到本机浏览器' : '未配置 API Key'}</p>
+      <ConnectionTestMessage state={testState} />
+      <footer>
+        <button className="btn secondary" type="button" onClick={onClear}>清除</button>
+        <button className="btn secondary" type="button" disabled={testState.status === 'testing'} onClick={onTest}>
+          {testState.status === 'testing' ? '测试中' : '测试连接'}
+        </button>
+        <button className="btn" type="button" onClick={onSave}>保存</button>
+      </footer>
+    </div>
+  )
+}
+
+function ConnectionTestMessage({ state }: { state: AiConnectionTestState }) {
+  if (state.status === 'idle') {
+    return <p className="api-test-message">保存前可先测试 Ark Key、模型和 Base URL 是否可用。</p>
+  }
+  if (state.status === 'testing') {
+    return <p className="api-test-message">正在通过后端测试 Ark chat/completions...</p>
+  }
+
+  const { result } = state
+  const model = result.provider?.model ? `｜${result.provider.model}` : ''
+  const latency = Number.isFinite(Number(result.latencyMs)) ? `｜${result.latencyMs}ms` : ''
+  if (state.status === 'success') {
+    return (
+      <p className="api-test-message success">
+        连接成功{model}{latency}。{result.sample ? `返回：${result.sample}` : ''}
+      </p>
+    )
+  }
+
+  const status = result.httpStatus ? `HTTP ${result.httpStatus}｜` : ''
+  const code = result.error?.code ? `${result.error.code}｜` : ''
+  return (
+    <p className="api-test-message failure">
+      连接失败：{status}{code}{result.error?.message || '未知错误'}{model}{latency}
+    </p>
   )
 }
 
@@ -1191,6 +1522,10 @@ function App() {
   const [subcompanyDrilldownOpen, setSubcompanyDrilldownOpen] = useState(false)
   const [villaDrilldownOpen, setVillaDrilldownOpen] = useState(false)
   const [taskCalendarEntryOpen, setTaskCalendarEntryOpen] = useState(false)
+  const [aiSettings, setAiSettings] = useState<AiSettings>(() => loadSavedAiSettings())
+  const [aiSettingsDraft, setAiSettingsDraft] = useState<AiSettings>(() => loadSavedAiSettings())
+  const [aiSettingsOpen, setAiSettingsOpen] = useState(false)
+  const [aiTestState, setAiTestState] = useState<AiConnectionTestState>({ status: 'idle' })
   const [hashRoute, setHashRoute] = useState(() => {
     if (window.location.hash.startsWith('#/task-calendar')) return 'task-calendar'
     if (window.location.hash.startsWith('#/villa-project')) return 'villa-project'
@@ -1332,14 +1667,59 @@ function App() {
     setToast('一级对接人CSV已导出')
   }
 
-  async function copyDecisionPackage() {
-    const text = buildDecisionPackage(data, tasks)
+  async function copyDecisionPackage(text?: string) {
+    const decisionPackage = text || buildDecisionPackage(data, tasks)
     try {
-      await navigator.clipboard.writeText(text)
+      await navigator.clipboard.writeText(decisionPackage)
       setToast('华哥决策包已复制')
     } catch {
       setToast('浏览器限制复制，请在本地 HTTPS 或授权后重试')
     }
+  }
+
+  function openAiSettings() {
+    setAiSettingsDraft(aiSettings)
+    setAiTestState({ status: 'idle' })
+    setAiSettingsOpen(true)
+  }
+
+  async function testCurrentAiSettings() {
+    const controller = new AbortController()
+    const next = normalizeAiSettings(aiSettingsDraft)
+    setAiSettingsDraft(next)
+    setAiTestState({ status: 'testing' })
+    try {
+      const result = await testAiConnection(getApiBaseUrl(), next, controller.signal)
+      setAiTestState(result.ok ? { status: 'success', result } : { status: 'failure', result })
+    } catch (error) {
+      setAiTestState({
+        status: 'failure',
+        result: {
+          ok: false,
+          error: {
+            code: 'test_connection_failed',
+            message: error instanceof Error ? error.message : String(error),
+          },
+        },
+      })
+    }
+  }
+
+  function saveCurrentAiSettings() {
+    const next = normalizeAiSettings(aiSettingsDraft)
+    saveAiSettings(next)
+    setAiSettings(next)
+    setAiSettingsOpen(false)
+    setToast('Ark API 设置已保存')
+  }
+
+  function clearCurrentAiSettings() {
+    const next = defaultAiSettings()
+    clearAiSettings()
+    setAiSettings(next)
+    setAiSettingsDraft(next)
+    setAiTestState({ status: 'idle' })
+    setToast('Ark API 设置已清除')
   }
 
   if (hashRoute === 'task-calendar') {
@@ -1429,6 +1809,7 @@ function App() {
           <SubcompanySupervisionPage
             sourceUrl={SUBCOMPANY_SUPERVISION_URL}
             apiBaseUrl={getApiBaseUrl()}
+            aiSettings={aiSettings}
             onBack={() => {
               setSubcompanyDrilldownOpen(false)
               setTaskCalendarEntryOpen(false)
@@ -1477,7 +1858,7 @@ function App() {
           </div>
           <div className="top-actions">
             <span className={`badge-dark ${connection.state === 'fallback' ? 'badge-orange' : 'badge-green'}`}>● {connection.message}</span>
-            <span className="badge-dark badge-blue">AI</span>
+            <span className="badge-dark badge-blue">Ark AI</span>
             <span className="badge-dark" title={connection.apiBaseUrl}>{connection.state === 'cloud' ? 'Cloudflare D1' : connection.state === 'loading' ? '连接中' : '本地缓存'}</span>
             <span className="badge-dark">李锦宁</span>
           </div>
@@ -1491,14 +1872,24 @@ function App() {
           </section>
         ) : null}
 
-        {activeView === 'daily' ? <DailyWorkPage /> : null}
+        {activeView === 'daily' ? (
+          <>
+            <DailyWorkPage />
+            <AiSectionPanel
+              section="daily"
+              apiBaseUrl={getApiBaseUrl()}
+              aiSettings={aiSettings}
+              context={{ label: 'JN每日工作跟进', tasks }}
+            />
+          </>
+        ) : null}
 
-        {activeView === 'overview' ? <KpiGrid kpis={data.kpis} /> : null}
+        {activeView === 'overview' ? <KpiGrid kpis={data.kpis} apiBaseUrl={getApiBaseUrl()} aiSettings={aiSettings} /> : null}
 
         {showPyramidPanel || showContactsPanel ? (
           <section className={`grid two-col section-anchor ${showPyramidPanel !== showContactsPanel ? 'single-view' : ''}`} id="pyramid">
-            {showPyramidPanel ? <PyramidPanel pyramid={data.pyramid} goalGroups={goalGroups} selectedGroup={activeView === 'pyramid' ? detailGroupName : selectedGoalGroup} showBranches={activeView === 'pyramid'} onSelectGroup={selectGoalGroup} /> : null}
-            {showContactsPanel ? <ContactsPanel keyword={contactKeyword} rows={filteredContacts} onKeywordChange={setContactKeyword} onExport={exportContacts} /> : null}
+            {showPyramidPanel ? <PyramidPanel pyramid={data.pyramid} goalGroups={goalGroups} selectedGroup={activeView === 'pyramid' ? detailGroupName : selectedGoalGroup} showBranches={activeView === 'pyramid'} onSelectGroup={selectGoalGroup} apiBaseUrl={getApiBaseUrl()} aiSettings={aiSettings} /> : null}
+            {showContactsPanel ? <ContactsPanel keyword={contactKeyword} rows={filteredContacts} onKeywordChange={setContactKeyword} onExport={exportContacts} apiBaseUrl={getApiBaseUrl()} aiSettings={aiSettings} /> : null}
           </section>
         ) : null}
 
@@ -1510,29 +1901,55 @@ function App() {
             ownerDirectory={ownerDirectory}
             onOpenSubcompany={openSubcompanyDrilldown}
             onOpenVilla={openVillaDrilldown}
+            apiBaseUrl={getApiBaseUrl()}
+            aiSettings={aiSettings}
           />
         ) : null}
 
         {showBrandPanel || showTaskPanel || showRiskPanel ? (
           <section className={`grid three-col section-anchor ${[showBrandPanel, showTaskPanel, showRiskPanel].filter(Boolean).length === 1 ? 'single-view' : ''}`} id="brand">
-            {showBrandPanel ? <BrandPanel brands={data.brands} /> : null}
-            {showTaskPanel ? <TasksPanel tasks={tasks} activeStatus={taskStatus} onStatusChange={setTaskStatus} onTaskToggle={handleTaskToggle} /> : null}
-            {showRiskPanel ? <RiskPanel risks={data.risks} /> : null}
+            {showBrandPanel ? <BrandPanel brands={data.brands} apiBaseUrl={getApiBaseUrl()} aiSettings={aiSettings} /> : null}
+            {showTaskPanel ? <TasksPanel tasks={tasks} activeStatus={taskStatus} onStatusChange={setTaskStatus} onTaskToggle={handleTaskToggle} apiBaseUrl={getApiBaseUrl()} aiSettings={aiSettings} /> : null}
+            {showRiskPanel ? <RiskPanel risks={data.risks} apiBaseUrl={getApiBaseUrl()} aiSettings={aiSettings} /> : null}
           </section>
         ) : null}
 
         {showSupplyPanel || showTaxPanel ? (
           <section className={`grid bottom-grid section-anchor ${showSupplyPanel !== showTaxPanel ? 'single-view' : ''}`} id="supply">
-            {showSupplyPanel ? <SupplyPanel costs={data.costs} /> : null}
-            {showTaxPanel ? <TaxPanel taxCards={data.taxCards} /> : null}
+            {showSupplyPanel ? <SupplyPanel costs={data.costs} apiBaseUrl={getApiBaseUrl()} aiSettings={aiSettings} /> : null}
+            {showTaxPanel ? <TaxPanel taxCards={data.taxCards} apiBaseUrl={getApiBaseUrl()} aiSettings={aiSettings} /> : null}
           </section>
         ) : null}
 
-        {showDecisionPanel ? <DecisionPanel data={data} tasks={tasks} onCopy={copyDecisionPackage} /> : null}
+        {showDecisionPanel ? <DecisionPanel data={data} tasks={tasks} apiBaseUrl={getApiBaseUrl()} aiSettings={aiSettings} onCopy={copyDecisionPackage} /> : null}
         {showRulesPanel ? <RulesPanel /> : null}
           </>
         )}
       </main>
+
+      <button
+        className={`api-settings-button ${aiSettings.apiKey ? 'configured' : ''}`}
+        type="button"
+        title="Ark API 设置"
+        aria-label="打开 Ark API 设置"
+        onClick={openAiSettings}
+      >
+        <Settings />
+      </button>
+      <ApiSettingsPanel
+        open={aiSettingsOpen}
+        draft={aiSettingsDraft}
+        configured={Boolean(aiSettings.apiKey)}
+        testState={aiTestState}
+        onChange={(settings) => {
+          setAiSettingsDraft(settings)
+          setAiTestState({ status: 'idle' })
+        }}
+        onSave={saveCurrentAiSettings}
+        onClear={clearCurrentAiSettings}
+        onTest={testCurrentAiSettings}
+        onClose={() => setAiSettingsOpen(false)}
+      />
 
       <div className={`toast ${toast ? 'show' : ''}`}>{toast || '已完成'}</div>
     </div>

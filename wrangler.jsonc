@@ -8,7 +8,9 @@
   "vars": {
     "ENVIRONMENT": "production",
     "HUAGE_CORS_ORIGIN": "https://17602842555.github.io,http://127.0.0.1:5173",
-    "HUAGE_ALLOW_HEADER_AUTH": "0"
+    "HUAGE_ALLOW_HEADER_AUTH": "0",
+    "ARK_MODEL": "ark-code-latest",
+    "ARK_BASE_URL": "https://ark.cn-beijing.volces.com/api/coding/v3"
   },
   "d1_databases": [
     {

@@ -1,4 +1,5 @@
 import seed from './data/seed.json' with { type: 'json' };
+import { getAiInsights, testAiConnection } from './lib/aiInsights.mjs';
 import { listLoginUsers, login, logout, authenticate } from './lib/auth.mjs';
 import { getCommercialSystem, updateCommercialWorkOrder } from './lib/commercialSystem.mjs';
 import { D1StateStore } from './lib/d1Store.mjs';
@@ -80,6 +81,13 @@ async function handleRequest(request, env, store) {
           auth: {
             allowHeaderFallback: env.HUAGE_ALLOW_HEADER_AUTH === '1',
           },
+          ai: {
+            provider: 'ark-coding-plan',
+            configured: Boolean(env.ARK_API_KEY),
+            model: env.ARK_MODEL || 'ark-code-latest',
+            baseUrl: env.ARK_BASE_URL || 'https://ark.cn-beijing.volces.com/api/coding/v3',
+            timeoutMs: Number(env.ARK_TIMEOUT_MS || 75_000),
+          },
           schema: {
             path: 'apps/api/migrations/0001_app_state.sql',
             checkCommand: 'npm run cf:seed:generate && wrangler d1 migrations apply DB',
@@ -140,6 +148,21 @@ async function handleRequest(request, env, store) {
       const actor = resolveActor(data, request, env);
       requirePermission(data, actor, 'dashboard.read');
       return json(request, env, 200, getCommercialSystem(data));
+    }
+
+    if (url.pathname === '/api/ai/insights' && ['GET', 'POST'].includes(request.method)) {
+      const body = request.method === 'POST' ? await readBody(request) : {};
+      const data = await store.read();
+      const actor = resolveActor(data, request, env);
+      return json(request, env, 200, await getAiInsights(data, actor, aiConfig(env, body)));
+    }
+
+    if (url.pathname === '/api/ai/test-connection' && request.method === 'POST') {
+      const body = await readBody(request);
+      const data = await store.read();
+      const actor = resolveActor(data, request, env);
+      requirePermission(data, actor, 'dashboard.read');
+      return json(request, env, 200, await testAiConnection(aiConfig(env, body)));
     }
 
     if (url.pathname === '/api/task-calendar' && request.method === 'GET') {
@@ -417,6 +440,21 @@ async function handleRequest(request, env, store) {
   }
 }
 
+function aiConfig(env, body = {}) {
+  const settings = body.aiSettings ?? body;
+  const apiKey = String(settings.apiKey || '').trim();
+  const model = String(settings.model || '').trim();
+  const baseUrl = String(settings.baseUrl || '').trim();
+  return {
+    apiKey: apiKey || env.ARK_API_KEY || '',
+    model: model || env.ARK_MODEL || 'ark-code-latest',
+    baseUrl: baseUrl || env.ARK_BASE_URL || 'https://ark.cn-beijing.volces.com/api/coding/v3',
+    timeoutMs: Number(env.ARK_TIMEOUT_MS || 75_000),
+    section: String(body.section || '').trim(),
+    context: body.context && typeof body.context === 'object' ? body.context : null,
+  };
+}
+
 function json(request, env, status, body) {
   const payload = status === 204 ? '' : JSON.stringify(body);
   return new Response(payload, {
@@ -425,7 +463,7 @@ function json(request, env, status, body) {
       'Content-Type': 'application/json; charset=utf-8',
       'Access-Control-Allow-Origin': allowedOrigin(request, env),
       'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-      'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Role, X-Actor, X-Subsidiary-Id',
+      'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Role, X-Actor, X-Subsidiary-Id, X-Ark-Api-Key, X-Ark-Model, X-Ark-Base-Url',
       'Access-Control-Expose-Headers': 'Content-Disposition, X-Object-Key',
       Vary: 'Origin',
     },

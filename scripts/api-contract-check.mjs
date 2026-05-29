@@ -17,6 +17,7 @@ const server = spawn('node', ['apps/api/server.mjs'], {
     HUAGE_DATA_FILE: join(tempRoot, 'runtime.json'),
     HUAGE_SOURCE_FILE_DIR: join(tempRoot, 'source-files'),
     HUAGE_CORS_ORIGIN: 'http://127.0.0.1:5173',
+    ARK_API_KEY: '',
   },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
@@ -51,6 +52,36 @@ try {
   assert(operatingSystem.body.goalBranches.length >= 5, 'operating system should expose goal branches');
   assert(operatingSystem.body.contacts.length >= 10, 'operating system should expose contact registry');
   assert(operatingSystem.body.tasks.length >= 7, 'operating system should expose task ledger');
+
+  const aiInsights = await request('/ai/insights', { headers: pmoAuth });
+  assert(aiInsights.status === 200, 'PMO AI insights should load');
+  assert(aiInsights.body.provider.status === 'not_configured', 'AI insights should use no-key fallback in contract check');
+  assert(aiInsights.body.advice.length >= 3, 'AI insights should expose advice items');
+  assert(aiInsights.body.sourceRefs.some((ref) => ref.id === 'dashboard.subsidiaries'), 'AI insights should expose source references');
+
+  const sectionAiInsights = await request('/ai/insights', {
+    method: 'POST',
+    headers: pmoAuth,
+    body: JSON.stringify({
+      section: 'brand',
+      context: { label: '品牌经营进度', brands: operatingSystem.body.brands },
+      aiSettings: { model: 'ark-code-latest', baseUrl: 'https://ark.cn-beijing.volces.com/api/coding/v3' },
+    }),
+  });
+  assert(sectionAiInsights.status === 200, 'section AI insights should load');
+  assert(sectionAiInsights.body.section.key === 'brand', 'section AI insights should preserve the requested section preset');
+  assert(sectionAiInsights.body.sourceRefs.some((ref) => ref.id === 'operatingSystem.brands'), 'section AI insights should expose section source references');
+
+  const aiConnectionMissingKey = await request('/ai/test-connection', {
+    method: 'POST',
+    headers: pmoAuth,
+    body: JSON.stringify({
+      aiSettings: { model: 'ark-code-latest', baseUrl: 'https://ark.cn-beijing.volces.com/api/coding/v3' },
+    }),
+  });
+  assert(aiConnectionMissingKey.status === 200, 'AI connection test should return a structured result');
+  assert(aiConnectionMissingKey.body.ok === false, 'AI connection test should fail without a key');
+  assert(aiConnectionMissingKey.body.error.code === 'missing_ark_api_key', 'AI connection test should expose missing-key reason');
 
   const people = await request('/people', { headers: pmoAuth });
   assert(people.status === 200, 'PMO people graph should load');
@@ -368,6 +399,7 @@ try {
           health: health.status,
           dashboardSubsidiaries: dashboard.body.subsidiaries.length,
           operatingBranches: operatingSystem.body.goalBranches.length,
+          aiInsightMode: aiInsights.body.provider.status,
           people: people.body.people.length,
           commercialModules: commercialSystem.body.systemModules.length,
           villaPhases: villaProject.body.phases.length,

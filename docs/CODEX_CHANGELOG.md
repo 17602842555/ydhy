@@ -1,5 +1,16 @@
 # Codex Change Log
 
+## 2026-05-30
+
+### Changed
+
+- Added `/api/ai/insights` as a read-only Ark Coding Plan analysis endpoint. It summarizes the whole dashboard from published/source-bound data and returns structured advice, warnings, next actions, decision-package text, and source references.
+- Kept the Ark API key server-side through `ARK_API_KEY`, added Cloudflare Worker support, exposed redacted runtime health metadata, and documented local/Worker setup.
+- Connected the React decision panel to the new endpoint with refresh, provider status, source labels, and local rule-based fallback when Ark is not configured or unavailable.
+- Added a bottom-left Ark settings gear in the dashboard so operators can enter an API key, model, and base URL from the page for browser-local analysis testing.
+- Added `/api/ai/test-connection` plus a settings-panel `测试连接` button so Ark Key/model/Base URL failures show explicit HTTP/error diagnostics instead of silently appearing as local fallback analysis.
+- Scoped Ark analysis prompts per board section, removed the unsupported `response_format=json_object` request parameter for `ark-code-latest`, and raised the default analysis timeout to 75 seconds so successful connection probes can complete full panel analysis.
+
 ## 2026-05-28
 
 ### Changed
@@ -94,6 +105,7 @@
 - Local minimal-style QA: Browser verified overview and target-pyramid interactions with KPI, digital display, branch rail, selected goal card, contact pill, and percent surfaces no longer using black/heavy bases; 390x844 Playwright smoke confirmed no horizontal overflow, no framework overlay, and no console/page errors.
 - Local table-minimal QA: Browser verified the `一级对接人总表` table has 12 rows, transparent `tbody tr`/`td` backgrounds, no background images, no row box-shadows, subtle 1px top dividers, no horizontal overflow, and no console/page errors.
 - Local AI-panel compact QA: Browser DOM verification confirmed the decision panel is height-auto with compact 64px AI column and no side-tile background/shadow; Playwright screenshot confirmed the module renders as a short content-height section with no horizontal overflow and no console/page errors.
+- Added per-section Ark AI analysis across the dashboard: KPI, target pyramid, branch detail, contacts, brand, tasks, risk, supply, tax, daily work, global decision package, and subsidiary-supervision metric/rank/company panels now expose preset prompts and send current panel context to `/api/ai/insights`.
 - Local subcompany third-level QA: Browser clicked `JOSMAN目标金字塔 -> 03 子公司监管分支 -> 打开三级页面`; DOM checks confirmed `2026年5月子公司目标完成看板`, 7 metric cards, 11 rank rows, 11 company cards, zero iframes, top-position entry, no horizontal overflow, and no console warnings/errors. Playwright 390x844 confirmed the same counts, hidden mobile sidebar for the third-level page, two-column mobile metrics, no horizontal overflow, and no console warnings/errors.
 - Task-calendar API QA: company owner login for `空锦界填报账号` returned only `空锦界`, loaded 4 operating units and 1 monthly target, saved a monthly target, saved a metric, and received `rollupLinked: true`; the smoke write was restored afterward.
 - Standalone task-calendar QA: Browser loaded `http://127.0.0.1:5173/#/task-calendar` with the independent shell, default company account, calendar grid, company/month summary, no return-to-dashboard text, and no horizontal overflow.

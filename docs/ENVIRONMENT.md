@@ -14,6 +14,10 @@ HUAGE_STORE=json
 HUAGE_DATA_FILE=/absolute/path/huage-runtime.json
 HUAGE_SOURCE_FILE_ADAPTER=local
 HUAGE_SOURCE_FILE_DIR=/absolute/path/huage-source-files
+ARK_API_KEY=
+ARK_MODEL=ark-code-latest
+ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/coding/v3
+ARK_TIMEOUT_MS=75000
 ```
 
 `GET /api/health` exposes the active runtime configuration, storage adapter, source-file adapter, limits, schema check command, and warnings.
@@ -22,8 +26,29 @@ Production rules:
 
 - Set `HUAGE_CORS_ORIGIN` to the exact Web/PWA origin.
 - Keep `HUAGE_ALLOW_HEADER_AUTH=0`.
+- Keep `ARK_API_KEY` only in the API runtime or Cloudflare secret store; never expose it as a `VITE_*` frontend variable.
 - Keep canonical source files outside the repo through `HUAGE_SOURCE_FILE_DIR` until the NAS/S3/MinIO adapter is implemented.
 - Run `npm run db:schema:check` before any PostgreSQL adapter work.
+
+## Ark Coding Plan Analysis Runtime
+
+`GET /api/ai/insights` is a read-only analysis endpoint. It requires the same Bearer-token auth and `dashboard.read` permission as the main dashboard, then builds a compact snapshot from:
+
+- published 子公司监管 data
+- operating-system tasks, risks, brands, costs, and tax cards
+- task-calendar supervision summaries and action plans
+- commercial-system work orders and integrations
+- villa-project summary, active phases, and open issues
+
+When `ARK_API_KEY` is set, the API calls Ark Coding Plan through the OpenAI-compatible base URL. Panel analysis defaults to a 75s timeout and sends a section-scoped snapshot instead of the whole dashboard, while `POST /api/ai/test-connection` remains a minimal probe for key/model/base-url diagnosis:
+
+```text
+https://ark.cn-beijing.volces.com/api/coding/v3
+```
+
+Do not use `https://ark.cn-beijing.volces.com/api/v3` for this feature, because that endpoint does not consume Coding Plan quota. When the key is missing or Ark fails, the endpoint returns local rule-based insights with the same response shape.
+
+`POST /api/ai/test-connection` accepts the same `aiSettings` object as panel analysis and runs a minimal Ark chat-completions probe. It intentionally does not fall back to local rules; failures return a structured result with `ok: false`, `httpStatus` when available, and an Ark/network error code/message so operators can distinguish bad keys, wrong model names, wrong Base URL, network timeouts, and Ark-side authentication failures.
 
 ## PostgreSQL Target
 

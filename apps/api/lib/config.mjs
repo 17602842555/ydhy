@@ -31,6 +31,14 @@ export function loadRuntimeConfig({ apiDir }) {
     auth: {
       allowHeaderFallback: process.env.HUAGE_ALLOW_HEADER_AUTH === '1',
     },
+    ai: {
+      provider: 'ark-coding-plan',
+      apiKey: process.env.ARK_API_KEY || '',
+      configured: Boolean(process.env.ARK_API_KEY),
+      model: process.env.ARK_MODEL || 'ark-code-latest',
+      baseUrl: process.env.ARK_BASE_URL || 'https://ark.cn-beijing.volces.com/api/coding/v3',
+      timeoutMs: positiveInt(process.env.ARK_TIMEOUT_MS, 75_000, 'ARK_TIMEOUT_MS'),
+    },
     schema: {
       path: join(apiDir, '../../docs/schema.sql'),
       checkCommand: 'npm run db:schema:check',
@@ -71,6 +79,13 @@ export function healthFromConfig(config) {
     },
     auth: {
       allowHeaderFallback: config.auth.allowHeaderFallback,
+    },
+    ai: {
+      provider: config.ai.provider,
+      configured: config.ai.configured,
+      model: config.ai.model,
+      baseUrl: config.ai.baseUrl,
+      timeoutMs: config.ai.timeoutMs,
     },
     schema: config.schema,
     warnings: config.warnings,

@@ -2,6 +2,7 @@ import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { getAiInsights, testAiConnection } from './lib/aiInsights.mjs';
 import { authenticate, listLoginUsers, login, logout } from './lib/auth.mjs';
 import { getCommercialSystem, updateCommercialWorkOrder } from './lib/commercialSystem.mjs';
 import { healthFromConfig, loadRuntimeConfig } from './lib/config.mjs';
@@ -65,7 +66,7 @@ function json(res, status, body) {
     'Content-Length': Buffer.byteLength(payload),
     'Access-Control-Allow-Origin': runtimeConfig.api.corsOrigin,
     'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Role, X-Actor, X-Subsidiary-Id',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Role, X-Actor, X-Subsidiary-Id, X-Ark-Api-Key, X-Ark-Model, X-Ark-Base-Url',
     'Access-Control-Expose-Headers': 'Content-Disposition, X-Object-Key',
   });
   res.end(payload);
@@ -192,6 +193,24 @@ const server = createServer(async (req, res) => {
       const actor = resolveActor(data, req);
       requirePermission(data, actor, 'dashboard.read');
       json(res, 200, getCommercialSystem(data));
+      return;
+    }
+
+    if (url.pathname === '/api/ai/insights' && ['GET', 'POST'].includes(req.method)) {
+      const body = req.method === 'POST' ? await readBody(req) : {};
+      const data = store.read();
+      const actor = resolveActor(data, req);
+      const result = await getAiInsights(data, actor, aiConfigFromBody(runtimeConfig.ai, body));
+      json(res, 200, result);
+      return;
+    }
+
+    if (url.pathname === '/api/ai/test-connection' && req.method === 'POST') {
+      const body = await readBody(req);
+      const data = store.read();
+      const actor = resolveActor(data, req);
+      requirePermission(data, actor, 'dashboard.read');
+      json(res, 200, await testAiConnection(aiConfigFromBody(runtimeConfig.ai, body)));
       return;
     }
 
@@ -528,7 +547,7 @@ const server = createServer(async (req, res) => {
   }
 });
 
-function runSelfCheck() {
+async function runSelfCheck() {
   const data = prepareInitialData(seed);
   const loggedIn = login(data, { userId: 'user-lijinning', password: '123456' });
   const sessionActor = authenticate(data, {
@@ -621,6 +640,10 @@ function runSelfCheck() {
   if (commercialSystem.systemModules.length < 12 || commercialSystem.integrations.length < 6 || commercialSystem.workOrders.length < 6) {
     throw new Error('expected commercial system payload to expose full system typed records');
   }
+  const aiInsights = await getAiInsights(data, sessionActor, { model: 'self-check-ark-disabled' });
+  if (aiInsights.provider.status !== 'not_configured' || aiInsights.advice.length < 3 || aiInsights.sourceRefs.length < 4) {
+    throw new Error('expected AI insights to return source-bound local fallback when Ark is not configured');
+  }
   const villaProject = getVillaProject(data, sessionActor);
   if (villaProject.phases.length < 20 || villaProject.issues.length < 4 || villaProject.summary.budgetTotal !== 4000000) {
     throw new Error('expected villa project payload to expose imported dashboard seed data');
@@ -670,6 +693,7 @@ function runSelfCheck() {
           operatingTasks: operatingSystem.tasks.length,
           people: people.people.length,
           commercialModules: commercialSystem.systemModules.length,
+          aiInsightMode: aiInsights.provider.status,
           villaPhases: villaProject.phases.length,
           villaBudgetTotal: villaProject.summary.budgetTotal,
           workOrderAudit: commercialWorkOrder.auditLog.action,
@@ -700,8 +724,24 @@ function contentDisposition(fileName) {
   return `attachment; filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(fileName || 'source-file')}`;
 }
 
+function aiConfigFromBody(config, body = {}) {
+  const settings = body.aiSettings ?? body;
+  const apiKey = String(settings.apiKey || '').trim();
+  const model = String(settings.model || '').trim();
+  const baseUrl = String(settings.baseUrl || '').trim();
+  return {
+    ...config,
+    apiKey: apiKey || config.apiKey,
+    model: model || config.model,
+    baseUrl: baseUrl || config.baseUrl,
+    configured: Boolean(apiKey || config.apiKey),
+    section: String(body.section || '').trim(),
+    context: body.context && typeof body.context === 'object' ? body.context : null,
+  };
+}
+
 if (process.argv.includes('--check')) {
-  runSelfCheck();
+  await runSelfCheck();
 } else {
   server.listen(runtimeConfig.api.port, runtimeConfig.api.host, () => {
     console.log(`HUAGE API listening on http://${runtimeConfig.api.host}:${runtimeConfig.api.port}`);

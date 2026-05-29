@@ -85,12 +85,19 @@ npm run cf:d1:seed:remote
 npx wrangler deploy
 ```
 
+如果要让线上看板调用 Ark Coding Plan 分析，先把 API key 写入 Cloudflare Secret，不要写进前端环境变量：
+
+```bash
+npx wrangler secret put ARK_API_KEY
+```
+
 GitHub Actions 部署需要设置这些 Secret：
 
 ```text
 CLOUDFLARE_API_TOKEN
 CLOUDFLARE_ACCOUNT_ID
 CLOUDFLARE_D1_DATABASE_ID
+ARK_API_KEY
 ```
 
 建议再设置仓库变量：
@@ -98,6 +105,9 @@ CLOUDFLARE_D1_DATABASE_ID
 ```text
 HUAGE_CORS_ORIGIN=https://17602842555.github.io,http://127.0.0.1:5173
 VITE_API_BASE_URL=https://<your-worker-subdomain>.workers.dev/api
+ARK_MODEL=ark-code-latest
+ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/coding/v3
+ARK_TIMEOUT_MS=75000
 ```
 
 ## 5. 验证
@@ -117,6 +127,22 @@ TOKEN=$(curl -sS -X POST https://ydhy-api.2445776963.workers.dev/api/auth/login 
 
 curl -sS https://ydhy-api.2445776963.workers.dev/api/operating-system \
   -H "Authorization: Bearer $TOKEN"
+```
+
+验证 Ark Coding Plan 分析接口：
+
+```bash
+curl -sS https://ydhy-api.2445776963.workers.dev/api/ai/insights \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+验证 Ark Coding Plan 连接诊断接口：
+
+```bash
+curl -sS https://ydhy-api.2445776963.workers.dev/api/ai/test-connection \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"aiSettings":{"model":"ark-code-latest","baseUrl":"https://ark.cn-beijing.volces.com/api/coding/v3"}}'
 ```
 
 ## 当前限制
