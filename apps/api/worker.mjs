@@ -18,6 +18,7 @@ import {
   addTaskCalendarUnit,
   clearTaskCalendarFutureTargets,
   clearTaskCalendarMonthData,
+  deleteTaskCalendarActionPlan,
   getTaskCalendar,
   syncTaskCalendarFromSeed,
   upsertTaskCalendarActionPlan,
@@ -222,6 +223,15 @@ async function handleRequest(request, env, store) {
     if (url.pathname === '/api/task-calendar/action-plans' && request.method === 'POST') {
       const body = await readBody(request);
       const result = await store.transaction((data) => upsertTaskCalendarActionPlan(data, body, resolveActor(data, request, env)));
+      return json(request, env, 200, {
+        ...result,
+        dashboard: calculateDashboard(await store.read()),
+      });
+    }
+
+    if (url.pathname === '/api/task-calendar/action-plans/delete' && request.method === 'POST') {
+      const body = await readBody(request);
+      const result = await store.transaction((data) => deleteTaskCalendarActionPlan(data, body, resolveActor(data, request, env)));
       return json(request, env, 200, {
         ...result,
         dashboard: calculateDashboard(await store.read()),

@@ -10,6 +10,11 @@ type ActionVerification = {
   label: string
   date?: string
   verifyDate?: string
+  validationDays?: number
+  periodStartDate?: string
+  periodEndDate?: string
+  baselineStartDate?: string
+  baselineEndDate?: string
   action: string
   expectation?: string
   expectedGmvGrowthRate?: number | null
@@ -27,6 +32,7 @@ type CompanyCard = {
   summary: string
   bars: BarItem[]
   actionVerification?: ActionVerification | null
+  actionVerifications?: ActionVerification[]
   fillModules: FillModule[]
   dailyHeaders: string[]
   dailyRows: RankRow[]
@@ -227,7 +233,7 @@ function CompanySection({ company }: { company: CompanyCard }) {
         ))}
       </div>
 
-      <ActionVerificationCard verification={company.actionVerification} />
+      <ActionVerificationCard verification={company.actionVerification} verifications={company.actionVerifications} />
 
       {company.fillModules.length ? (
         <details className="subcompany-details">
@@ -259,12 +265,20 @@ function CompanySection({ company }: { company: CompanyCard }) {
   )
 }
 
-function ActionVerificationCard({ verification }: { verification?: ActionVerification | null }) {
-  const item = verification ?? {
+function ActionVerificationCard({ verification, verifications }: { verification?: ActionVerification | null; verifications?: ActionVerification[] }) {
+  const items = verifications?.length ? verifications : (verification ? [verification] : [])
+  const [index, setIndex] = useState(0)
+  const safeIndex = items.length ? Math.min(index, items.length - 1) : 0
+  const item = items[safeIndex] ?? {
     status: 'empty',
     label: '待填写动作',
     action: '暂无当日动作和预期。',
   }
+  const periodStart = item.periodStartDate || item.date
+  const periodEnd = item.periodEndDate || item.verifyDate
+  const periodLabel = periodStart && periodEnd ? `${periodStart} → ${periodEnd}` : '等待填报'
+  const canFlip = items.length > 1
+
   return (
     <section className={`subcompany-action-card status-${item.status}`}>
       <div className="subcompany-action-card-head">
@@ -272,17 +286,24 @@ function ActionVerificationCard({ verification }: { verification?: ActionVerific
           <span>动作与验证</span>
           <strong>{item.label}</strong>
         </div>
-        <em>{item.date && item.verifyDate ? `${item.date} → ${item.verifyDate}` : '等待填报'}</em>
+        <em>{periodLabel}{item.validationDays ? ` · ${item.validationDays}天` : ''}</em>
       </div>
+      {canFlip ? (
+        <div className="subcompany-action-pager">
+          <button type="button" onClick={() => setIndex((current) => (current <= 0 ? items.length - 1 : current - 1))}>上一个动作</button>
+          <span>{safeIndex + 1} / {items.length}</span>
+          <button type="button" onClick={() => setIndex((current) => (current + 1) % items.length)}>下一个动作</button>
+        </div>
+      ) : null}
       <p>{item.action}</p>
       {item.expectation ? <small>{item.expectation}</small> : null}
       <div className="subcompany-action-metrics">
         <div>
-          <span>预期GMV涨幅</span>
+          <span>预期周期涨幅</span>
           <strong>{formatPercentValue(item.expectedGmvGrowthRate)}</strong>
         </div>
         <div>
-          <span>实际GMV涨幅</span>
+          <span>实际周期涨幅</span>
           <strong>{formatPercentValue(item.actualGmvGrowthRate)}</strong>
         </div>
         <div>
@@ -291,7 +312,7 @@ function ActionVerificationCard({ verification }: { verification?: ActionVerific
         </div>
       </div>
       {Number.isFinite(Number(item.baseGmv)) || Number.isFinite(Number(item.verifyGmv)) ? (
-        <footer>前日 GMV {formatMoneyValue(item.baseGmv)} · 当日 GMV {formatMoneyValue(item.verifyGmv)}</footer>
+        <footer>基准周期 GMV {formatMoneyValue(item.baseGmv)} · 验证周期 GMV {formatMoneyValue(item.verifyGmv)}</footer>
       ) : null}
     </section>
   )

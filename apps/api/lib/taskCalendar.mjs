@@ -148,6 +148,7 @@ export function upsertTaskCalendarActionPlan(data, body, actor) {
   const action = String(body?.action || '').trim();
   const expectedGmvGrowthRate = finiteNumber(body?.expectedGmvGrowthRate);
   const expectation = String(body?.expectation || '').trim();
+  const validationDays = normalizeValidationDays(body?.validationDays);
   if (!date) fail(400, 'invalid_date', 'date must be YYYY-MM-DD');
   if (!action) fail(400, 'invalid_action', '当日动作不能为空');
   if (!Number.isFinite(expectedGmvGrowthRate) || expectedGmvGrowthRate <= 0) {
@@ -157,6 +158,14 @@ export function upsertTaskCalendarActionPlan(data, body, actor) {
 
   const id = `daily-action-${slug(company)}-${date}`;
   const existing = state.actionPlans.find((plan) => plan.id === id);
+  const conflict = state.actionPlans.find((plan) => {
+    if (plan.company !== company || plan.id === id) return false;
+    return actionPeriodsOverlap(date, validationDays, plan.date, planValidationDays(plan));
+  });
+  if (conflict) {
+    const end = actionPeriodEnd(conflict.date, planValidationDays(conflict));
+    fail(409, 'action_cycle_conflict', `${conflict.date} 到 ${end} 已有动作验证周期，周期内不能填写新的当日动作`);
+  }
   const beforeText = existing ? JSON.stringify(existing) : '-';
   const plan = {
     id,
@@ -164,6 +173,8 @@ export function upsertTaskCalendarActionPlan(data, body, actor) {
     date,
     action,
     expectedGmvGrowthRate,
+    validationDays,
+    periodEndDate: actionPeriodEnd(date, validationDays),
     expectation,
     owner: actor.name,
     updatedAt: new Date().toISOString(),
@@ -186,6 +197,35 @@ export function upsertTaskCalendarActionPlan(data, body, actor) {
     actionPlan: plan,
     auditLog,
     taskCalendar: getTaskCalendar(data, actor, { month: date.slice(0, 7) }),
+  };
+}
+
+export function deleteTaskCalendarActionPlan(data, body, actor) {
+  requireTaskCalendarWrite(data, actor);
+  const state = taskCalendarState(data);
+  const company = normalizeCompanyForActor(data, actor, body?.company);
+  const id = String(body?.id || '').trim();
+  const date = normalizeDate(body?.date);
+  const existing = state.actionPlans.find((plan) => plan.company === company && ((id && plan.id === id) || (date && plan.date === date)));
+  if (!existing) fail(404, 'action_plan_not_found', '动作和预期不存在');
+
+  const beforeText = JSON.stringify(existing);
+  state.actionPlans = state.actionPlans.filter((plan) => plan.id !== existing.id);
+  data.taskCalendar = state;
+  const auditLog = addAudit(
+    data,
+    actor,
+    'task_calendar.action_plan.delete',
+    'task_calendar_action_plan',
+    existing.id,
+    beforeText,
+    '-',
+    `${actor.name} 删除 ${company} ${existing.date} 当日动作和预期`,
+  );
+  return {
+    deleted: existing,
+    auditLog,
+    taskCalendar: getTaskCalendar(data, actor, { month: String(existing.date || currentMonth()).slice(0, 7) }),
   };
 }
 
@@ -472,6 +512,37 @@ function isTargetEntry(entry) {
   return ['monthly-target', 'daily-target', 'day-target'].includes(String(entry?.source || ''));
 }
 
+function normalizeValidationDays(value) {
+  const days = Math.trunc(Number(value || 1));
+  if (!Number.isFinite(days) || days < 1 || days > 30) fail(400, 'invalid_validation_days', '验证周期必须是 1 到 30 天');
+  return days;
+}
+
+function planValidationDays(plan) {
+  const days = Math.trunc(Number(plan?.validationDays || 1));
+  return Number.isFinite(days) && days > 0 ? days : 1;
+}
+
+function actionPeriodEnd(startDate, days) {
+  return dateOffset(startDate, Math.max(1, Number(days || 1)) - 1);
+}
+
+function actionPeriodsOverlap(startA, daysA, startB, daysB) {
+  const endA = actionPeriodEnd(startA, daysA);
+  const endB = actionPeriodEnd(startB, daysB);
+  return String(startA) <= String(endB) && String(startB) <= String(endA);
+}
+
+function eachDateInRange(startDate, endDate) {
+  const dates = [];
+  let current = startDate;
+  while (current <= endDate) {
+    dates.push(current);
+    current = dateOffset(current, 1);
+  }
+  return dates;
+}
+
 function normalizeMetricPayload(body, unit, actor, date, fields) {
   const payload = {
     company: unit.company,
@@ -581,6 +652,7 @@ function buildSupervisionDashboard(data, summaries, month) {
 }
 
 function buildSupervisionCompanyCard(data, item, month) {
+  const actionVerifications = buildCompanyActionVerifications(data, item.company, month);
   return {
     name: item.company,
     status: item.status === 'good' ? 'good' : item.status === 'watch' ? 'warn' : item.status === 'risk' ? 'bad' : 'empty',
@@ -599,37 +671,47 @@ function buildSupervisionCompanyCard(data, item, month) {
       { label: '3天监管', value: item.gapWan > 0 ? `缺口 ${formatNumber(item.gapWan)}万` : '达标', width: percentWidth(item.threeDayRate) },
       { label: '周监管', value: `日均需 ${formatNumber(item.dailyNeedWan)}万`, width: percentWidth(item.weekRate) },
     ],
-    actionVerification: buildCompanyActionVerification(data, item.company, month),
+    actionVerification: actionVerifications[0] ?? emptyActionVerification(),
+    actionVerifications,
     fillModules: [],
     dailyHeaders: ['日期', '经营主体数', '数据行数', '月完成'],
     dailyRows: [],
   };
 }
 
-function buildCompanyActionVerification(data, company, month) {
+function emptyActionVerification() {
+  return {
+    status: 'empty',
+    label: '待填写动作',
+    action: '暂无当日动作和预期。',
+    expectedGmvGrowthRate: null,
+    actualGmvGrowthRate: null,
+    complianceRate: null,
+  };
+}
+
+function buildCompanyActionVerifications(data, company, month) {
   const state = taskCalendarState(data);
   const plans = state.actionPlans
     .filter((plan) => plan.company === company && String(plan.date || '').startsWith(`${month}-`))
     .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')) || String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
-  const plan = plans[0];
-  if (!plan) {
-    return {
-      status: 'empty',
-      label: '待填写动作',
-      action: '暂无当日动作和预期。',
-      expectedGmvGrowthRate: null,
-      actualGmvGrowthRate: null,
-      complianceRate: null,
-    };
-  }
+  return plans.map((plan) => buildActionVerificationForPlan(state, company, plan));
+}
 
-  const verifyDate = dateOffset(plan.date, 1);
-  const baseRows = dayRowsForCompany(state, company, plan.date);
-  const verifyRows = dayRowsForCompany(state, company, verifyDate);
-  const baseGmv = dayRevenueFromRows(baseRows);
-  const verifyGmv = dayRevenueFromRows(verifyRows);
+function buildActionVerificationForPlan(state, company, plan) {
+  const validationDays = planValidationDays(plan);
+  const periodEndDate = actionPeriodEnd(plan.date, validationDays);
+  const baselineStartDate = dateOffset(plan.date, -validationDays);
+  const baselineEndDate = dateOffset(plan.date, -1);
+  const periodDates = eachDateInRange(plan.date, periodEndDate);
+  const baselineDates = eachDateInRange(baselineStartDate, baselineEndDate);
+  const baseGmv = totalRevenueForDates(state, company, baselineDates);
+  const verifyGmv = totalRevenueForDates(state, company, periodDates);
   const expectedGmvGrowthRate = Number(plan.expectedGmvGrowthRate || 0);
-  const hasVerificationData = verifyRows.metrics.length > 0 || verifyRows.entries.length > 0;
+  const hasVerificationData = periodDates.some((date) => {
+    const rows = dayRowsForCompany(state, company, date);
+    return rows.metrics.length > 0 || rows.entries.length > 0;
+  });
   const actualGmvGrowthRate = hasVerificationData
     ? (baseGmv > 0 ? ((verifyGmv - baseGmv) / baseGmv) * 100 : (verifyGmv > 0 ? 100 : 0))
     : null;
@@ -640,9 +722,14 @@ function buildCompanyActionVerification(data, company, month) {
 
   return {
     status,
-    label: actionVerificationLabel(status),
+    label: actionVerificationLabel(status, validationDays),
     date: plan.date,
-    verifyDate,
+    verifyDate: periodEndDate,
+    validationDays,
+    periodStartDate: plan.date,
+    periodEndDate,
+    baselineStartDate,
+    baselineEndDate,
     action: plan.action,
     expectation: plan.expectation,
     expectedGmvGrowthRate,
@@ -653,6 +740,13 @@ function buildCompanyActionVerification(data, company, month) {
     owner: plan.owner,
     updatedAt: plan.updatedAt,
   };
+}
+
+function totalRevenueForDates(state, company, dates) {
+  return dates.reduce((sum, date) => {
+    const rows = dayRowsForCompany(state, company, date);
+    return sum + dayRevenueFromRows(rows);
+  }, 0);
 }
 
 function dayRowsForCompany(state, company, date) {
@@ -675,8 +769,8 @@ function actionVerificationStatus(complianceRate, actualGrowthRate) {
   return 'good';
 }
 
-function actionVerificationLabel(status) {
-  if (status === 'good') return '前日动作有效';
+function actionVerificationLabel(status, validationDays = 1) {
+  if (status === 'good') return Number(validationDays) > 1 ? '周期动作有效' : '当日动作有效';
   if (status === 'warn') return '需要优化';
   if (status === 'invalid') return '动作基本无效';
   if (status === 'bad') return '动作无效需要预警';

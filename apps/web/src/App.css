@@ -724,6 +724,26 @@
     0 14px 24px rgba(89, 219, 226, 0.16);
 }
 
+.task-calendar-week-day-list button.action-cycle {
+  border-color: color-mix(in srgb, var(--cycle-color, #2bbfc7) 68%, transparent);
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--cycle-color, #2bbfc7) 36%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 12px 22px color-mix(in srgb, var(--cycle-color, #2bbfc7) 13%, transparent);
+}
+
+.task-calendar-week-day-list small {
+  display: inline-flex;
+  width: fit-content;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cycle-color, #2bbfc7) 16%, white);
+  color: var(--cycle-color, #2bbfc7);
+  font-size: 11px;
+  font-weight: 950;
+  padding: 3px 7px;
+}
+
 .task-calendar-week-day-list button.muted {
   opacity: 0.48;
 }
@@ -762,6 +782,13 @@
   background: rgba(255, 255, 255, 0.68);
 }
 
+.task-calendar-grid button.action-cycle,
+.task-calendar-week-board button.action-cycle {
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--cycle-color, #2bbfc7) 62%, transparent),
+    inset 0 0 0 6px color-mix(in srgb, var(--cycle-color, #2bbfc7) 10%, transparent);
+}
+
 .task-calendar-grid button.muted,
 .task-calendar-week-board button.muted {
   opacity: 0.4;
@@ -798,6 +825,19 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.86),
     0 9px 18px rgba(156, 160, 168, 0.1);
   padding: 9px 10px 9px 12px;
+}
+
+.task-calendar-day-cycle {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cycle-color, #2bbfc7) 14%, white);
+  color: var(--cycle-color, #2bbfc7);
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+  padding: 4px 7px;
 }
 
 .task-calendar-day-card span,
@@ -3052,6 +3092,33 @@ p {
   margin-top: 3px;
   color: #139aa5;
   font-size: 14px;
+  font-weight: 950;
+}
+
+.subcompany-action-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.subcompany-action-pager button {
+  min-height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.36);
+  color: #139aa5;
+  font-size: 11px;
+  font-weight: 950;
+  padding: 0 10px;
+}
+
+.subcompany-action-pager span {
+  color: var(--muted);
+  font-size: 11px;
   font-weight: 950;
 }
 

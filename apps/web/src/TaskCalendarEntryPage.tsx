@@ -1,5 +1,5 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react'
-import { Building2, ChevronLeft, ChevronRight, ClipboardCheck, LogOut, Save, Target } from 'lucide-react'
+import { type CSSProperties, type FormEvent, useEffect, useMemo, useState } from 'react'
+import { Building2, ChevronLeft, ChevronRight, ClipboardCheck, LogOut, Save, Target, Trash2 } from 'lucide-react'
 
 type BusinessUnit = { id: string; company: string; type: 'store' | 'business'; name: string }
 type BusinessMetric = {
@@ -51,6 +51,8 @@ type DailyActionPlan = {
   date: string
   action: string
   expectedGmvGrowthRate: number
+  validationDays?: number
+  periodEndDate?: string
   expectation?: string
   owner?: string
   updatedAt?: string
@@ -107,6 +109,17 @@ const businessFields = [
 const allFields = [...storeFields, ...businessFields] as const
 const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
 const allCompaniesLabel = '全部子公司'
+const actionCycleColors = ['#2bbfc7', '#4f8cff', '#d18424', '#15a779', '#d7536f', '#7c65d8']
+const actionValidationDayOptions = [1, 3, 7]
+
+type CalendarActionPeriod = {
+  id: string
+  company: string
+  start: string
+  end: string
+  validationDays: number
+  color: string
+}
 
 function today() {
   return new Date().toISOString().slice(0, 10)
@@ -136,6 +149,40 @@ function shiftDate(date: string, offset: number) {
   const nextDate = new Date(`${date}T00:00:00`)
   nextDate.setDate(nextDate.getDate() + offset)
   return dateKey(nextDate)
+}
+
+function daysBetween(startDate: string, endDate: string) {
+  const start = new Date(`${startDate}T00:00:00`).getTime()
+  const end = new Date(`${endDate}T00:00:00`).getTime()
+  return Math.round((end - start) / 86400000)
+}
+
+function datesInRange(startDate: string, endDate: string) {
+  const dates: string[] = []
+  let current = startDate
+  while (current <= endDate) {
+    dates.push(current)
+    current = shiftDate(current, 1)
+  }
+  return dates
+}
+
+function actionPlanValidationDays(plan?: Pick<DailyActionPlan, 'validationDays'> | null) {
+  const days = Math.trunc(Number(plan?.validationDays || 1))
+  return Number.isFinite(days) && days > 0 ? days : 1
+}
+
+function actionPlanEndDate(plan: DailyActionPlan) {
+  return plan.periodEndDate || shiftDate(plan.date, actionPlanValidationDays(plan) - 1)
+}
+
+function isDateInActionPlan(date: string, plan: DailyActionPlan) {
+  return plan.date <= date && date <= actionPlanEndDate(plan)
+}
+
+function actionPeriodText(plan: DailyActionPlan) {
+  const endDate = actionPlanEndDate(plan)
+  return plan.date === endDate ? plan.date : `${plan.date} → ${endDate}`
 }
 
 function dateKey(date: Date) {
@@ -200,7 +247,7 @@ function actionValidationLabel(complianceRate: number | null, actualGrowthRate: 
   if (Number(actualGrowthRate) <= 0 || Number(complianceRate) < 20) return '动作无效需要预警'
   if (Number(complianceRate) < 60) return '动作基本无效'
   if (Number(complianceRate) < 90) return '需要优化'
-  return '前日动作有效'
+  return '动作有效'
 }
 
 function metricRevenue(metric: BusinessMetric) {
@@ -353,8 +400,12 @@ export function TaskCalendarEntryPage({
   const [actionEditor, setActionEditor] = useState(false)
   const [actionText, setActionText] = useState('')
   const [actionExpectedGrowth, setActionExpectedGrowth] = useState('')
+  const [actionValidationDays, setActionValidationDays] = useState('1')
   const [actionExpectation, setActionExpectation] = useState('')
+  const [actionEditorPlanId, setActionEditorPlanId] = useState('')
+  const [actionEditorPlanDate, setActionEditorPlanDate] = useState('')
   const [actionSaving, setActionSaving] = useState(false)
+  const [actionDeleting, setActionDeleting] = useState(false)
   const [savingUnitId, setSavingUnitId] = useState('')
   const [clearingMonth, setClearingMonth] = useState(false)
   const [businessDetailOpen, setBusinessDetailOpen] = useState(false)
@@ -398,6 +449,20 @@ export function TaskCalendarEntryPage({
     () => activeData?.metrics.filter((metric) => targetCompanies.includes(metric.company) && monthOf(metric.date) === visibleMonth) ?? [],
     [activeData, targetCompanies, visibleMonth],
   )
+  const actionPeriods = useMemo<CalendarActionPeriod[]>(
+    () => (activeData?.actionPlans ?? [])
+      .filter((plan) => targetCompanies.includes(plan.company))
+      .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || a.company.localeCompare(b.company))
+      .map((plan, index) => ({
+        id: plan.id,
+        company: plan.company,
+        start: plan.date,
+        end: actionPlanEndDate(plan),
+        validationDays: actionPlanValidationDays(plan),
+        color: actionCycleColors[index % actionCycleColors.length],
+      })),
+    [activeData, targetCompanies],
+  )
   const selectedDateMetrics = monthMetrics.filter((metric) => metric.date === selectedDate)
   const selectedSummary = activeData?.summaries.find((item) => item.company === selectedCompany)
   const selectedTarget = activeData?.monthlyTargets.find((target) => target.company === selectedCompany && target.month === visibleMonth)
@@ -431,10 +496,13 @@ export function TaskCalendarEntryPage({
   }
 
   function openActionEditor() {
-    const existing = actionPlanForDate(selectedDate, selectedCompany)
+    const existing = actionPlanForDate(selectedDate, selectedCompany) ?? actionPlanCoveringDate(selectedDate, selectedCompany)
     setActionText(existing?.action || '')
     setActionExpectedGrowth(existing?.expectedGmvGrowthRate ? String(existing.expectedGmvGrowthRate) : '')
+    setActionValidationDays(String(actionPlanValidationDays(existing)))
     setActionExpectation(existing?.expectation || '')
+    setActionEditorPlanId(existing?.id || '')
+    setActionEditorPlanDate(existing?.date || selectedDate)
     setActionEditor(true)
   }
 
@@ -466,12 +534,16 @@ export function TaskCalendarEntryPage({
     return activeData?.entries.filter((entry) => targetCompanies.includes(entry.company) && entry.date === date) ?? []
   }
 
-  function actionPlansForDate(date: string) {
-    return (activeData?.actionPlans ?? []).filter((plan) => targetCompanies.includes(plan.company) && plan.date === date)
-  }
-
   function actionPlanForDate(date: string, company: string) {
     return (activeData?.actionPlans ?? []).find((plan) => plan.company === company && plan.date === date)
+  }
+
+  function actionPlansCoveringDate(date: string) {
+    return (activeData?.actionPlans ?? []).filter((plan) => targetCompanies.includes(plan.company) && isDateInActionPlan(date, plan))
+  }
+
+  function actionPlanCoveringDate(date: string, company: string) {
+    return (activeData?.actionPlans ?? []).find((plan) => plan.company === company && isDateInActionPlan(date, plan))
   }
 
   function monthlyTargetForCompany(company: string, month = visibleMonth) {
@@ -482,6 +554,25 @@ export function TaskCalendarEntryPage({
     const metrics = dayMetricRows(date)
     if (metrics.length) return metrics.reduce((sum, metric) => sum + metricRevenue(metric), 0)
     return dayEntryRows(date).reduce((sum, entry) => sum + Number(entry.revenueActual || 0), 0)
+  }
+
+  function dayActualForCompany(date: string, company: string) {
+    const metrics = activeData?.metrics.filter((metric) => metric.company === company && metric.date === date) ?? []
+    if (metrics.length) return metrics.reduce((sum, metric) => sum + metricRevenue(metric), 0)
+    return activeData?.entries.filter((entry) => entry.company === company && entry.date === date).reduce((sum, entry) => sum + Number(entry.revenueActual || 0), 0) ?? 0
+  }
+
+  function hasActualRowsForCompany(date: string, company: string) {
+    return Boolean(activeData?.metrics.some((metric) => metric.company === company && metric.date === date)
+      || activeData?.entries.some((entry) => entry.company === company && entry.date === date))
+  }
+
+  function actionPeriodActual(plan: DailyActionPlan, startDate: string, endDate: string) {
+    return datesInRange(startDate, endDate).reduce((sum, date) => sum + dayActualForCompany(date, plan.company), 0)
+  }
+
+  function actionPeriodHasRows(plan: DailyActionPlan, startDate: string, endDate: string) {
+    return datesInRange(startDate, endDate).some((date) => hasActualRowsForCompany(date, plan.company))
   }
 
   function dayTarget(date: string) {
@@ -595,8 +686,17 @@ export function TaskCalendarEntryPage({
   async function saveActionPlan() {
     if (!token || !canEdit || actionSaving) return
     const expectedGmvGrowthRate = Number(actionExpectedGrowth)
+    const validationDays = Number(actionValidationDays)
+    if (actionEditorPlanId && actionEditorPlanDate && actionEditorPlanDate !== selectedDate) {
+      setNotice(`当前日期在 ${actionEditorPlanDate} 开始的验证周期内，不能填写新的当日动作。`)
+      return
+    }
     if (!actionText.trim() || !Number.isFinite(expectedGmvGrowthRate) || expectedGmvGrowthRate <= 0) {
       setNotice('请填写当日动作，并设置大于 0 的预期 GMV 涨幅。')
+      return
+    }
+    if (!Number.isFinite(validationDays) || validationDays < 1) {
+      setNotice('请选择正确的验证周期。')
       return
     }
     setActionSaving(true)
@@ -609,6 +709,7 @@ export function TaskCalendarEntryPage({
           date: selectedDate,
           action: actionText,
           expectedGmvGrowthRate,
+          validationDays,
           expectation: actionExpectation,
         }),
       })
@@ -622,9 +723,44 @@ export function TaskCalendarEntryPage({
         ? { status: 'ready', data: mergeTaskCalendarWindow(current.data, [result.taskCalendar]) }
         : { status: 'ready', data: result.taskCalendar })
       setActionEditor(false)
-      setNotice(`已保存 ${formatDate(selectedDate)} 的动作和预期。`)
+      setActionEditorPlanId('')
+      setActionEditorPlanDate('')
+      setNotice(`已保存 ${formatDate(selectedDate)} 的动作和 ${validationDays} 天验证周期。`)
     } finally {
       setActionSaving(false)
+    }
+  }
+
+  async function deleteActionPlan() {
+    if (!token || !canEdit || actionDeleting || !actionEditorPlanId) return
+    const confirmed = window.confirm('确定删除这个动作和预期吗？删除后该周期日期会解除锁定。')
+    if (!confirmed) return
+    setActionDeleting(true)
+    try {
+      const response = await fetch(`${apiBaseUrl}/task-calendar/action-plans/delete`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company: selectedCompany,
+          id: actionEditorPlanId,
+          date: actionEditorPlanDate || selectedDate,
+        }),
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        setNotice(error.reason || error.error || '删除动作失败')
+        return
+      }
+      const result = await response.json() as { taskCalendar: TaskCalendarData }
+      setLoadState((current) => current.status === 'ready'
+        ? { status: 'ready', data: mergeTaskCalendarWindow(current.data, [result.taskCalendar]) }
+        : { status: 'ready', data: result.taskCalendar })
+      setActionEditor(false)
+      setActionEditorPlanId('')
+      setActionEditorPlanDate('')
+      setNotice('已删除动作和预期，验证周期已解除。')
+    } finally {
+      setActionDeleting(false)
     }
   }
 
@@ -816,16 +952,29 @@ export function TaskCalendarEntryPage({
   const selectedDateActual = dayActual(selectedDate)
   const selectedDateTarget = dayTarget(selectedDate)
   const selectedDateRate = selectedDateTarget > 0 ? (selectedDateActual / selectedDateTarget) * 100 : 0
-  const previousActionDate = shiftDate(selectedDate, -1)
-  const previousDateActual = dayActual(previousActionDate)
-  const previousActionPlans = actionPlansForDate(previousActionDate)
-  const expectedGmvGrowthRate = previousActionPlans.length
-    ? previousActionPlans.reduce((sum, plan) => sum + Number(plan.expectedGmvGrowthRate || 0), 0) / previousActionPlans.length
+  const selectedActionPlans = actionPlansCoveringDate(selectedDate)
+  const actionBaseGmv = selectedActionPlans.reduce((sum, plan) => {
+    const validationDays = actionPlanValidationDays(plan)
+    return sum + actionPeriodActual(plan, shiftDate(plan.date, -validationDays), shiftDate(plan.date, -1))
+  }, 0)
+  const actionPeriodGmv = selectedActionPlans.reduce((sum, plan) => sum + actionPeriodActual(plan, plan.date, actionPlanEndDate(plan)), 0)
+  const hasActionPeriodRows = selectedActionPlans.some((plan) => actionPeriodHasRows(plan, plan.date, actionPlanEndDate(plan)))
+  const expectedGmvGrowthRate = selectedActionPlans.length
+    ? selectedActionPlans.reduce((sum, plan) => sum + Number(plan.expectedGmvGrowthRate || 0), 0) / selectedActionPlans.length
     : null
-  const actualGmvGrowthRate = previousDateActual > 0 ? ((selectedDateActual - previousDateActual) / previousDateActual) * 100 : (selectedDateActual > 0 ? 100 : 0)
-  const actionComplianceRate = expectedGmvGrowthRate && expectedGmvGrowthRate > 0 ? (actualGmvGrowthRate / expectedGmvGrowthRate) * 100 : null
+  const actualGmvGrowthRate = hasActionPeriodRows
+    ? (actionBaseGmv > 0 ? ((actionPeriodGmv - actionBaseGmv) / actionBaseGmv) * 100 : (actionPeriodGmv > 0 ? 100 : 0))
+    : null
+  const actionComplianceRate = expectedGmvGrowthRate && expectedGmvGrowthRate > 0 && actualGmvGrowthRate !== null ? (actualGmvGrowthRate / expectedGmvGrowthRate) * 100 : null
   const actionVerificationTone = actionValidationTone(actionComplianceRate, actualGmvGrowthRate)
   const actionVerificationLabel = actionValidationLabel(actionComplianceRate, actualGmvGrowthRate)
+  const actionCycleLabel = selectedActionPlans.length === 1
+    ? `${selectedActionPlans[0].company} · ${actionPeriodText(selectedActionPlans[0])}`
+    : selectedActionPlans.length
+      ? `${selectedActionPlans.length} 个动作周期覆盖 ${selectedDate}`
+      : `${selectedDate} 暂无动作周期`
+  const editingActionPlan = actionEditorPlanId ? (activeData.actionPlans ?? []).find((plan) => plan.id === actionEditorPlanId) : null
+  const actionEditorLocked = Boolean(editingActionPlan && actionEditorPlanDate && actionEditorPlanDate !== selectedDate)
   const selectedWeekDates = weekDays(selectedDate)
   const toolbarTitle = viewMode === 'business'
     ? `${selectedDate} 经营数据`
@@ -915,28 +1064,28 @@ export function TaskCalendarEntryPage({
           </section>
 
           <section className={`task-calendar-panel compact task-calendar-action-verify ${actionVerificationTone}`}>
-            <div className="task-calendar-section-title"><ClipboardCheck size={14} /> 前日动作验证</div>
+            <div className="task-calendar-section-title"><ClipboardCheck size={14} /> 动作周期验证</div>
             <div className="task-calendar-action-verify-head">
-              <span>{previousActionDate} 动作 → {selectedDate} 结果</span>
-              <b>{previousActionPlans.length ? actionVerificationLabel : '未填写前日动作'}</b>
+              <span>{actionCycleLabel}</span>
+              <b>{selectedActionPlans.length ? actionVerificationLabel : '未填写动作'}</b>
             </div>
             <div className="task-calendar-action-verify-metrics">
               <article>
-                <span>当日GMV涨幅</span>
-                <strong>{formatPercent(actualGmvGrowthRate)}</strong>
+                <span>周期GMV涨幅</span>
+                <strong>{selectedActionPlans.length ? formatPercent(actualGmvGrowthRate) : '待填'}</strong>
               </article>
               <article>
                 <span>符合预期</span>
-                <strong>{previousActionPlans.length ? formatPercent(actionComplianceRate) : '待填'}</strong>
+                <strong>{selectedActionPlans.length ? formatPercent(actionComplianceRate) : '待填'}</strong>
               </article>
             </div>
-            {previousActionPlans.length ? (
+            {selectedActionPlans.length ? (
               <>
-                <p className="task-calendar-action-verify-copy">{previousActionPlans.map((plan) => plan.action).join(' / ')}</p>
-                <p>预期 GMV 涨幅 {formatPercent(expectedGmvGrowthRate)}；前日 GMV {formatMoney(previousDateActual)}，当日 GMV {formatMoney(selectedDateActual)}。</p>
+                <p className="task-calendar-action-verify-copy">{selectedActionPlans.map((plan) => `${plan.company}：${plan.action}`).join(' / ')}</p>
+                <p>预期周期涨幅 {formatPercent(expectedGmvGrowthRate)}；基准周期 GMV {formatMoney(actionBaseGmv)}，验证周期 GMV {formatMoney(actionPeriodGmv)}。</p>
               </>
             ) : (
-              <p>选择日期后，这里会用前一天填写的动作和预期，验证当天 GMV 涨幅是否达标。</p>
+              <p>选择日期后，这里会显示该日期所在动作周期，并用整个周期 GMV 涨幅验证预期。</p>
             )}
           </section>
         </aside>
@@ -1006,13 +1155,13 @@ export function TaskCalendarEntryPage({
               unitType={unitType}
             />
           ) : viewMode === 'week' ? (
-            <WeekTrendBoard dates={selectedWeekDates} month={visibleMonth} selectedDate={selectedDate} dayActual={dayActual} dayTarget={dayTarget} onSelectDate={changeDate} />
+            <WeekTrendBoard dates={selectedWeekDates} month={visibleMonth} selectedDate={selectedDate} actionPeriods={actionPeriods} dayActual={dayActual} dayTarget={dayTarget} onSelectDate={changeDate} />
           ) : viewMode === 'year' ? (
             <YearBoard month={visibleMonth} monthActual={monthActual} monthTarget={monthTarget} company={selectedCompany} />
           ) : (
             <>
               <div className="task-calendar-weekdays">{weekdays.map((day) => <span key={day}>{day}</span>)}</div>
-              <CalendarGrid dates={calendarDays(visibleMonth)} month={visibleMonth} selectedDate={selectedDate} mode="month" dayActual={dayActual} dayTarget={dayTarget} onSelectDate={changeDate} />
+              <CalendarGrid dates={calendarDays(visibleMonth)} month={visibleMonth} selectedDate={selectedDate} actionPeriods={actionPeriods} mode="month" dayActual={dayActual} dayTarget={dayTarget} onSelectDate={changeDate} />
             </>
           )}
         </section>
@@ -1135,24 +1284,40 @@ export function TaskCalendarEntryPage({
                 <p>{selectedCompany} / {formatDate(selectedDate)}</p>
               </div>
             </div>
+            {actionEditorLocked && editingActionPlan ? (
+              <p className="task-calendar-target-preview">
+                当前日期属于 {editingActionPlan.date} 开始的 {actionPlanValidationDays(editingActionPlan)} 天验证周期，周期内不能新增当日动作。可切换到起始日修改，或删除该动作周期。
+              </p>
+            ) : null}
             <label className="task-calendar-field">
               当日动作
-              <textarea value={actionText} onChange={(event) => setActionText(event.currentTarget.value)} placeholder="例如：加大直播间投放、补达人短视频、调整货盘主推款" />
+              <textarea disabled={actionEditorLocked} value={actionText} onChange={(event) => setActionText(event.currentTarget.value)} placeholder="例如：加大直播间投放、补达人短视频、调整货盘主推款" />
             </label>
             <label className="task-calendar-field">
-              预期 GMV 涨幅（%）
-              <input type="number" min="1" step="1" value={actionExpectedGrowth} onChange={(event) => setActionExpectedGrowth(event.currentTarget.value)} placeholder="例如：30" />
+              验证周期
+              <select disabled={actionEditorLocked} value={actionValidationDays} onChange={(event) => setActionValidationDays(event.currentTarget.value)}>
+                {actionValidationDayOptions.map((days) => (
+                  <option value={days} key={days}>{days}天</option>
+                ))}
+              </select>
+            </label>
+            <label className="task-calendar-field">
+              预期周期 GMV 涨幅（%）
+              <input disabled={actionEditorLocked} type="number" min="1" step="1" value={actionExpectedGrowth} onChange={(event) => setActionExpectedGrowth(event.currentTarget.value)} placeholder="例如：30" />
             </label>
             <label className="task-calendar-field">
               预期说明
-              <textarea value={actionExpectation} onChange={(event) => setActionExpectation(event.currentTarget.value)} placeholder="可填写预期来源、关键业务或负责人" />
+              <textarea disabled={actionEditorLocked} value={actionExpectation} onChange={(event) => setActionExpectation(event.currentTarget.value)} placeholder="可填写预期来源、关键业务或负责人" />
             </label>
             <p className="task-calendar-target-preview">
-              保存后，点到下一天时会在“前日动作验证”里用当天 GMV 涨幅对比该预期：90%以上为有效，60-90为需要优化，20-60为基本无效，低于20或负增长会预警。
+              保存后，{formatDate(actionEditorPlanDate || selectedDate)} 到 {formatDate(shiftDate(actionEditorPlanDate || selectedDate, Number(actionValidationDays || 1) - 1))} 会被标成同一个动作周期；周期内不能再填写新的当日动作。验证会用该周期 GMV 对比前一个同长度周期，90%以上为有效，60-90为需要优化，20-60为基本无效，低于20或负增长会预警。
             </p>
             <div className="task-calendar-modal-actions">
+              {actionEditorPlanId ? (
+                <button className="task-calendar-danger" type="button" disabled={actionDeleting} onClick={deleteActionPlan}><Trash2 size={16} /> {actionDeleting ? '删除中' : '删除动作'}</button>
+              ) : null}
               <button className="task-calendar-light-button" type="button" onClick={() => setActionEditor(false)}>取消</button>
-              <button className="task-calendar-primary" type="button" disabled={actionSaving} onClick={saveActionPlan}><Save size={16} /> {actionSaving ? '保存中' : '保存动作'}</button>
+              <button className="task-calendar-primary" type="button" disabled={actionSaving || actionEditorLocked} onClick={saveActionPlan}><Save size={16} /> {actionSaving ? '保存中' : '保存动作'}</button>
             </div>
           </div>
         </div>
@@ -1167,6 +1332,7 @@ function WeekTrendBoard({
   dates,
   month,
   selectedDate,
+  actionPeriods,
   dayActual,
   dayTarget,
   onSelectDate,
@@ -1174,6 +1340,7 @@ function WeekTrendBoard({
   dates: string[]
   month: string
   selectedDate: string
+  actionPeriods: CalendarActionPeriod[]
   dayActual: (date: string) => number
   dayTarget: (date: string) => number
   onSelectDate: (date: string) => void
@@ -1249,11 +1416,15 @@ function WeekTrendBoard({
           const tone = performanceTone(row.rate, row.target, row.actual)
           const isMuted = monthOf(row.date) !== month
           const isSelected = row.date === selectedDate
+          const actionPeriod = actionPeriods.find((period) => period.start <= row.date && row.date <= period.end)
+          const cycleIndex = actionPeriod ? daysBetween(actionPeriod.start, row.date) + 1 : 0
+          const cycleStyle = actionPeriod ? ({ '--cycle-color': actionPeriod.color } as CSSProperties) : undefined
           return (
-            <button className={`${tone} ${isMuted ? 'muted' : ''} ${isSelected ? 'selected' : ''}`} type="button" key={row.date} onClick={() => onSelectDate(row.date)}>
+            <button className={`${tone} ${isMuted ? 'muted' : ''} ${isSelected ? 'selected' : ''} ${actionPeriod ? 'action-cycle' : ''}`} type="button" key={row.date} style={cycleStyle} onClick={() => onSelectDate(row.date)}>
               <span>{weekdays[row.index]}</span>
               <strong>{shortDateLabel(row.date)}</strong>
               <em>{formatMoney(row.actual)} / {formatMoney(row.target)}</em>
+              {actionPeriod ? <small>{actionPeriod.company} {cycleIndex}/{actionPeriod.validationDays}</small> : null}
             </button>
           )
         })}
@@ -1266,6 +1437,7 @@ function CalendarGrid({
   dates,
   month,
   selectedDate,
+  actionPeriods,
   mode,
   dayActual,
   dayTarget,
@@ -1274,6 +1446,7 @@ function CalendarGrid({
   dates: string[]
   month: string
   selectedDate: string
+  actionPeriods: CalendarActionPeriod[]
   mode: 'month' | 'week'
   dayActual: (date: string) => number
   dayTarget: (date: string) => number
@@ -1289,13 +1462,17 @@ function CalendarGrid({
         const isSelected = date === selectedDate
         const isToday = date === today()
         const tone = performanceTone(rate, target, actual)
+        const actionPeriod = actionPeriods.find((period) => period.start <= date && date <= period.end)
+        const cycleIndex = actionPeriod ? daysBetween(actionPeriod.start, date) + 1 : 0
+        const cycleStyle = actionPeriod ? ({ '--cycle-color': actionPeriod.color } as CSSProperties) : undefined
         return (
-          <button className={`${tone} ${isMuted ? 'muted' : ''} ${isSelected ? 'selected' : ''}`} type="button" key={date} onClick={() => onSelectDate(date)}>
+          <button className={`${tone} ${isMuted ? 'muted' : ''} ${isSelected ? 'selected' : ''} ${actionPeriod ? 'action-cycle' : ''}`} type="button" key={date} style={cycleStyle} onClick={() => onSelectDate(date)}>
             <div className="task-calendar-day-number">
               <strong>{Number(date.slice(8, 10))}</strong>
               {isToday ? <span>今天</span> : null}
             </div>
             <div className="task-calendar-day-card">
+              {actionPeriod ? <b className="task-calendar-day-cycle">{actionPeriod.company}动作 {cycleIndex}/{actionPeriod.validationDays}</b> : null}
               <span>{performanceLabel(rate, target, actual)} · 目标 {formatMoney(target)}</span>
               <strong>{formatPercent(rate)}</strong>
               <i><em style={{ width: `${Math.min(rate, 100)}%` }} /></i>
