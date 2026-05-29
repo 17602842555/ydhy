@@ -406,6 +406,7 @@ export function TaskCalendarEntryPage({
   const [actionEditorPlanDate, setActionEditorPlanDate] = useState('')
   const [actionSaving, setActionSaving] = useState(false)
   const [actionDeleting, setActionDeleting] = useState(false)
+  const [actionDeleteConfirming, setActionDeleteConfirming] = useState(false)
   const [savingUnitId, setSavingUnitId] = useState('')
   const [clearingMonth, setClearingMonth] = useState(false)
   const [businessDetailOpen, setBusinessDetailOpen] = useState(false)
@@ -503,6 +504,7 @@ export function TaskCalendarEntryPage({
     setActionExpectation(existing?.expectation || '')
     setActionEditorPlanId(existing?.id || '')
     setActionEditorPlanDate(existing?.date || selectedDate)
+    setActionDeleteConfirming(false)
     setActionEditor(true)
   }
 
@@ -725,6 +727,7 @@ export function TaskCalendarEntryPage({
       setActionEditor(false)
       setActionEditorPlanId('')
       setActionEditorPlanDate('')
+      setActionDeleteConfirming(false)
       setNotice(`已保存 ${formatDate(selectedDate)} 的动作和 ${validationDays} 天验证周期。`)
     } finally {
       setActionSaving(false)
@@ -733,8 +736,11 @@ export function TaskCalendarEntryPage({
 
   async function deleteActionPlan() {
     if (!token || !canEdit || actionDeleting || !actionEditorPlanId) return
-    const confirmed = window.confirm('确定删除这个动作和预期吗？删除后该周期日期会解除锁定。')
-    if (!confirmed) return
+    if (!actionDeleteConfirming) {
+      setActionDeleteConfirming(true)
+      setNotice('再次点击“确认删除”会删除这个动作和预期。')
+      return
+    }
     setActionDeleting(true)
     try {
       const response = await fetch(`${apiBaseUrl}/task-calendar/action-plans/delete`, {
@@ -752,12 +758,11 @@ export function TaskCalendarEntryPage({
         return
       }
       const result = await response.json() as { taskCalendar: TaskCalendarData }
-      setLoadState((current) => current.status === 'ready'
-        ? { status: 'ready', data: mergeTaskCalendarWindow(current.data, [result.taskCalendar]) }
-        : { status: 'ready', data: result.taskCalendar })
+      setLoadState({ status: 'ready', data: result.taskCalendar })
       setActionEditor(false)
       setActionEditorPlanId('')
       setActionEditorPlanDate('')
+      setActionDeleteConfirming(false)
       setNotice('已删除动作和预期，验证周期已解除。')
     } finally {
       setActionDeleting(false)
@@ -1314,9 +1319,11 @@ export function TaskCalendarEntryPage({
             </p>
             <div className="task-calendar-modal-actions">
               {actionEditorPlanId ? (
-                <button className="task-calendar-danger" type="button" disabled={actionDeleting} onClick={deleteActionPlan}><Trash2 size={16} /> {actionDeleting ? '删除中' : '删除动作'}</button>
+                <button className="task-calendar-danger" type="button" disabled={actionDeleting} onClick={deleteActionPlan}>
+                  <Trash2 size={16} /> {actionDeleting ? '删除中' : actionDeleteConfirming ? '确认删除' : '删除动作'}
+                </button>
               ) : null}
-              <button className="task-calendar-light-button" type="button" onClick={() => setActionEditor(false)}>取消</button>
+              <button className="task-calendar-light-button" type="button" onClick={() => { setActionDeleteConfirming(false); setActionEditor(false) }}>取消</button>
               <button className="task-calendar-primary" type="button" disabled={actionSaving || actionEditorLocked} onClick={saveActionPlan}><Save size={16} /> {actionSaving ? '保存中' : '保存动作'}</button>
             </div>
           </div>
