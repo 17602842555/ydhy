@@ -766,7 +766,8 @@ dd {
 .layout > .goals,
 .layout > .content-grid,
 .layout > #tasks,
-.layout > #spaces {
+.layout > #spaces,
+.layout > #liveReview {
   display: none;
 }
 
@@ -792,7 +793,8 @@ dd {
 }
 
 .layout[data-active-view="tasks"] > #tasks,
-.layout[data-active-view="spaces"] > #spaces {
+.layout[data-active-view="spaces"] > #spaces,
+.layout[data-active-view="liveReview"] > #liveReview {
   display: block;
 }
 
@@ -800,8 +802,24 @@ dd {
 .layout[data-active-view="dashboard"] > .goals,
 .layout[data-active-view="pages"] > .content-grid,
 .layout[data-active-view="tasks"] > #tasks,
-.layout[data-active-view="spaces"] > #spaces {
+.layout[data-active-view="spaces"] > #spaces,
+.layout[data-active-view="liveReview"] > #liveReview {
   animation: page-swap 0.18s ease both;
+}
+
+.live-review-panel {
+  min-height: calc(100vh - 156px);
+  padding: 0;
+}
+
+.live-review-panel iframe {
+  display: block;
+  width: 100%;
+  height: calc(100vh - 156px);
+  min-height: 720px;
+  border: 0;
+  border-radius: 24px;
+  background: #f3f3f3;
 }
 
 @keyframes page-swap {

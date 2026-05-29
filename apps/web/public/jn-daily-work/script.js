@@ -1755,7 +1755,7 @@ function setActiveStatus(status, options = {}) {
 
 document.querySelector(".workspace-nav").addEventListener("click", (event) => {
   const navButton = event.target.closest("[data-nav-target], [data-nav-status]");
-  const docItem = event.target.closest("[data-doc-search]");
+  const docItem = event.target.closest("[data-doc-search], [data-doc-view]");
 
   if (navButton) {
     document.querySelectorAll(".doc-button").forEach((item) => item.classList.remove("is-active"));
@@ -1778,10 +1778,18 @@ document.querySelector(".workspace-nav").addEventListener("click", (event) => {
 
   if (docItem) {
     const view = docItem.dataset.docView || "tasks";
-    const sideKey = `view:${view}`;
+    const sideKey = `doc:${view}:${docItem.textContent.trim()}`;
     searchInput.value = docItem.dataset.docFilter || "";
     document.querySelectorAll(".doc-button").forEach((item) => item.classList.toggle("is-active", item === docItem));
     setActiveView(view, sideKey);
+    if (view === "liveReview") {
+      activeStatus = "全部";
+      document.querySelectorAll(".tab").forEach((tab) => {
+        tab.classList.toggle("is-active", tab.dataset.status === "全部");
+      });
+      renderAll();
+      return;
+    }
     setActiveStatus("全部", { sideKey });
   }
 });
