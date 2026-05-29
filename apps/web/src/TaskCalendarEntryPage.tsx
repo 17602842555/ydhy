@@ -110,7 +110,12 @@ const allFields = [...storeFields, ...businessFields] as const
 const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
 const allCompaniesLabel = '全部子公司'
 const actionCycleColors = ['#2bbfc7', '#4f8cff', '#d18424', '#15a779', '#d7536f', '#7c65d8']
-const actionValidationDayOptions = [1, 3, 7]
+const actionValidationDayOptions = [
+  { value: 1, label: '1天' },
+  { value: 3, label: '3天' },
+  { value: 7, label: '7天' },
+  { value: 30, label: '一个月' },
+]
 
 type CalendarActionPeriod = {
   id: string
@@ -1301,8 +1306,8 @@ export function TaskCalendarEntryPage({
             <label className="task-calendar-field">
               验证周期
               <select disabled={actionEditorLocked} value={actionValidationDays} onChange={(event) => setActionValidationDays(event.currentTarget.value)}>
-                {actionValidationDayOptions.map((days) => (
-                  <option value={days} key={days}>{days}天</option>
+                {actionValidationDayOptions.map((option) => (
+                  <option value={option.value} key={option.value}>{option.label}</option>
                 ))}
               </select>
             </label>
