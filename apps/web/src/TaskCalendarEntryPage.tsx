@@ -239,6 +239,13 @@ function performanceLabel(rate: number, target = 0, actual = 0) {
   return '需关注'
 }
 
+function monthSummaryText(company: string, target: number, actual: number, rate: number) {
+  if (target <= 0) return `${company} 已有完成数据，但月目标尚未设定，需要先补齐目标后进入完成率监管。`
+  if (rate >= 100) return `${company} 月完成 ${formatMoney(actual)}，完成率 ${formatPercent(rate)}，当前节奏基本达标，继续保持日填报连续性。`
+  if (rate >= 70) return `${company} 月完成 ${formatMoney(actual)}，完成率 ${formatPercent(rate)}，需关注剩余缺口并确认近 3 天填报是否完整。`
+  return `${company} 月完成 ${formatMoney(actual)}，完成率 ${formatPercent(rate)}，低于监管线，需要负责人补动作、补数据、补风险说明。`
+}
+
 function actionValidationTone(complianceRate: number | null, actualGrowthRate: number | null) {
   if (!Number.isFinite(Number(complianceRate)) || !Number.isFinite(Number(actualGrowthRate))) return 'is-empty'
   if (Number(actualGrowthRate) <= 0 || Number(complianceRate) < 20) return 'is-risk'
@@ -470,7 +477,6 @@ export function TaskCalendarEntryPage({
     [activeData, targetCompanies],
   )
   const selectedDateMetrics = monthMetrics.filter((metric) => metric.date === selectedDate)
-  const selectedSummary = activeData?.summaries.find((item) => item.company === selectedCompany)
   const selectedTarget = activeData?.monthlyTargets.find((target) => target.company === selectedCompany && target.month === visibleMonth)
   const monthTarget = targetCompanies.reduce((sum, company) => sum + targetForCompany(company), 0)
   const monthActual = targetCompanies.reduce((sum, company) => sum + actualForCompany(company), 0)
@@ -528,13 +534,11 @@ export function TaskCalendarEntryPage({
   }
 
   function actualForCompany(company: string) {
-    const rows = metricRowsForCompany(company)
-    if (rows.length) return rows.reduce((sum, metric) => sum + metricRevenue(metric), 0)
-    return entryRowsForCompany(company).reduce((sum, entry) => sum + Number(entry.revenueActual || 0), 0)
-  }
-
-  function dayMetricRows(date: string) {
-    return activeData?.metrics.filter((metric) => targetCompanies.includes(metric.company) && metric.date === date) ?? []
+    const dates = uniqueValues([
+      ...metricRowsForCompany(company).map((metric) => metric.date),
+      ...entryRowsForCompany(company).map((entry) => entry.date),
+    ]).filter((date) => monthOf(date) === visibleMonth)
+    return dates.reduce((sum, date) => sum + dayActualForCompany(date, company), 0)
   }
 
   function dayEntryRows(date: string) {
@@ -558,9 +562,7 @@ export function TaskCalendarEntryPage({
   }
 
   function dayActual(date: string) {
-    const metrics = dayMetricRows(date)
-    if (metrics.length) return metrics.reduce((sum, metric) => sum + metricRevenue(metric), 0)
-    return dayEntryRows(date).reduce((sum, entry) => sum + Number(entry.revenueActual || 0), 0)
+    return targetCompanies.reduce((sum, company) => sum + dayActualForCompany(date, company), 0)
   }
 
   function dayActualForCompany(date: string, company: string) {
@@ -1070,7 +1072,7 @@ export function TaskCalendarEntryPage({
               </article>
             </div>
             <div className="task-calendar-progress-line"><i style={{ width: `${Math.min(monthRate, 100)}%` }} /></div>
-            <p>{selectedSummary?.summary || `${selectedCompany} 月完成 ${formatMoney(monthActual)}，完成率 ${formatPercent(monthRate)}。`}</p>
+            <p>{monthSummaryText(selectedCompany, monthTarget, monthActual, monthRate)}</p>
           </section>
 
           <section className={`task-calendar-panel compact task-calendar-action-verify ${actionVerificationTone}`}>

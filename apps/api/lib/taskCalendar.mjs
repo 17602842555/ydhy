@@ -575,20 +575,19 @@ function summarizeCompany(data, state, company, month) {
   const entries = state.entries.filter((entry) => entry.company === company && String(entry.date || '').startsWith(`${month}-`));
   const subsidiary = data.subsidiaries?.find((item) => item.name === company);
   const monthlyTarget = findMonthlyTarget(state, company, month);
-  const sourceRows = rows.length ? rows : entries;
-  const dates = sourceRows.map((row) => row.date).filter(Boolean).sort();
+  const dates = [...new Set([...rows, ...entries].map((row) => row.date).filter(Boolean))].sort();
   const lastDate = dates.at(-1) ?? `${month}-01`;
   const elapsedDays = Math.max(1, Number(lastDate.slice(8, 10)) || 1);
   const days = daysInMonth(month);
-  const actualWan = rows.length ? roundWan(sumMetricRevenue(rows)) : roundWan(sumEntryRevenue(entries, 'revenueActual'));
+  const actualWan = roundWan(sumDailyActuals(rows, entries, dates));
   const targetWan = monthlyTarget ? roundWan(monthlyTarget.monthlyTarget) : roundWan(sumEntryRevenue(entries, 'revenueTarget')) || Number(subsidiary?.target ?? 0);
   const completionRate = targetWan > 0 ? (actualWan / targetWan) * 100 : null;
   const dailyNeedWan = targetWan > 0 ? Math.max(0, (targetWan - actualWan) / Math.max(1, days - elapsedDays)) : 0;
   const forecastRate = targetWan > 0 ? (actualWan / elapsedDays) * days / targetWan * 100 : null;
-  const recentRows = sourceRows.filter((row) => row.date > dateOffset(lastDate, -3));
-  const weekRows = sourceRows.filter((row) => row.date > dateOffset(lastDate, -7));
-  const threeDayActual = rows.length ? roundWan(sumMetricRevenue(recentRows)) : roundWan(sumEntryRevenue(recentRows, 'revenueActual'));
-  const weekActual = rows.length ? roundWan(sumMetricRevenue(weekRows)) : roundWan(sumEntryRevenue(weekRows, 'revenueActual'));
+  const recentDates = dates.filter((date) => date > dateOffset(lastDate, -3));
+  const weekDates = dates.filter((date) => date > dateOffset(lastDate, -7));
+  const threeDayActual = roundWan(sumDailyActuals(rows, entries, recentDates));
+  const weekActual = roundWan(sumDailyActuals(rows, entries, weekDates));
   const threeDayRate = targetWan > 0 ? (threeDayActual / (targetWan / days * 3)) * 100 : 0;
   const weekRate = targetWan > 0 ? (weekActual / (targetWan / days * 7)) * 100 : 0;
   const status = targetWan <= 0 ? 'pending' : completionRate >= 90 ? 'good' : completionRate >= 70 ? 'watch' : 'risk';
@@ -605,11 +604,19 @@ function summarizeCompany(data, state, company, month) {
     gapWan,
     dailyNeedWan,
     status,
-    rowCount: sourceRows.length,
-    unitCount: rows.length ? new Set(rows.map((row) => row.unitId || row.unitName)).size : new Set(entries.map((row) => row.owner || row.task)).size,
+    rowCount: rows.length + entries.length,
+    unitCount: new Set([...rows.map((row) => row.unitId || row.unitName), ...entries.map((row) => row.owner || row.task)].filter(Boolean)).size,
     latestDate: dates.at(-1) ?? null,
-    summary: buildSummary(company, targetWan, actualWan, completionRate, status, sourceRows.length),
+    summary: buildSummary(company, targetWan, actualWan, completionRate, status, rows.length + entries.length),
   };
+}
+
+function sumDailyActuals(metrics, entries, dates) {
+  return dates.reduce((sum, date) => {
+    const metricRows = metrics.filter((row) => row.date === date);
+    if (metricRows.length) return sum + sumMetricRevenue(metricRows);
+    return sum + sumEntryRevenue(entries.filter((row) => row.date === date), 'revenueActual');
+  }, 0);
 }
 
 function buildSupervisionDashboard(data, summaries, month) {
