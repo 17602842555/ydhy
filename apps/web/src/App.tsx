@@ -11,6 +11,7 @@ import {
   clearAiSettings,
   clearCachedAuthToken,
   defaultAiSettings,
+  loadCachedAiInsights,
   loadAiInsights,
   loadSavedAiSettings,
   loginForToken,
@@ -1257,16 +1258,19 @@ function DecisionPanel({
   onCopy: (text?: string) => void
 }) {
   const localInsights = useMemo(() => buildAiInsights(data, tasks), [data, tasks])
-  const [loadState, setLoadState] = useState<AiLoadState>(() => ({ status: 'loading', insights: localInsights }))
-  const [refreshKey, setRefreshKey] = useState(0)
+  const decisionContext = useMemo(() => ({ label: '全局决策包', data, tasks }), [data, tasks])
+  const [loadState, setLoadState] = useState<AiLoadState>(() => ({ status: 'ready', insights: localInsights }))
 
   useEffect(() => {
     const controller = new AbortController()
-    loadAiInsights(apiBaseUrl, aiSettings, controller.signal, {
+    loadCachedAiInsights(apiBaseUrl, controller.signal, {
       section: 'decision',
-      context: { label: '全局决策包', data, tasks },
+      context: decisionContext,
     })
-      .then((insights) => setLoadState({ status: 'ready', insights: normalizeAiInsights(insights, localInsights) }))
+      .then((insights) => {
+        if (controller.signal.aborted) return
+        setLoadState({ status: 'ready', insights: insights ? normalizeAiInsights(insights, localInsights) : localInsights })
+      })
       .catch((error: Error) => {
         if (controller.signal.aborted) return
         setLoadState({
@@ -1279,20 +1283,46 @@ function DecisionPanel({
         })
       })
     return () => controller.abort()
-  }, [apiBaseUrl, aiSettings, data, tasks, localInsights, refreshKey])
+  }, [apiBaseUrl, decisionContext, localInsights])
+
+  async function runDecisionAnalysis() {
+    const controller = new AbortController()
+    setLoadState({ status: 'loading', insights })
+    try {
+      const next = await loadAiInsights(apiBaseUrl, aiSettings, controller.signal, {
+        section: 'decision',
+        context: decisionContext,
+        refresh: true,
+      })
+      setLoadState({ status: 'ready', insights: normalizeAiInsights(next, localInsights) })
+    } catch (error) {
+      setLoadState({
+        status: 'error',
+        insights: {
+          ...localInsights,
+          provider: { status: 'client_fallback', reason: 'ai_endpoint_unavailable', error: error instanceof Error ? error.message : String(error) },
+        },
+        message: error instanceof Error ? error.message : String(error),
+      })
+    }
+  }
 
   const insights = loadState.insights
   const sourceLookup = useMemo(() => {
     return new Map((insights.sourceRefs ?? []).map((ref) => [ref.id, ref.label]))
   }, [insights.sourceRefs])
   const providerStatus = insights.provider?.status ?? 'client_fallback'
-  const providerLabel = providerStatus === 'ark'
-    ? `Ark ${insights.provider?.model ?? ''}`.trim()
-    : providerStatus === 'not_configured'
-      ? 'Ark 未配置'
-      : loadState.status === 'loading'
-        ? 'Ark 分析中'
-        : '本地兜底'
+  const providerLabel = loadState.status === 'loading'
+    ? 'Ark 分析中'
+    : insights.cache?.status === 'hit'
+      ? '已保存分析'
+      : insights.cache?.status === 'saved'
+        ? '已更新分析'
+        : providerStatus === 'ark'
+          ? `Ark ${insights.provider?.model ?? ''}`.trim()
+        : providerStatus === 'not_configured'
+          ? 'Ark 未配置'
+          : '本地兜底'
 
   return (
     <section className="panel decision-panel section-anchor" id="decision">
@@ -1306,10 +1336,7 @@ function DecisionPanel({
               className="btn secondary"
               type="button"
               disabled={loadState.status === 'loading'}
-              onClick={() => {
-                setLoadState({ status: 'loading', insights })
-                setRefreshKey((current) => current + 1)
-              }}
+              onClick={runDecisionAnalysis}
             >
               刷新分析
             </button>
@@ -1451,7 +1478,9 @@ function ApiSettingsPanel({
           onChange={(event) => onChange({ ...draft, baseUrl: event.currentTarget.value })}
         />
       </label>
-      <p className="api-settings-state">{configured ? '已保存到本机浏览器' : '未配置 API Key'}</p>
+      <p className="api-settings-state">
+        {configured ? '已保存到本机浏览器；多人共用请配置后端 ARK_API_KEY' : '未配置本机 API Key；后端有 ARK_API_KEY 时所有用户可直接刷新分析'}
+      </p>
       <ConnectionTestMessage state={testState} />
       <footer>
         <button className="btn secondary" type="button" onClick={onClear}>清除</button>

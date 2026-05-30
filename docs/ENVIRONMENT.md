@@ -32,7 +32,9 @@ Production rules:
 
 ## Ark Coding Plan Analysis Runtime
 
-`GET /api/ai/insights` is a read-only analysis endpoint. It requires the same Bearer-token auth and `dashboard.read` permission as the main dashboard, then builds a compact snapshot from:
+`GET /api/ai/insights` and `POST /api/ai/insights` without `refresh: true` are read-only cache endpoints. They require the same Bearer-token auth and `dashboard.read` permission as the main dashboard, then return the last backend-saved analysis for the requested section/context. A cache miss returns `404 ai_insight_cache_miss` and does not call Ark.
+
+`POST /api/ai/insights` with `refresh: true` builds a compact section-scoped snapshot, calls Ark, and saves successful Ark results into the backend state store so other users can read the same analysis later. The snapshot can include:
 
 - published 子公司监管 data
 - operating-system tasks, risks, brands, costs, and tax cards
@@ -46,7 +48,7 @@ When `ARK_API_KEY` is set, the API calls Ark Coding Plan through the OpenAI-comp
 https://ark.cn-beijing.volces.com/api/coding/v3
 ```
 
-Do not use `https://ark.cn-beijing.volces.com/api/v3` for this feature, because that endpoint does not consume Coding Plan quota. When the key is missing or Ark fails, the endpoint returns local rule-based insights with the same response shape.
+Do not use `https://ark.cn-beijing.volces.com/api/v3` for this feature, because that endpoint does not consume Coding Plan quota. When the key is missing or Ark fails during a refresh, the endpoint returns local rule-based insights with the same response shape but does not overwrite the last saved Ark analysis. Browser-entered API keys are request-only and are not saved into backend business data; use `ARK_API_KEY` or Cloudflare Secret for shared refresh access.
 
 `POST /api/ai/test-connection` accepts the same `aiSettings` object as panel analysis and runs a minimal Ark chat-completions probe. It intentionally does not fall back to local rules; failures return a structured result with `ok: false`, `httpStatus` when available, and an Ark/network error code/message so operators can distinguish bad keys, wrong model names, wrong Base URL, network timeouts, and Ark-side authentication failures.
 

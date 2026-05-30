@@ -133,8 +133,12 @@ curl -sS https://ydhy-api.2445776963.workers.dev/api/operating-system \
 
 ```bash
 curl -sS https://ydhy-api.2445776963.workers.dev/api/ai/insights \
-  -H "Authorization: Bearer $TOKEN"
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"refresh":true,"section":"decision","context":{"label":"全局决策包"}}'
 ```
+
+不带 `refresh:true` 时只读取后端保存的分析结果；没有保存记录会返回 `404 ai_insight_cache_miss`。
 
 验证 Ark Coding Plan 连接诊断接口：
 

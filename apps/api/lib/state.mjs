@@ -20,6 +20,7 @@ export function prepareInitialData(seed, defaults = {}) {
   data.subsidiaries = Array.isArray(data.subsidiaries) ? data.subsidiaries : [];
   if (Array.isArray(defaults.subsidiaries)) data.subsidiaries = mergeById(data.subsidiaries, defaults.subsidiaries);
   data.decisionPackages = Array.isArray(data.decisionPackages) ? data.decisionPackages : [];
+  data.aiInsightCache = Array.isArray(data.aiInsightCache) ? data.aiInsightCache : [];
   data.operatingSystem = data.operatingSystem ?? clone(defaults.operatingSystem ?? {});
   data.commercialSystem = data.commercialSystem ?? clone(defaults.commercialSystem ?? {});
   data.villaProject = data.villaProject ?? clone(defaults.villaProject ?? { phases: [], issues: [], budgets: [], expenses: [], villaZones: [] });

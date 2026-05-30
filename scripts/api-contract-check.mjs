@@ -1,14 +1,42 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { createServer } from 'node:http';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const port = 19000 + Math.floor(Math.random() * 2000);
+const arkPort = 22000 + Math.floor(Math.random() * 2000);
 const tempRoot = await mkdtemp(join(tmpdir(), 'huage-api-contract-'));
 const api = `http://127.0.0.1:${port}/api`;
+const arkBaseUrl = `http://127.0.0.1:${arkPort}`;
 const stdout = [];
 const stderr = [];
+const arkRequests = [];
+const arkServer = createServer(async (req, res) => {
+  if (req.url !== '/chat/completions' || req.method !== 'POST') {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'not_found' }));
+    return;
+  }
+  const payload = JSON.parse(await readRequestBody(req));
+  arkRequests.push(payload);
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({
+    choices: [{
+      message: {
+        content: JSON.stringify({
+          summary: '契约测试 Ark 分析已生成并保存。',
+          advice: [{ text: '品牌经营先追低完成度品牌。', sourceRefs: ['operatingSystem.brands'] }],
+          warnings: [{ text: '低完成度品牌需要补动作验证。', sourceRefs: ['operatingSystem.brands'] }],
+          next: [{ text: '下次周会按负责人追踪。', sourceRefs: ['operatingSystem.tasks'] }],
+          decisionPackage: '契约测试决策包',
+        }),
+      },
+    }],
+  }));
+});
+await new Promise((resolve) => arkServer.listen(arkPort, '127.0.0.1', resolve));
 const server = spawn('node', ['apps/api/server.mjs'], {
   cwd: process.cwd(),
   env: {
@@ -53,9 +81,17 @@ try {
   assert(operatingSystem.body.contacts.length >= 10, 'operating system should expose contact registry');
   assert(operatingSystem.body.tasks.length >= 7, 'operating system should expose task ledger');
 
-  const aiInsights = await request('/ai/insights', { headers: pmoAuth });
-  assert(aiInsights.status === 200, 'PMO AI insights should load');
-  assert(aiInsights.body.provider.status === 'not_configured', 'AI insights should use no-key fallback in contract check');
+  const aiCacheMiss = await request('/ai/insights', { headers: pmoAuth });
+  assert(aiCacheMiss.status === 404 && aiCacheMiss.body.error === 'ai_insight_cache_miss', 'AI cache read should miss before first analysis');
+
+  const aiInsights = await request('/ai/insights', {
+    method: 'POST',
+    headers: pmoAuth,
+    body: JSON.stringify({ refresh: true }),
+  });
+  assert(aiInsights.status === 200, 'PMO AI refresh should return a fallback without a key');
+  assert(aiInsights.body.provider.status === 'not_configured', 'AI refresh should use no-key fallback in contract check');
+  assert(aiInsights.body.cache.status === 'not_saved', 'no-key fallback should not overwrite saved AI cache');
   assert(aiInsights.body.advice.length >= 3, 'AI insights should expose advice items');
   assert(aiInsights.body.sourceRefs.some((ref) => ref.id === 'dashboard.subsidiaries'), 'AI insights should expose source references');
 
@@ -63,14 +99,31 @@ try {
     method: 'POST',
     headers: pmoAuth,
     body: JSON.stringify({
+      refresh: true,
       section: 'brand',
       context: { label: '品牌经营进度', brands: operatingSystem.body.brands },
-      aiSettings: { model: 'ark-code-latest', baseUrl: 'https://ark.cn-beijing.volces.com/api/coding/v3' },
+      aiSettings: { apiKey: 'contract-key', model: 'ark-code-latest', baseUrl: arkBaseUrl },
     }),
   });
-  assert(sectionAiInsights.status === 200, 'section AI insights should load');
+  assert(sectionAiInsights.status === 200, 'section AI insights should refresh');
+  assert(sectionAiInsights.body.provider.status === 'ark', 'successful Ark section analysis should use Ark provider');
+  assert(sectionAiInsights.body.cache.status === 'saved', 'successful Ark section analysis should save to backend cache');
   assert(sectionAiInsights.body.section.key === 'brand', 'section AI insights should preserve the requested section preset');
   assert(sectionAiInsights.body.sourceRefs.some((ref) => ref.id === 'operatingSystem.brands'), 'section AI insights should expose section source references');
+  assert(arkRequests.length === 1, 'section refresh should call Ark exactly once');
+
+  const sectionAiCached = await request('/ai/insights', {
+    method: 'POST',
+    headers: pmoAuth,
+    body: JSON.stringify({
+      section: 'brand',
+      context: { label: '品牌经营进度' },
+    }),
+  });
+  assert(sectionAiCached.status === 200, 'section AI cache should be readable after refresh');
+  assert(sectionAiCached.body.cache.status === 'hit', 'section AI cache read should report a cache hit');
+  assert(sectionAiCached.body.summary === sectionAiInsights.body.summary, 'section AI cache should return the saved analysis');
+  assert(arkRequests.length === 1, 'cache read must not call Ark again');
 
   const aiConnectionMissingKey = await request('/ai/test-connection', {
     method: 'POST',
@@ -400,6 +453,8 @@ try {
           dashboardSubsidiaries: dashboard.body.subsidiaries.length,
           operatingBranches: operatingSystem.body.goalBranches.length,
           aiInsightMode: aiInsights.body.provider.status,
+          aiCacheStatus: sectionAiCached.body.cache.status,
+          arkRequests: arkRequests.length,
           people: people.body.people.length,
           commercialModules: commercialSystem.body.systemModules.length,
           villaPhases: villaProject.body.phases.length,
@@ -431,6 +486,7 @@ try {
   );
 } finally {
   server.kill('SIGTERM');
+  await new Promise((resolve) => arkServer.close(resolve));
   await rm(tempRoot, { recursive: true, force: true });
 }
 
@@ -466,6 +522,12 @@ async function request(path, options = {}) {
   const text = bytes.toString('utf8');
   const body = text ? JSON.parse(text) : null;
   return { status: response.status, headers: response.headers, body, bytes };
+}
+
+async function readRequestBody(req) {
+  let raw = '';
+  for await (const chunk of req) raw += String(chunk);
+  return raw;
 }
 
 function auth(token) {

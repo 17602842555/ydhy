@@ -1,6 +1,7 @@
 import { RotateCw, Sparkles } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
+  loadCachedAiInsights,
   loadAiInsights,
   SECTION_AI_PRESETS,
   type AiInsightItem,
@@ -31,16 +32,32 @@ export function AiSectionPanel({
 }) {
   const preset = SECTION_AI_PRESETS[section]
   const contextKey = useMemo(() => stableStringify(context), [context])
+  const requestContext = useMemo(() => parseStableContext(contextKey), [contextKey])
   const stateKey = `${section}:${contextKey}`
   const [loadState, setLoadState] = useState<AiLoadState>({ status: 'idle', key: '' })
   const currentState: AiLoadState = loadState.key === stateKey ? loadState : { status: 'idle', key: stateKey }
+
+  useEffect(() => {
+    const controller = new AbortController()
+    loadCachedAiInsights(apiBaseUrl, controller.signal, { section, context: requestContext })
+      .then((insights) => {
+        if (controller.signal.aborted) return
+        if (insights) setLoadState({ status: 'ready', key: stateKey, insights })
+        else setLoadState((current) => (current.key === stateKey ? current : { status: 'idle', key: stateKey }))
+      })
+      .catch((error: Error) => {
+        if (controller.signal.aborted) return
+        setLoadState({ status: 'error', key: stateKey, message: error.message })
+      })
+    return () => controller.abort()
+  }, [apiBaseUrl, requestContext, section, stateKey])
 
   async function runAnalysis() {
     const previous = currentState.status === 'ready' ? currentState.insights : undefined
     const controller = new AbortController()
     setLoadState({ status: 'loading', key: stateKey, insights: previous })
     try {
-      const insights = await loadAiInsights(apiBaseUrl, aiSettings, controller.signal, { section, context })
+      const insights = await loadAiInsights(apiBaseUrl, aiSettings, controller.signal, { section, context: requestContext, refresh: true })
       setLoadState({ status: 'ready', key: stateKey, insights })
     } catch (error) {
       setLoadState({
@@ -94,7 +111,7 @@ export function AiSectionPanel({
           </div>
         </>
       ) : (
-        <p className="section-ai-empty">使用上方预设提示词，只分析当前板块数据。</p>
+        <p className="section-ai-empty">暂无已保存分析。点击 AI分析 后会写入后端，其他用户也能读取。</p>
       )}
     </section>
   )
@@ -129,6 +146,8 @@ function SectionAiItem({ item, sourceLookup }: { item: AiInsightItem; sourceLook
 }
 
 function providerLabel(status: string, insights?: AiInsights) {
+  if (insights?.cache?.status === 'hit') return insights.provider?.status === 'ark' ? `已保存 ${insights.provider.model ?? 'Ark'}` : '已保存分析'
+  if (insights?.cache?.status === 'saved') return insights.provider?.status === 'ark' ? `已更新 ${insights.provider.model ?? 'Ark'}` : '已更新'
   if (status === 'ark') return `Ark ${insights?.provider?.model ?? ''}`.trim()
   if (status === 'loading') return 'Ark 分析中'
   if (status === 'idle') return '待分析'
@@ -147,5 +166,13 @@ function stableStringify(value: unknown) {
     })
   } catch {
     return ''
+  }
+}
+
+function parseStableContext(value: string): AiSectionContext {
+  try {
+    return JSON.parse(value) as AiSectionContext
+  } catch {
+    return {}
   }
 }

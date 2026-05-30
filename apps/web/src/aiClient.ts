@@ -8,6 +8,7 @@ export type AiSectionContext = Record<string, unknown> & {
 export type AiInsights = {
   generatedAt?: string
   provider?: { status: string; model?: string; reason?: string; error?: string }
+  cache?: { status: 'hit' | 'saved' | 'not_saved'; key?: string; updatedAt?: string; updatedBy?: string; reason?: string }
   section?: { key: string; title: string; prompt: string; contextLabel?: string }
   summary: string
   advice: AiInsightItem[]
@@ -197,16 +198,35 @@ export async function loadAiInsights(
   apiBaseUrl: string,
   aiSettings: AiSettings,
   signal: AbortSignal,
-  request: { section?: AiSectionKey; context?: AiSectionContext } = {},
+  request: { section?: AiSectionKey; context?: AiSectionContext; refresh?: boolean } = {},
 ): Promise<AiInsights> {
   const settings = normalizeAiSettings(aiSettings)
   const body = JSON.stringify({
+    refresh: request.refresh === true,
     section: request.section,
     context: request.context,
     aiSettings: settings.apiKey ? settings : { model: settings.model, baseUrl: settings.baseUrl },
   })
   const response = await fetchWithAuthRetry(apiBaseUrl, '/ai/insights', signal, { method: 'POST', body })
   if (!response.ok) throw new Error(`读取 Ark Coding Plan 分析失败：${response.status}`)
+  return (await response.json()) as AiInsights
+}
+
+export async function loadCachedAiInsights(
+  apiBaseUrl: string,
+  signal: AbortSignal,
+  request: { section?: AiSectionKey; context?: AiSectionContext } = {},
+): Promise<AiInsights | null> {
+  const response = await fetchWithAuthRetry(apiBaseUrl, '/ai/insights', signal, {
+    method: 'POST',
+    body: JSON.stringify({
+      refresh: false,
+      section: request.section,
+      context: request.context,
+    }),
+  })
+  if (response.status === 404) return null
+  if (!response.ok) throw new Error(`读取已保存 AI 分析失败：${response.status}`)
   return (await response.json()) as AiInsights
 }
 

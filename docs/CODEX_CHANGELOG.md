@@ -4,12 +4,13 @@
 
 ### Changed
 
-- Added `/api/ai/insights` as a read-only Ark Coding Plan analysis endpoint. It summarizes the whole dashboard from published/source-bound data and returns structured advice, warnings, next actions, decision-package text, and source references.
+- Added `/api/ai/insights` as an Ark Coding Plan analysis endpoint. It can refresh section-scoped analysis from published/source-bound data and return structured advice, warnings, next actions, decision-package text, and source references.
 - Kept the Ark API key server-side through `ARK_API_KEY`, added Cloudflare Worker support, exposed redacted runtime health metadata, and documented local/Worker setup.
 - Connected the React decision panel to the new endpoint with refresh, provider status, source labels, and local rule-based fallback when Ark is not configured or unavailable.
 - Added a bottom-left Ark settings gear in the dashboard so operators can enter an API key, model, and base URL from the page for browser-local analysis testing.
 - Added `/api/ai/test-connection` plus a settings-panel `测试连接` button so Ark Key/model/Base URL failures show explicit HTTP/error diagnostics instead of silently appearing as local fallback analysis.
 - Scoped Ark analysis prompts per board section, removed the unsupported `response_format=json_object` request parameter for `ark-code-latest`, and raised the default analysis timeout to 75 seconds so successful connection probes can complete full panel analysis.
+- Added backend persistence for successful Ark section analysis: saved results are returned to all users until a panel is explicitly refreshed again, while failed/local fallback analysis no longer overwrites the last saved Ark result.
 
 ## 2026-05-28
 

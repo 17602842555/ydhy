@@ -51,7 +51,7 @@ references    Original static prototypes extracted from the provided zip files
 - Primary contact updates through `/api/people/contacts/:id`, with distinct handover events and audit logs
 - Risk status/escalation updates through `/api/risks/:id`
 - Evidence-bound risk escalation that creates idempotent decision packages instead of local-only frontend decisions
-- Ark Coding Plan-backed read-only analysis through `/api/ai/insights`, with per-section prompt presets and source-bound local fallback when `ARK_API_KEY` is not configured
+- Ark Coding Plan-backed section analysis through `/api/ai/insights`, with backend-saved results, per-section prompt presets, and source-bound local fallback when `ARK_API_KEY` is not configured
 - Development role switcher for validating PMO, owner, finance, boss, disabled action states, and server-side 403 responses
 - Session-based login stub through `/api/auth/login` and Bearer-token API calls
 - Data lifecycle states: `raw`, `validated`, `published`, `corrected`, `archived`
@@ -108,13 +108,13 @@ ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/coding/v3
 ARK_TIMEOUT_MS=75000
 ```
 
-`GET /api/ai/insights` logs in through the same Bearer-token/RBAC boundary as other data APIs, builds a section-scoped snapshot from published/source-bound records, calls Ark's OpenAI-compatible `/chat/completions` endpoint, and returns structured advice, warnings, next actions, a decision-package draft, and source references. Without a key, the endpoint still returns deterministic local analysis so the UI remains usable.
+`GET /api/ai/insights` or `POST /api/ai/insights` without `refresh: true` reads the last saved analysis for that section/context from the backend state store. It does not call Ark again. If no saved analysis exists, it returns `404 ai_insight_cache_miss`.
 
-The same endpoint also accepts `POST` with `section`, `context`, and `aiSettings`. The frontend uses that path for panel-level analysis, so KPI, target pyramid, branch detail, contacts, brand, tasks, risk, supply, tax, daily work, decision package, and subsidiary-supervision panels each run with their own preset prompt and current panel data.
+`POST /api/ai/insights` with `refresh: true`, `section`, `context`, and optional `aiSettings` builds a section-scoped snapshot from published/source-bound records, calls Ark's OpenAI-compatible `/chat/completions` endpoint, and saves successful Ark results into `aiInsightCache`. The frontend uses that path for panel-level analysis, so KPI, target pyramid, branch detail, contacts, brand, tasks, risk, supply, tax, daily work, decision package, and subsidiary-supervision panels each run with their own preset prompt and current panel data. Missing-key or failed-Ark local fallback responses are returned to the caller but do not overwrite the last saved Ark analysis.
 
 `POST /api/ai/test-connection` uses the same Bearer-token/RBAC boundary and sends a minimal Ark `/chat/completions` probe. It returns a structured success/failure result with model, base URL, latency, HTTP status, and Ark error code/message without exposing the API key.
 
-For local browser testing, the dashboard also has a bottom-left settings gear where an operator can enter an Ark API key, model, and base URL. These values are stored in that browser and sent to the API in the `/api/ai/insights` or `/api/ai/test-connection` request body for that analysis/test call only. Use the settings panel's `测试连接` button before saving or refreshing panel analysis when diagnosing Key/model/Base URL problems.
+For local browser testing, the dashboard also has a bottom-left settings gear where an operator can enter an Ark API key, model, and base URL. These values are stored in that browser and sent to the API in the `/api/ai/insights` or `/api/ai/test-connection` request body for that analysis/test call only; the key itself is never saved into business data. For all users to refresh AI without entering a key, configure `ARK_API_KEY` in the API process or Cloudflare Secret. Use the settings panel's `测试连接` button before saving or refreshing panel analysis when diagnosing Key/model/Base URL problems.
 
 ## Deployment
 

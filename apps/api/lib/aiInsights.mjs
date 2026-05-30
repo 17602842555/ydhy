@@ -117,6 +117,54 @@ export async function getAiInsights(data, actor, options = {}) {
   }
 }
 
+export function getCachedAiInsights(data, actor, options = {}) {
+  requirePermission(data, actor, 'dashboard.read');
+  const section = resolveSectionPreset(options.section);
+  const sectionContext = normalizeSectionContext(options.context);
+  const key = aiInsightCacheKey(data, section, sectionContext);
+  const record = (data.aiInsightCache ?? []).find((entry) => entry.key === key || entry.id === key);
+  if (!record?.insights) return null;
+  return withCacheMeta(record.insights, {
+    status: 'hit',
+    key,
+    updatedAt: record.updatedAt,
+    updatedBy: record.updatedBy,
+  });
+}
+
+export function saveAiInsightCache(data, actor, options = {}, insights) {
+  const section = resolveSectionPreset(options.section);
+  const sectionContext = normalizeSectionContext(options.context);
+  const key = aiInsightCacheKey(data, section, sectionContext);
+  const updatedAt = new Date().toISOString();
+  const updatedBy = actor?.name || 'system';
+  const record = {
+    id: key,
+    key,
+    section: section.key,
+    title: section.title,
+    contextLabel: sectionMeta(section, sectionContext).contextLabel,
+    companyName: sectionContext?.companyName || '',
+    period: data.period,
+    updatedAt,
+    updatedBy,
+    provider: insights?.provider ?? null,
+    insights: stripCacheMeta(insights),
+  };
+  const rest = (data.aiInsightCache ?? []).filter((entry) => entry.key !== key && entry.id !== key);
+  data.aiInsightCache = [record, ...rest].slice(0, 120);
+  return withCacheMeta(record.insights, {
+    status: 'saved',
+    key,
+    updatedAt,
+    updatedBy,
+  });
+}
+
+export function isPersistableAiInsights(insights) {
+  return insights?.provider?.status === 'ark';
+}
+
 export async function testAiConnection(options = {}) {
   const apiKey = String(options.apiKey || '').trim();
   const baseUrl = String(options.baseUrl || options.endpoint || DEFAULT_ARK_BASE_URL).replace(/\/$/, '');
@@ -1128,6 +1176,19 @@ function sectionMeta(section, sectionContext) {
   };
 }
 
+function aiInsightCacheKey(data, section, sectionContext) {
+  const context = normalizeCacheKeyPart(sectionContext?.companyName || sectionContext?.label || 'global');
+  return [normalizeCacheKeyPart(data.period || 'all'), section.key, context].join('::');
+}
+
+function normalizeCacheKeyPart(value) {
+  return cleanText(value)
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}._-]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || 'global';
+}
+
 function normalizeSectionContext(value) {
   if (!value || typeof value !== 'object') return null;
   const label = cleanText(value.label || value.companyName);
@@ -1164,6 +1225,20 @@ function compactContextValue(value, depth = 0) {
     return Object.fromEntries(entries.map(([key, item]) => [key, compactContextValue(item, depth + 1)]));
   }
   return cleanText(value);
+}
+
+function stripCacheMeta(insights) {
+  if (!insights || typeof insights !== 'object') return insights;
+  const result = { ...insights };
+  delete result.cache;
+  return result;
+}
+
+function withCacheMeta(insights, cache) {
+  return {
+    ...stripCacheMeta(insights),
+    cache,
+  };
 }
 
 function buildDecisionPackageText(weakSubsidiaries, highTasks, decisionRisks, openWorkOrders) {

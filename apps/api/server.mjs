@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getAiInsights, testAiConnection } from './lib/aiInsights.mjs';
+import { getAiInsights, getCachedAiInsights, isPersistableAiInsights, saveAiInsightCache, testAiConnection } from './lib/aiInsights.mjs';
 import { authenticate, listLoginUsers, login, logout } from './lib/auth.mjs';
 import { getCommercialSystem, updateCommercialWorkOrder } from './lib/commercialSystem.mjs';
 import { healthFromConfig, loadRuntimeConfig } from './lib/config.mjs';
@@ -200,8 +200,21 @@ const server = createServer(async (req, res) => {
       const body = req.method === 'POST' ? await readBody(req) : {};
       const data = store.read();
       const actor = resolveActor(data, req);
-      const result = await getAiInsights(data, actor, aiConfigFromBody(runtimeConfig.ai, body));
-      json(res, 200, result);
+      const config = aiConfigFromBody(runtimeConfig.ai, body);
+      if (!shouldRefreshAiInsights(req.method, body)) {
+        const cached = getCachedAiInsights(data, actor, config);
+        if (!cached) {
+          json(res, 404, { error: 'ai_insight_cache_miss', reason: 'no saved AI analysis for this section/context' });
+          return;
+        }
+        json(res, 200, cached);
+        return;
+      }
+      const result = await getAiInsights(data, actor, config);
+      const saved = isPersistableAiInsights(result)
+        ? store.transaction((latest) => saveAiInsightCache(latest, actor, config, result))
+        : { ...result, cache: { status: 'not_saved', reason: 'only_successful_ark_results_are_saved' } };
+      json(res, 200, saved);
       return;
     }
 
@@ -738,6 +751,10 @@ function aiConfigFromBody(config, body = {}) {
     section: String(body.section || '').trim(),
     context: body.context && typeof body.context === 'object' ? body.context : null,
   };
+}
+
+function shouldRefreshAiInsights(method, body = {}) {
+  return method === 'POST' && body.refresh === true;
 }
 
 if (process.argv.includes('--check')) {

@@ -1,5 +1,5 @@
 import seed from './data/seed.json' with { type: 'json' };
-import { getAiInsights, testAiConnection } from './lib/aiInsights.mjs';
+import { getAiInsights, getCachedAiInsights, isPersistableAiInsights, saveAiInsightCache, testAiConnection } from './lib/aiInsights.mjs';
 import { listLoginUsers, login, logout, authenticate } from './lib/auth.mjs';
 import { getCommercialSystem, updateCommercialWorkOrder } from './lib/commercialSystem.mjs';
 import { D1StateStore } from './lib/d1Store.mjs';
@@ -154,7 +154,18 @@ async function handleRequest(request, env, store) {
       const body = request.method === 'POST' ? await readBody(request) : {};
       const data = await store.read();
       const actor = resolveActor(data, request, env);
-      return json(request, env, 200, await getAiInsights(data, actor, aiConfig(env, body)));
+      const config = aiConfig(env, body);
+      if (!shouldRefreshAiInsights(request.method, body)) {
+        const cached = getCachedAiInsights(data, actor, config);
+        if (!cached) return json(request, env, 404, { error: 'ai_insight_cache_miss', reason: 'no saved AI analysis for this section/context' });
+        return json(request, env, 200, cached);
+      }
+      const result = await getAiInsights(data, actor, config);
+      if (!isPersistableAiInsights(result)) {
+        return json(request, env, 200, { ...result, cache: { status: 'not_saved', reason: 'only_successful_ark_results_are_saved' } });
+      }
+      const saved = await store.transaction((latest) => saveAiInsightCache(latest, actor, config, result));
+      return json(request, env, 200, saved);
     }
 
     if (url.pathname === '/api/ai/test-connection' && request.method === 'POST') {
@@ -453,6 +464,10 @@ function aiConfig(env, body = {}) {
     section: String(body.section || '').trim(),
     context: body.context && typeof body.context === 'object' ? body.context : null,
   };
+}
+
+function shouldRefreshAiInsights(method, body = {}) {
+  return method === 'POST' && body.refresh === true;
 }
 
 function json(request, env, status, body) {
