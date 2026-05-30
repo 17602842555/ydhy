@@ -3069,6 +3069,10 @@ p {
   background: var(--orange);
 }
 
+.subcompany-action-card.status-pending::before {
+  background: #24a8b2;
+}
+
 .subcompany-action-card.status-invalid::before,
 .subcompany-action-card.status-bad::before {
   background: var(--red);
@@ -3134,6 +3138,10 @@ p {
 
 .subcompany-action-card.status-warn .subcompany-action-card-head strong {
   color: var(--orange);
+}
+
+.subcompany-action-card.status-pending .subcompany-action-card-head strong {
+  color: #139aa5;
 }
 
 .subcompany-action-card.status-invalid .subcompany-action-card-head strong,

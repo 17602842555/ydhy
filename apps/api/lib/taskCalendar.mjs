@@ -710,6 +710,7 @@ function buildActionVerificationForPlan(state, company, plan) {
   const periodEndDate = actionPeriodEnd(plan.date, validationDays);
   const baselineStartDate = dateOffset(plan.date, -validationDays);
   const baselineEndDate = dateOffset(plan.date, -1);
+  const verificationDue = isActionVerificationDue(periodEndDate);
   const periodDates = eachDateInRange(plan.date, periodEndDate);
   const baselineDates = eachDateInRange(baselineStartDate, baselineEndDate);
   const baseGmv = totalRevenueForDates(state, company, baselineDates);
@@ -719,17 +720,18 @@ function buildActionVerificationForPlan(state, company, plan) {
     const rows = dayRowsForCompany(state, company, date);
     return rows.metrics.length > 0 || rows.entries.length > 0;
   });
-  const actualGmvGrowthRate = hasVerificationData
+  const actualGmvGrowthRate = verificationDue && hasVerificationData
     ? (baseGmv > 0 ? ((verifyGmv - baseGmv) / baseGmv) * 100 : (verifyGmv > 0 ? 100 : 0))
     : null;
-  const complianceRate = Number.isFinite(Number(actualGmvGrowthRate)) && expectedGmvGrowthRate > 0
+  const complianceRate = verificationDue && Number.isFinite(Number(actualGmvGrowthRate)) && expectedGmvGrowthRate > 0
     ? (Number(actualGmvGrowthRate) / expectedGmvGrowthRate) * 100
     : null;
-  const status = actionVerificationStatus(complianceRate, actualGmvGrowthRate);
+  const status = verificationDue ? actionVerificationStatus(complianceRate, actualGmvGrowthRate) : 'pending';
 
   return {
     status,
     label: actionVerificationLabel(status, validationDays),
+    verificationDue,
     date: plan.date,
     verifyDate: periodEndDate,
     validationDays,
@@ -747,6 +749,10 @@ function buildActionVerificationForPlan(state, company, plan) {
     owner: plan.owner,
     updatedAt: plan.updatedAt,
   };
+}
+
+function isActionVerificationDue(periodEndDate) {
+  return currentBusinessDate() > String(periodEndDate || '');
 }
 
 function totalRevenueForDates(state, company, dates) {
@@ -777,6 +783,7 @@ function actionVerificationStatus(complianceRate, actualGrowthRate) {
 }
 
 function actionVerificationLabel(status, validationDays = 1) {
+  if (status === 'pending') return '未到验证节点';
   if (status === 'good') return Number(validationDays) > 1 ? '周期动作有效' : '当日动作有效';
   if (status === 'warn') return '需要优化';
   if (status === 'invalid') return '动作基本无效';
@@ -956,6 +963,15 @@ function normalizeDate(value) {
 
 function currentMonth() {
   return new Date().toISOString().slice(0, 7);
+}
+
+function currentBusinessDate() {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
 }
 
 function daysInMonth(month) {

@@ -127,7 +127,7 @@ type CalendarActionPeriod = {
 }
 
 function today() {
-  return new Date().toISOString().slice(0, 10)
+  return dateKey(new Date())
 }
 
 function monthOf(date: string) {
@@ -183,6 +183,10 @@ function actionPlanEndDate(plan: DailyActionPlan) {
 
 function isDateInActionPlan(date: string, plan: DailyActionPlan) {
   return plan.date <= date && date <= actionPlanEndDate(plan)
+}
+
+function isActionVerificationDue(plan: DailyActionPlan) {
+  return today() > actionPlanEndDate(plan)
 }
 
 function actionPeriodText(plan: DailyActionPlan) {
@@ -246,7 +250,8 @@ function monthSummaryText(company: string, target: number, actual: number, rate:
   return `${company} 月完成 ${formatMoney(actual)}，完成率 ${formatPercent(rate)}，低于监管线，需要负责人补动作、补数据、补风险说明。`
 }
 
-function actionValidationTone(complianceRate: number | null, actualGrowthRate: number | null) {
+function actionValidationTone(complianceRate: number | null, actualGrowthRate: number | null, verificationDue = true) {
+  if (!verificationDue) return 'is-empty'
   if (!Number.isFinite(Number(complianceRate)) || !Number.isFinite(Number(actualGrowthRate))) return 'is-empty'
   if (Number(actualGrowthRate) <= 0 || Number(complianceRate) < 20) return 'is-risk'
   if (Number(complianceRate) < 60) return 'is-invalid'
@@ -254,7 +259,8 @@ function actionValidationTone(complianceRate: number | null, actualGrowthRate: n
   return 'is-good'
 }
 
-function actionValidationLabel(complianceRate: number | null, actualGrowthRate: number | null) {
+function actionValidationLabel(complianceRate: number | null, actualGrowthRate: number | null, verificationDue = true) {
+  if (!verificationDue) return '未到验证节点'
   if (!Number.isFinite(Number(complianceRate)) || !Number.isFinite(Number(actualGrowthRate))) return '待验证'
   if (Number(actualGrowthRate) <= 0 || Number(complianceRate) < 20) return '动作无效需要预警'
   if (Number(complianceRate) < 60) return '动作基本无效'
@@ -970,16 +976,21 @@ export function TaskCalendarEntryPage({
     return sum + actionPeriodActual(plan, shiftDate(plan.date, -validationDays), shiftDate(plan.date, -1))
   }, 0)
   const actionPeriodGmv = selectedActionPlans.reduce((sum, plan) => sum + actionPeriodActual(plan, plan.date, actionPlanEndDate(plan)), 0)
+  const actionVerificationDue = selectedActionPlans.length > 0 && selectedActionPlans.every((plan) => isActionVerificationDue(plan))
+  const actionVerificationNodeDate = selectedActionPlans.reduce((latest, plan) => {
+    const endDate = actionPlanEndDate(plan)
+    return endDate > latest ? endDate : latest
+  }, '')
   const hasActionPeriodRows = selectedActionPlans.some((plan) => actionPeriodHasRows(plan, plan.date, actionPlanEndDate(plan)))
   const expectedGmvGrowthRate = selectedActionPlans.length
     ? selectedActionPlans.reduce((sum, plan) => sum + Number(plan.expectedGmvGrowthRate || 0), 0) / selectedActionPlans.length
     : null
-  const actualGmvGrowthRate = hasActionPeriodRows
+  const actualGmvGrowthRate = actionVerificationDue && hasActionPeriodRows
     ? (actionBaseGmv > 0 ? ((actionPeriodGmv - actionBaseGmv) / actionBaseGmv) * 100 : (actionPeriodGmv > 0 ? 100 : 0))
     : null
-  const actionComplianceRate = expectedGmvGrowthRate && expectedGmvGrowthRate > 0 && actualGmvGrowthRate !== null ? (actualGmvGrowthRate / expectedGmvGrowthRate) * 100 : null
-  const actionVerificationTone = actionValidationTone(actionComplianceRate, actualGmvGrowthRate)
-  const actionVerificationLabel = actionValidationLabel(actionComplianceRate, actualGmvGrowthRate)
+  const actionComplianceRate = actionVerificationDue && expectedGmvGrowthRate && expectedGmvGrowthRate > 0 && actualGmvGrowthRate !== null ? (actualGmvGrowthRate / expectedGmvGrowthRate) * 100 : null
+  const actionVerificationTone = actionValidationTone(actionComplianceRate, actualGmvGrowthRate, actionVerificationDue)
+  const actionVerificationLabel = actionValidationLabel(actionComplianceRate, actualGmvGrowthRate, actionVerificationDue)
   const actionCycleLabel = selectedActionPlans.length === 1
     ? `${selectedActionPlans[0].company} · ${actionPeriodText(selectedActionPlans[0])}`
     : selectedActionPlans.length
@@ -1084,17 +1095,21 @@ export function TaskCalendarEntryPage({
             <div className="task-calendar-action-verify-metrics">
               <article>
                 <span>周期GMV涨幅</span>
-                <strong>{selectedActionPlans.length ? formatPercent(actualGmvGrowthRate) : '待填'}</strong>
+                <strong>{selectedActionPlans.length ? (actionVerificationDue ? formatPercent(actualGmvGrowthRate) : '验证中') : '待填'}</strong>
               </article>
               <article>
                 <span>符合预期</span>
-                <strong>{selectedActionPlans.length ? formatPercent(actionComplianceRate) : '待填'}</strong>
+                <strong>{selectedActionPlans.length ? (actionVerificationDue ? formatPercent(actionComplianceRate) : '未到验证节点') : '待填'}</strong>
               </article>
             </div>
             {selectedActionPlans.length ? (
               <>
                 <p className="task-calendar-action-verify-copy">{selectedActionPlans.map((plan) => `${plan.company}：${plan.action}`).join(' / ')}</p>
-                <p>预期周期涨幅 {formatPercent(expectedGmvGrowthRate)}；基准周期 GMV {formatMoney(actionBaseGmv)}，验证周期 GMV {formatMoney(actionPeriodGmv)}。</p>
+                <p>
+                  {actionVerificationDue
+                    ? `预期周期涨幅 ${formatPercent(expectedGmvGrowthRate)}；基准周期 GMV ${formatMoney(actionBaseGmv)}，验证周期 GMV ${formatMoney(actionPeriodGmv)}。`
+                    : `预期周期涨幅 ${formatPercent(expectedGmvGrowthRate)}；验证节点 ${actionVerificationNodeDate}，当前仍在验证周期内。`}
+                </p>
               </>
             ) : (
               <p>选择日期后，这里会显示该日期所在动作周期，并用整个周期 GMV 涨幅验证预期。</p>

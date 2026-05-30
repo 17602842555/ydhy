@@ -13,6 +13,7 @@ type ActionVerification = {
   date?: string
   verifyDate?: string
   validationDays?: number
+  verificationDue?: boolean
   periodStartDate?: string
   periodEndDate?: string
   baselineStartDate?: string
@@ -157,6 +158,13 @@ function formatPercentValue(value?: number | null) {
   if (Math.abs(number) >= 100) return `${number.toFixed(0)}%`
   if (Math.abs(number) >= 10) return `${number.toFixed(1).replace(/\.0$/, '')}%`
   return `${number.toFixed(1).replace(/\.0$/, '')}%`
+}
+
+function actionMetricValue(item: ActionVerification, field: 'actualGmvGrowthRate' | 'complianceRate') {
+  if (item.status === 'pending' || item.verificationDue === false) {
+    return field === 'complianceRate' ? '未到验证节点' : '验证中'
+  }
+  return formatPercentValue(item[field])
 }
 
 function formatMoneyValue(value?: number | null) {
@@ -314,11 +322,11 @@ function ActionVerificationCard({ verification, verifications }: { verification?
         </div>
         <div>
           <span>实际周期涨幅</span>
-          <strong>{formatPercentValue(item.actualGmvGrowthRate)}</strong>
+          <strong>{actionMetricValue(item, 'actualGmvGrowthRate')}</strong>
         </div>
         <div>
           <span>符合预期</span>
-          <strong>{formatPercentValue(item.complianceRate)}</strong>
+          <strong>{actionMetricValue(item, 'complianceRate')}</strong>
         </div>
       </div>
       {Number.isFinite(Number(item.baseGmv)) || Number.isFinite(Number(item.verifyGmv)) ? (
