@@ -36,6 +36,14 @@ jobs:
       - name: Normalize Cloudflare token
         run: |
           CLEAN_TOKEN="$(printf '%s' "$CLOUDFLARE_API_TOKEN" | tr -d '\r\n\t ')"
+          CLEAN_TOKEN="${CLEAN_TOKEN#Bearer}"
+          CLEAN_TOKEN="${CLEAN_TOKEN#bearer}"
+          CLEAN_TOKEN="${CLEAN_TOKEN#CLOUDFLARE_API_TOKEN=}"
+          CLEAN_TOKEN="${CLEAN_TOKEN#YYHY=}"
+          CLEAN_TOKEN="${CLEAN_TOKEN#\"}"
+          CLEAN_TOKEN="${CLEAN_TOKEN%\"}"
+          CLEAN_TOKEN="${CLEAN_TOKEN#\'}"
+          CLEAN_TOKEN="${CLEAN_TOKEN%\'}"
           echo "::add-mask::$CLEAN_TOKEN"
           echo "CLOUDFLARE_API_TOKEN=$CLEAN_TOKEN" >> "$GITHUB_ENV"
 
