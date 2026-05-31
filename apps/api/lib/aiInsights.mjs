@@ -77,6 +77,11 @@ const SECTION_PRESETS = {
     sourceId: 'taskCalendar.supervision',
     prompt: '按预计完成率、3天完成率、周完成率和月缺口，排序识别最该追问的子公司。',
   },
+  'subcompany-weekly-report': {
+    title: '子公司监管 AI 周报',
+    sourceId: 'taskCalendar.supervision',
+    prompt: '基于后端子公司监管数据生成给华哥的本周 AI 周报，必须包含本周总览、完成率与缺口、重点风险公司、动作验证、下周三件事和需拍板事项。',
+  },
   'subcompany-company': {
     title: '单家公司诊断',
     sourceId: 'taskCalendar.supervision',
@@ -558,6 +563,40 @@ function applySectionFallback(generic, snapshot, section, sectionContext) {
     };
   }
 
+  if (section.key === 'subcompany-weekly-report') {
+    const actionPlans = snapshot.taskCalendar?.actionPlans ?? [];
+    const totalTargetWan = summaries.reduce((sum, entry) => sum + Number(entry.targetWan || 0), 0);
+    const totalActualWan = summaries.reduce((sum, entry) => sum + Number(entry.actualWan || 0), 0);
+    const completionRate = totalTargetWan > 0 ? (totalActualWan / totalTargetWan) * 100 : null;
+    const gapCompanies = [...summaries]
+      .filter((entry) => Number(entry.gapWan || 0) > 0 || Number(entry.forecastRate ?? entry.completionRate ?? 0) < 80)
+      .sort((a, b) => Number(b.gapWan || 0) - Number(a.gapWan || 0))
+      .slice(0, 4);
+    const actionRisks = actionPlans
+      .filter((entry) => entry.verificationDue || Number(entry.complianceRate ?? 100) < 90 || ['bad', 'invalid', 'warn'].includes(String(entry.status || '')))
+      .slice(0, 4);
+    return {
+      ...generic,
+      summary: `【子公司监管 AI 周报】已汇总 ${summaries.length} 家子公司，本月完成约 ${formatPercent(completionRate)}，动作验证 ${actionPlans.length} 条。`,
+      advice: [
+        source(`周报开头先报集团目标 ${formatWan(totalTargetWan)}万、完成 ${formatWan(totalActualWan)}万、完成率 ${formatPercent(completionRate)}。`),
+        source(gapCompanies.length ? `重点复盘 ${gapCompanies.map((entry) => entry.company).join('、')} 的月缺口和周完成率。` : '当前缺口公司不明显，周报重点转向动作验证质量。'),
+        source('每家公司只保留一个一级责任口，周报里写清负责人、补救动作、验证日期。'),
+      ],
+      warnings: [
+        source(gapCompanies.length ? `${gapCompanies.map((entry) => `${entry.company}缺口${formatWan(entry.gapWan)}万`).join('；')}。` : '暂无明显月缺口风险。'),
+        source(actionRisks.length ? `${actionRisks.map((entry) => `${entry.company}动作验证`).join('、')} 需要在周报里单列。` : '动作验证暂无明显低符合度项。'),
+        source(decisionRisks.length ? `有 ${decisionRisks.length} 条需华哥拍板风险，周报末尾必须列“需拍板事项”。` : '暂无必须拍板风险，仍需保留“需拍板事项：暂无”。', ['operatingSystem.risks']),
+      ],
+      next: [
+        source('下周先追月缺口最大公司，再追 3天/周完成率为 0 的公司。'),
+        source('未到验证节点的动作写清验证日期，到期动作必须回填实际涨幅和符合率。'),
+        source('将低完成率公司补救动作沉淀到填报页，避免周报只有文字总结。'),
+      ],
+      decisionPackage: buildSubcompanyWeeklyReportText(summaries, gapCompanies, actionRisks, decisionRisks, totalTargetWan, totalActualWan, completionRate),
+    };
+  }
+
   if (section.key === 'subcompany-metrics' || section.key === 'subcompany-rank') {
     return {
       ...generic,
@@ -666,6 +705,7 @@ function buildSystemInstruction() {
 
 function buildUserPrompt(snapshot, section = resolveSectionPreset(), sectionContext = null) {
   const scopedSnapshot = buildScopedPromptSnapshot(snapshot, section, sectionContext);
+  const isWeeklyReport = section.key === 'subcompany-weekly-report';
   return JSON.stringify({
     task: '按指定板块分析集团经营看板，输出结构化中文洞察。',
     section: sectionMeta(section, sectionContext),
@@ -675,12 +715,15 @@ function buildUserPrompt(snapshot, section = resolveSectionPreset(), sectionCont
       advice: [{ text: '当前板块经营建议，50字内', sourceRefs: [section.sourceId] }],
       warnings: [{ text: '当前板块异常提醒，50字内', sourceRefs: [section.sourceId] }],
       next: [{ text: '当前板块下步动作，50字内', sourceRefs: [section.sourceId] }],
-      decisionPackage: '可复制给华哥的简短决策包草案，分一二三四段',
+      decisionPackage: isWeeklyReport
+        ? '可直接复制给华哥的周报正文，按【本周总览】【重点风险】【动作验证】【下周安排】【需拍板事项】分段'
+        : '可复制给华哥的简短决策包草案，分一二三四段',
     },
     constraints: [
       'advice、warnings、next 各输出 3 条。',
       `本次只分析“${section.title}”板块，预设提示词：${section.prompt}`,
       '优先使用 sectionContext 与 snapshot 中当前板块相关数据，不要扩展分析未提供的全局明细。',
+      ...(isWeeklyReport ? ['周报正文必须用可直接发送的经营汇报口吻，不要写成解释说明；缺失数据必须写“待补数据”。'] : []),
       '所有金额单位沿用输入中的万元口径。',
       '如果数据缺失，请明确写“待补数据”，不要猜。',
       '必须返回可被 JSON.parse 直接解析的 JSON；字符串内如需换行请使用 \\n。',
@@ -828,6 +871,24 @@ function buildScopedPromptSnapshot(snapshot, section, sectionContext) {
     };
   }
 
+  if (section.key === 'subcompany-weekly-report') {
+    return {
+      ...base,
+      dashboard: compactDashboard(snapshot, { limit: 14 }),
+      taskCalendar: compactTaskCalendar(snapshot.taskCalendar, {
+        summaryLimit: 14,
+        actionLimit: 20,
+        includeCompanies: true,
+        includeMonthlyTargets: true,
+      }),
+      operatingSystem: {
+        contacts: compactContacts(snapshot.operatingSystem.contacts, 20),
+        tasks: compactTasks(snapshot.operatingSystem.tasks, 16),
+        risks: compactRisks(snapshot.operatingSystem.risks, 14),
+      },
+    };
+  }
+
   if (section.key === 'subcompany-company') {
     return {
       ...base,
@@ -906,9 +967,14 @@ function compactTaskCalendar(taskCalendar, options = {}) {
       'date',
       'action',
       'expectedGmvGrowthRate',
+      'actualGmvGrowthRate',
+      'complianceRate',
+      'verificationDue',
       'validationDays',
       'periodEndDate',
       'expectation',
+      'baseGmv',
+      'verifyGmv',
       'owner',
     ])),
     monthlyTargets: monthlyTargets.map((item) => pickFields(item, ['company', 'month', 'monthlyTarget', 'dailyTarget', 'updatedBy', 'updatedAt'])),
@@ -1249,6 +1315,13 @@ function buildDecisionPackageText(weakSubsidiaries, highTasks, decisionRisks, op
   return `《华哥经营决策包草案》\n\n一、需拍板/关注事项\n${risks}\n\n二、经营缺口\n${weak}\n\n三、未完高优任务\n${tasks}\n\n四、系统建设阻塞\n${workOrders}`;
 }
 
+function buildSubcompanyWeeklyReportText(summaries, gapCompanies, actionRisks, decisionRisks, totalTargetWan, totalActualWan, completionRate) {
+  const gapText = gapCompanies.map((entry) => `- ${entry.company}：月缺口 ${formatWan(entry.gapWan)}万，预计完成率 ${formatPercent(entry.forecastRate ?? entry.completionRate)}`).join('\n') || '- 暂无明显月缺口公司';
+  const actionText = actionRisks.map((entry) => `- ${entry.company}：${entry.action || '动作待补'}｜验证 ${entry.verificationDue ? '已到期' : '未到期'}｜符合率 ${formatPercent(entry.complianceRate)}`).join('\n') || '- 暂无明显异常动作验证';
+  const decisionText = decisionRisks.map((entry) => `- ${entry.text || entry.id}`).join('\n') || '- 暂无必须拍板事项';
+  return `《子公司监管 AI 周报》\n\n【本周总览】\n本周已汇总 ${summaries.length} 家子公司监管数据，集团月目标 ${formatWan(totalTargetWan)}万，已完成 ${formatWan(totalActualWan)}万，完成率 ${formatPercent(completionRate)}。\n\n【重点风险】\n${gapText}\n\n【动作验证】\n${actionText}\n\n【下周安排】\n1. 先追月缺口最大和周完成率异常公司。\n2. 所有补救动作补齐负责人、预期涨幅、验证天数。\n3. 到期动作必须回填实际涨幅和符合率。\n\n【需拍板事项】\n${decisionText}`;
+}
+
 function parseJsonText(text) {
   const normalized = stripJsonFences(text);
   try {
@@ -1357,6 +1430,14 @@ function formatWan(value) {
   if (Math.abs(number) >= 100) return number.toFixed(0);
   if (Math.abs(number) >= 10) return number.toFixed(1).replace(/\.0$/, '');
   return number.toFixed(1).replace(/\.0$/, '');
+}
+
+function formatPercent(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '待补数据';
+  if (Math.abs(number) >= 100) return `${number.toFixed(0)}%`;
+  if (Math.abs(number) >= 10) return `${number.toFixed(1).replace(/\.0$/, '')}%`;
+  return `${number.toFixed(1).replace(/\.0$/, '')}%`;
 }
 
 function safeErrorMessage(error) {

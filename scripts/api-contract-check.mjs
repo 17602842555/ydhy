@@ -95,6 +95,21 @@ try {
   assert(aiInsights.body.advice.length >= 3, 'AI insights should expose advice items');
   assert(aiInsights.body.sourceRefs.some((ref) => ref.id === 'dashboard.subsidiaries'), 'AI insights should expose source references');
 
+  const weeklyAiInsights = await request('/ai/insights', {
+    method: 'POST',
+    headers: pmoAuth,
+    body: JSON.stringify({
+      refresh: true,
+      section: 'subcompany-weekly-report',
+      context: { label: '子公司监管AI周报' },
+    }),
+  });
+  assert(weeklyAiInsights.status === 200, 'weekly AI report should refresh through the shared insights endpoint');
+  assert(weeklyAiInsights.body.provider.status === 'not_configured', 'weekly AI report should use no-key fallback in contract check');
+  assert(weeklyAiInsights.body.section.key === 'subcompany-weekly-report', 'weekly AI report should preserve the requested section preset');
+  assert(weeklyAiInsights.body.decisionPackage.includes('子公司监管 AI 周报'), 'weekly AI report should expose a report draft');
+  assert(weeklyAiInsights.body.cache.status === 'not_saved', 'weekly no-key fallback should not overwrite saved AI cache');
+
   const sectionAiInsights = await request('/ai/insights', {
     method: 'POST',
     headers: pmoAuth,

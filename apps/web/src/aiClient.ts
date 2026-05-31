@@ -42,6 +42,7 @@ export type AiSectionKey =
   | 'decision'
   | 'subcompany-metrics'
   | 'subcompany-rank'
+  | 'subcompany-weekly-report'
   | 'subcompany-company'
 
 export const DEFAULT_ARK_BASE_URL = 'https://ark.cn-beijing.volces.com/api/coding/v3'
@@ -116,6 +117,11 @@ export const SECTION_AI_PRESETS: Record<AiSectionKey, { title: string; prompt: s
     title: '监管排行诊断',
     prompt: '按预计完成率、3天完成率、周完成率和月缺口，排序识别最该追问的子公司。',
     source: '子公司监管排行',
+  },
+  'subcompany-weekly-report': {
+    title: '子公司监管 AI 周报',
+    prompt: '基于后端子公司监管数据生成给华哥的本周 AI 周报，必须包含本周总览、完成率与缺口、重点风险公司、动作验证、下周三件事和需拍板事项。',
+    source: '子公司监管周报 / 后端填报数据',
   },
   'subcompany-company': {
     title: '单家公司诊断',

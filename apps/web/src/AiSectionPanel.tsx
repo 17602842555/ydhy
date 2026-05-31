@@ -23,12 +23,14 @@ export function AiSectionPanel({
   apiBaseUrl,
   aiSettings,
   compact = false,
+  showDecisionPackage = false,
 }: {
   section: AiSectionKey
   context: AiSectionContext
   apiBaseUrl: string
   aiSettings: AiSettings
   compact?: boolean
+  showDecisionPackage?: boolean
 }) {
   const preset = SECTION_AI_PRESETS[section]
   const contextKey = useMemo(() => stableStringify(context), [context])
@@ -109,6 +111,12 @@ export function AiSectionPanel({
               <InsightGroup group={group} sourceLookup={sourceLookup} key={group.key} />
             ))}
           </div>
+          {showDecisionPackage && insights.decisionPackage ? (
+            <section className="section-ai-report">
+              <h4>周报草案</h4>
+              <p>{insights.decisionPackage}</p>
+            </section>
+          ) : null}
         </>
       ) : (
         <p className="section-ai-empty">暂无已保存分析。点击 AI分析 后会写入后端，其他用户也能读取。</p>

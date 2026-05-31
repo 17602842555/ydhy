@@ -424,6 +424,29 @@ export function SubcompanySupervisionPage({
         aiSettings={aiSettings}
         context={{ label: '子公司监管总指标', metrics: data.metrics, title: data.title, subtitle: data.subtitle }}
       />
+      <AiSectionPanel
+        section="subcompany-weekly-report"
+        apiBaseUrl={apiBaseUrl}
+        aiSettings={aiSettings}
+        showDecisionPackage
+        context={{
+          label: '子公司监管AI周报',
+          data: {
+            title: data.title,
+            subtitle: data.subtitle,
+            metrics: data.metrics,
+            rankHeaders: data.rankHeaders,
+            rankRows: data.rankRows.slice(0, 12),
+            companies: data.companies.slice(0, 12).map((company) => ({
+              name: company.name,
+              status: company.status,
+              score: company.score,
+              summary: company.summary,
+              actionVerification: company.actionVerification,
+            })),
+          },
+        }}
+      />
 
       <section className="panel subcompany-rank-panel">
         <div className="panel-header">
