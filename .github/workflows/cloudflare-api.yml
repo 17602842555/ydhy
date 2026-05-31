@@ -50,8 +50,8 @@ jobs:
       - name: Apply D1 migrations
         run: npx wrangler d1 migrations apply DB --remote
 
-      - name: Seed D1 if empty
-        run: npx wrangler d1 execute DB --remote --file apps/api/d1/seed.sql
+      - name: Verify D1 state store
+        run: npx wrangler d1 execute DB --remote --command "select count(*) as count from app_state;"
 
       - name: Deploy Worker
         run: npx wrangler deploy
