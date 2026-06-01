@@ -1,6 +1,6 @@
 import { type CSSProperties, type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Building2, ChevronLeft, ChevronRight, ClipboardCheck, FileText, LogOut, Save, Sparkles, Target, Trash2 } from 'lucide-react'
-import { type AiInsights, defaultAiSettings, loadAiInsights } from './aiClient'
+import { type AiInsightItem, type AiInsights, defaultAiSettings, loadAiInsights } from './aiClient'
 
 type BusinessUnit = { id: string; company: string; type: 'store' | 'business'; name: string }
 type BusinessMetric = {
@@ -184,6 +184,21 @@ function shiftMonth(month: string, offset: number) {
   const [year, monthNumber] = month.split('-').map(Number)
   const date = new Date(year, monthNumber - 1 + offset, 1)
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+}
+
+function readableInsightText(item: AiInsightItem) {
+  const raw = String(item?.text || '').trim()
+  if (!raw) return ''
+  if (raw.startsWith('{') && raw.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(raw) as Record<string, unknown>
+      const text = parsed.text || parsed.summary || parsed.advice || parsed.warning || parsed.next || parsed.action || parsed.risk
+      if (typeof text === 'string' && text.trim()) return text.trim()
+    } catch {
+      return raw
+    }
+  }
+  return raw
 }
 
 function shiftDate(date: string, offset: number) {
@@ -1352,7 +1367,7 @@ export function TaskCalendarEntryPage({
         </div>
       </header>
 
-      <main className="task-calendar-workspace">
+      <main className={`task-calendar-workspace ${viewMode === 'year' ? 'task-calendar-year-workspace' : ''}`}>
         <aside className="task-calendar-sidebar">
           <section className="task-calendar-panel">
             <label className="task-calendar-field">
@@ -1862,47 +1877,60 @@ function MonthReportPanel({
         <span>月报填写</span>
         <b>{isSaved ? '已保存' : '待填写'}</b>
       </div>
-      <label className="task-calendar-weekly-field">
-        本月总结
-        <textarea disabled={!canEdit} value={draft.summary} onChange={(event) => onUpdate('summary', event.currentTarget.value)} placeholder="本月主要完成了什么，目标差距和核心原因是什么" />
-      </label>
-      <label className="task-calendar-weekly-field">
-        完成亮点
-        <textarea disabled={!canEdit} value={draft.wins} onChange={(event) => onUpdate('wins', event.currentTarget.value)} placeholder="有效动作、增长来源、表现好的主体或渠道" />
-      </label>
-      <label className="task-calendar-weekly-field">
-        问题风险
-        <textarea disabled={!canEdit} value={draft.risks} onChange={(event) => onUpdate('risks', event.currentTarget.value)} placeholder="低完成、缺口、未填数据、动作未验证原因" />
-      </label>
-      <label className="task-calendar-weekly-field">
-        下月计划
-        <textarea disabled={!canEdit} value={draft.nextPlan} onChange={(event) => onUpdate('nextPlan', event.currentTarget.value)} placeholder="下月三件重点动作、负责人和验证方式" />
-      </label>
-      <label className="task-calendar-weekly-field">
-        需要集团支持
-        <textarea disabled={!canEdit} value={draft.supportNeeded} onChange={(event) => onUpdate('supportNeeded', event.currentTarget.value)} placeholder="资源、预算、人手、供应链或拍板事项；没有就填暂无" />
-      </label>
-      <div className="task-calendar-weekly-actions">
-        <button className="task-calendar-primary" type="button" disabled={!canEdit || saving} onClick={onSave}>
-          <Save size={15} /> {saving ? '保存中' : '保存月报'}
-        </button>
-        <button className="task-calendar-light-button" type="button" disabled={loading} onClick={onAnalyze}>
-          <Sparkles size={15} /> {loading ? '分析中' : 'AI分析'}
-        </button>
+      <div className="task-calendar-month-report-form">
+        <label className="task-calendar-weekly-field task-calendar-month-report-field is-wide">
+          本月总结
+          <textarea disabled={!canEdit} value={draft.summary} onChange={(event) => onUpdate('summary', event.currentTarget.value)} placeholder="本月主要完成了什么，目标差距和核心原因是什么" />
+        </label>
+        <label className="task-calendar-weekly-field task-calendar-month-report-field">
+          完成亮点
+          <textarea disabled={!canEdit} value={draft.wins} onChange={(event) => onUpdate('wins', event.currentTarget.value)} placeholder="有效动作、增长来源、表现好的主体或渠道" />
+        </label>
+        <label className="task-calendar-weekly-field task-calendar-month-report-field">
+          问题风险
+          <textarea disabled={!canEdit} value={draft.risks} onChange={(event) => onUpdate('risks', event.currentTarget.value)} placeholder="低完成、缺口、未填数据、动作未验证原因" />
+        </label>
+        <label className="task-calendar-weekly-field task-calendar-month-report-field">
+          下月计划
+          <textarea disabled={!canEdit} value={draft.nextPlan} onChange={(event) => onUpdate('nextPlan', event.currentTarget.value)} placeholder="下月三件重点动作、负责人和验证方式" />
+        </label>
+        <label className="task-calendar-weekly-field task-calendar-month-report-field">
+          需要集团支持
+          <textarea disabled={!canEdit} value={draft.supportNeeded} onChange={(event) => onUpdate('supportNeeded', event.currentTarget.value)} placeholder="资源、预算、人手、供应链或拍板事项；没有就填暂无" />
+        </label>
+        <div className="task-calendar-weekly-actions task-calendar-month-report-actions">
+          <button className="task-calendar-primary" type="button" disabled={!canEdit || saving} onClick={onSave}>
+            <Save size={15} /> {saving ? '保存中' : '保存月报'}
+          </button>
+          <button className="task-calendar-light-button" type="button" disabled={loading} onClick={onAnalyze}>
+            <Sparkles size={15} /> {loading ? '分析中' : 'AI分析'}
+          </button>
+        </div>
+        <p className="task-calendar-weekly-hint">
+          年视图显示当前月份月报；AI 会结合月报、周报、月目标、每日经营数据和动作周期判断是否匹配。
+        </p>
       </div>
-      <p className="task-calendar-weekly-hint">
-        年视图显示当前月份月报；AI 会结合月报、周报、月目标、每日经营数据和动作周期判断是否匹配。
-      </p>
       {error ? <p className="task-calendar-inline-notice">{error}</p> : null}
       {insights ? (
-        <div className="task-calendar-weekly-ai-result">
+        <div className="task-calendar-weekly-ai-result task-calendar-month-ai-result">
           <strong>{insights.section?.title || 'AI 月报诊断'}</strong>
           <p>{insights.summary}</p>
-          <ul>
-            {[...(insights.warnings ?? []), ...(insights.next ?? [])].slice(0, 4).map((item, index) => (
-              <li key={`${item.text}-${index}`}>{item.text}</li>
+          <div className="task-calendar-month-ai-grid">
+            {[
+              ['经营建议', insights.advice ?? []],
+              ['风险提醒', insights.warnings ?? []],
+              ['下月动作', insights.next ?? []],
+            ].map(([title, items]) => (
+              <div key={title as string}>
+                <span>{title as string}</span>
+                <ul>
+                  {(items as AiInsightItem[]).slice(0, 3).map((item, index) => (
+                    <li key={`${readableInsightText(item)}-${index}`}>{readableInsightText(item)}</li>
+                  ))}
+                </ul>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       ) : null}
 
