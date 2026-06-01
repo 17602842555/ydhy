@@ -1,9 +1,10 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createServer } from 'node:http';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { preparePersistedData } from '../apps/api/lib/state.mjs';
 
 const port = 19000 + Math.floor(Math.random() * 2000);
 const arkPort = 22000 + Math.floor(Math.random() * 2000);
@@ -54,6 +55,11 @@ server.stdout.on('data', (chunk) => stdout.push(String(chunk)));
 server.stderr.on('data', (chunk) => stderr.push(String(chunk)));
 
 try {
+  const seed = JSON.parse(await readFile('apps/api/data/seed.json', 'utf8'));
+  const d1Payload = JSON.stringify(preparePersistedData(seed));
+  assert(d1Payload.length < 1_000_000, 'D1 persisted app_state payload should stay below D1 single-value limit');
+  assert(!JSON.parse(d1Payload).taskCalendar.entries.some((entry) => ['business-metric', 'monthly-target'].includes(String(entry.source || ''))), 'D1 persisted task calendar should omit derived entries');
+
   await waitForHealth();
   const health = await request('/health');
   assert(health.status === 200, 'health should be public');

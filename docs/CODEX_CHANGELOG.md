@@ -12,6 +12,7 @@
 - Scoped Ark analysis prompts per board section, removed the unsupported `response_format=json_object` request parameter for `ark-code-latest`, and raised the default analysis timeout to 75 seconds so successful connection probes can complete full panel analysis.
 - Added backend persistence for successful Ark section analysis: saved results are returned to all users until a panel is explicitly refreshed again, while failed/local fallback analysis no longer overwrites the last saved Ark result.
 - Added task-calendar weekly report filling for subsidiary accounts, saved to the backend with audit logs, and added an Ark-powered weekly report diagnosis that compares the report text against monthly targets, daily operating data, and action-cycle verification.
+- Compacted Cloudflare D1 app-state writes by omitting derived task-calendar entries, preventing D1 `SQLITE_TOOBIG` errors when saving daily operating metrics.
 
 ## 2026-05-28
 

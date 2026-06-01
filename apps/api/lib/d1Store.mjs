@@ -1,4 +1,4 @@
-import { prepareInitialData } from './state.mjs';
+import { prepareInitialData, preparePersistedData } from './state.mjs';
 
 const defaultStateId = 'default';
 
@@ -35,6 +35,7 @@ export class D1StateStore {
 
   async write(data) {
     await this.ensure();
+    const persisted = preparePersistedData(data, this.seed);
     await this.db
       .prepare(
         `insert into app_state (id, payload, updated_at)
@@ -43,7 +44,7 @@ export class D1StateStore {
            payload = excluded.payload,
            updated_at = excluded.updated_at`,
       )
-      .bind(this.stateId, JSON.stringify(prepareInitialData(data)))
+      .bind(this.stateId, JSON.stringify(persisted))
       .run();
   }
 

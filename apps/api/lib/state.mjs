@@ -52,9 +52,36 @@ export function prepareInitialData(seed, defaults = {}) {
   return data;
 }
 
+export function preparePersistedData(data, defaults = {}) {
+  const prepared = prepareInitialData(data, defaults);
+  const next = clone(prepared);
+  next.sessions = limitRows(next.sessions, 30);
+  next.auditLogs = limitRows(next.auditLogs, 120);
+  next.aiInsightCache = limitRows(next.aiInsightCache, 80);
+
+  if (next.taskCalendar && Array.isArray(next.taskCalendar.entries)) {
+    next.taskCalendar.entries = next.taskCalendar.entries.filter((entry) => !isDerivedTaskCalendarEntry(entry));
+  }
+
+  return next;
+}
+
 function mergeById(current = [], defaults = []) {
   const ids = new Set(current.map((item) => item.id));
   return [...current, ...clone(defaults).filter((item) => item?.id && !ids.has(item.id))];
+}
+
+function limitRows(rows, limit) {
+  if (!Array.isArray(rows)) return [];
+  if (rows.length <= limit) return rows;
+  return [...rows]
+    .sort((a, b) => String(b?.updatedAt || b?.createdAt || b?.timestamp || '').localeCompare(String(a?.updatedAt || a?.createdAt || a?.timestamp || '')))
+    .slice(0, limit);
+}
+
+function isDerivedTaskCalendarEntry(entry) {
+  const source = String(entry?.source || '');
+  return source === 'business-metric' || source === 'monthly-target';
 }
 
 function roleNeedsRefresh(roles) {
