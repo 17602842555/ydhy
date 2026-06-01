@@ -71,6 +71,7 @@ type WeeklyReport = {
   owner?: string
   updatedAt?: string
 }
+type WeeklyReportDraft = Pick<WeeklyReport, 'summary' | 'wins' | 'risks' | 'nextPlan' | 'supportNeeded'>
 type CompanySummary = {
   company: string
   targetWan: number
@@ -441,7 +442,7 @@ export function TaskCalendarEntryPage({
   const [actionSaving, setActionSaving] = useState(false)
   const [actionDeleting, setActionDeleting] = useState(false)
   const [actionDeleteConfirming, setActionDeleteConfirming] = useState(false)
-  const [weeklyReportDraft, setWeeklyReportDraft] = useState({ summary: '', wins: '', risks: '', nextPlan: '', supportNeeded: '' })
+  const [weeklyReportDraft, setWeeklyReportDraft] = useState<WeeklyReportDraft>({ summary: '', wins: '', risks: '', nextPlan: '', supportNeeded: '' })
   const [weeklyReportSaving, setWeeklyReportSaving] = useState(false)
   const [weeklyAiLoading, setWeeklyAiLoading] = useState(false)
   const [weeklyAiError, setWeeklyAiError] = useState('')
@@ -453,6 +454,7 @@ export function TaskCalendarEntryPage({
   const selectedWeekDates = useMemo(() => weekDays(selectedDate), [selectedDate])
   const selectedWeekStart = selectedWeekDates[0] || selectedDate
   const selectedWeekEnd = selectedWeekDates[selectedWeekDates.length - 1] || selectedDate
+  const currentWeekStart = useMemo(() => weekDays(today())[0] || today(), [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -836,7 +838,7 @@ export function TaskCalendarEntryPage({
     }
   }
 
-  function updateWeeklyReportDraft(key: keyof typeof weeklyReportDraft, value: string) {
+  function updateWeeklyReportDraft(key: keyof WeeklyReportDraft, value: string) {
     setWeeklyReportDraft((current) => ({ ...current, [key]: value }))
   }
 
@@ -1147,6 +1149,7 @@ export function TaskCalendarEntryPage({
       : `${selectedDate} 暂无动作周期`
   const editingActionPlan = actionEditorPlanId ? (activeData.actionPlans ?? []).find((plan) => plan.id === actionEditorPlanId) : null
   const actionEditorLocked = Boolean(editingActionPlan && actionEditorPlanDate && actionEditorPlanDate !== selectedDate)
+  const showWeeklyReportInDetail = selectedCompany !== allCompaniesLabel && selectedWeekStart === currentWeekStart
   const toolbarTitle = viewMode === 'business'
     ? `${selectedDate} 经营数据`
     : viewMode === 'week'
@@ -1264,56 +1267,6 @@ export function TaskCalendarEntryPage({
             )}
           </section>
 
-          <section className="task-calendar-panel compact task-calendar-weekly-report-panel">
-            <div className="task-calendar-section-title"><FileText size={14} /> 周报填写</div>
-            <div className="task-calendar-weekly-report-head">
-              <span>{shortDateLabel(selectedWeekStart)} - {shortDateLabel(selectedWeekEnd)}</span>
-              <b>{selectedWeeklyReport ? '已保存' : '待填写'}</b>
-            </div>
-            <label className="task-calendar-weekly-field">
-              本周总结
-              <textarea disabled={!canEdit} value={weeklyReportDraft.summary} onChange={(event) => updateWeeklyReportDraft('summary', event.currentTarget.value)} placeholder="本周主要完成了什么，和目标差距在哪里" />
-            </label>
-            <label className="task-calendar-weekly-field">
-              完成亮点
-              <textarea disabled={!canEdit} value={weeklyReportDraft.wins} onChange={(event) => updateWeeklyReportDraft('wins', event.currentTarget.value)} placeholder="有效动作、增长来源、表现好的主体" />
-            </label>
-            <label className="task-calendar-weekly-field">
-              问题风险
-              <textarea disabled={!canEdit} value={weeklyReportDraft.risks} onChange={(event) => updateWeeklyReportDraft('risks', event.currentTarget.value)} placeholder="低完成、缺口、未填数据、动作未验证原因" />
-            </label>
-            <label className="task-calendar-weekly-field">
-              下周计划
-              <textarea disabled={!canEdit} value={weeklyReportDraft.nextPlan} onChange={(event) => updateWeeklyReportDraft('nextPlan', event.currentTarget.value)} placeholder="下周三件重点动作、负责人和验证方式" />
-            </label>
-            <label className="task-calendar-weekly-field">
-              需要集团支持
-              <textarea disabled={!canEdit} value={weeklyReportDraft.supportNeeded} onChange={(event) => updateWeeklyReportDraft('supportNeeded', event.currentTarget.value)} placeholder="资源、预算、人手、供应链或拍板事项；没有就填暂无" />
-            </label>
-            <div className="task-calendar-weekly-actions">
-              <button className="task-calendar-primary" type="button" disabled={!canEdit || weeklyReportSaving} onClick={saveWeeklyReport}>
-                <Save size={15} /> {weeklyReportSaving ? '保存中' : '保存周报'}
-              </button>
-              <button className="task-calendar-light-button" type="button" disabled={weeklyAiLoading} onClick={analyzeWeeklyReport}>
-                <Sparkles size={15} /> {weeklyAiLoading ? '分析中' : 'AI分析'}
-              </button>
-            </div>
-            <p className="task-calendar-weekly-hint">
-              AI 会结合周报、月目标、每日经营数据和动作周期判断是否匹配。
-            </p>
-            {weeklyAiError ? <p className="task-calendar-inline-notice">{weeklyAiError}</p> : null}
-            {weeklyAiInsights ? (
-              <div className="task-calendar-weekly-ai-result">
-                <strong>{weeklyAiInsights.section?.title || 'AI 周报诊断'}</strong>
-                <p>{weeklyAiInsights.summary}</p>
-                <ul>
-                  {[...(weeklyAiInsights.warnings ?? []), ...(weeklyAiInsights.next ?? [])].slice(0, 4).map((item, index) => (
-                    <li key={`${item.text}-${index}`}>{item.text}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-          </section>
         </aside>
 
         <section className="task-calendar-main-panel">
@@ -1393,6 +1346,22 @@ export function TaskCalendarEntryPage({
         </section>
 
         <aside className="task-calendar-detail">
+          {showWeeklyReportInDetail ? (
+            <WeeklyReportEditor
+              canEdit={canEdit}
+              draft={weeklyReportDraft}
+              insights={weeklyAiInsights}
+              isSaved={Boolean(selectedWeeklyReport)}
+              loading={weeklyAiLoading}
+              saving={weeklyReportSaving}
+              error={weeklyAiError}
+              weekStart={selectedWeekStart}
+              weekEnd={selectedWeekEnd}
+              onAnalyze={analyzeWeeklyReport}
+              onSave={saveWeeklyReport}
+              onUpdate={updateWeeklyReportDraft}
+            />
+          ) : (
           <section className="task-calendar-panel detail">
             <div className="task-calendar-date-head">
               <div>
@@ -1439,6 +1408,7 @@ export function TaskCalendarEntryPage({
               </div>
             ) : null}
           </section>
+          )}
         </aside>
       </main>
 
@@ -1552,6 +1522,87 @@ export function TaskCalendarEntryPage({
       ) : null}
 
       {notice ? <div className="task-calendar-toast" role="status">{notice}</div> : null}
+    </section>
+  )
+}
+
+function WeeklyReportEditor({
+  canEdit,
+  draft,
+  error,
+  insights,
+  isSaved,
+  loading,
+  onAnalyze,
+  onSave,
+  onUpdate,
+  saving,
+  weekEnd,
+  weekStart,
+}: {
+  canEdit: boolean
+  draft: WeeklyReportDraft
+  error: string
+  insights: AiInsights | null
+  isSaved: boolean
+  loading: boolean
+  onAnalyze: () => void
+  onSave: () => void
+  onUpdate: (key: keyof WeeklyReportDraft, value: string) => void
+  saving: boolean
+  weekEnd: string
+  weekStart: string
+}) {
+  return (
+    <section className="task-calendar-panel detail task-calendar-weekly-report-panel task-calendar-weekly-report-detail">
+      <div className="task-calendar-section-title"><FileText size={14} /> 周报填写</div>
+      <div className="task-calendar-weekly-report-head">
+        <span>{shortDateLabel(weekStart)} - {shortDateLabel(weekEnd)}</span>
+        <b>{isSaved ? '已保存' : '待填写'}</b>
+      </div>
+      <label className="task-calendar-weekly-field">
+        本周总结
+        <textarea disabled={!canEdit} value={draft.summary} onChange={(event) => onUpdate('summary', event.currentTarget.value)} placeholder="本周主要完成了什么，和目标差距在哪里" />
+      </label>
+      <label className="task-calendar-weekly-field">
+        完成亮点
+        <textarea disabled={!canEdit} value={draft.wins} onChange={(event) => onUpdate('wins', event.currentTarget.value)} placeholder="有效动作、增长来源、表现好的主体" />
+      </label>
+      <label className="task-calendar-weekly-field">
+        问题风险
+        <textarea disabled={!canEdit} value={draft.risks} onChange={(event) => onUpdate('risks', event.currentTarget.value)} placeholder="低完成、缺口、未填数据、动作未验证原因" />
+      </label>
+      <label className="task-calendar-weekly-field">
+        下周计划
+        <textarea disabled={!canEdit} value={draft.nextPlan} onChange={(event) => onUpdate('nextPlan', event.currentTarget.value)} placeholder="下周三件重点动作、负责人和验证方式" />
+      </label>
+      <label className="task-calendar-weekly-field">
+        需要集团支持
+        <textarea disabled={!canEdit} value={draft.supportNeeded} onChange={(event) => onUpdate('supportNeeded', event.currentTarget.value)} placeholder="资源、预算、人手、供应链或拍板事项；没有就填暂无" />
+      </label>
+      <div className="task-calendar-weekly-actions">
+        <button className="task-calendar-primary" type="button" disabled={!canEdit || saving} onClick={onSave}>
+          <Save size={15} /> {saving ? '保存中' : '保存周报'}
+        </button>
+        <button className="task-calendar-light-button" type="button" disabled={loading} onClick={onAnalyze}>
+          <Sparkles size={15} /> {loading ? '分析中' : 'AI分析'}
+        </button>
+      </div>
+      <p className="task-calendar-weekly-hint">
+        当前周不显示当日模块；AI 会结合周报、月目标、每日经营数据和动作周期判断是否匹配。
+      </p>
+      {error ? <p className="task-calendar-inline-notice">{error}</p> : null}
+      {insights ? (
+        <div className="task-calendar-weekly-ai-result">
+          <strong>{insights.section?.title || 'AI 周报诊断'}</strong>
+          <p>{insights.summary}</p>
+          <ul>
+            {[...(insights.warnings ?? []), ...(insights.next ?? [])].slice(0, 4).map((item, index) => (
+              <li key={`${item.text}-${index}`}>{item.text}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   )
 }
