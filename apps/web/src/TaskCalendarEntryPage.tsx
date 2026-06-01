@@ -1149,7 +1149,10 @@ export function TaskCalendarEntryPage({
       : `${selectedDate} 暂无动作周期`
   const editingActionPlan = actionEditorPlanId ? (activeData.actionPlans ?? []).find((plan) => plan.id === actionEditorPlanId) : null
   const actionEditorLocked = Boolean(editingActionPlan && actionEditorPlanDate && actionEditorPlanDate !== selectedDate)
-  const showWeeklyReportInDetail = selectedCompany !== allCompaniesLabel && selectedWeekStart === currentWeekStart
+  const showWeeklyReportInDetail =
+    selectedCompany !== allCompaniesLabel &&
+    selectedWeekStart === currentWeekStart &&
+    (viewMode === 'month' || viewMode === 'week')
   const toolbarTitle = viewMode === 'business'
     ? `${selectedDate} 经营数据`
     : viewMode === 'week'
