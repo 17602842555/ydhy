@@ -270,8 +270,13 @@
 }
 
 .task-calendar-year-workspace {
-  grid-template-columns: minmax(248px, 330px) minmax(620px, 1fr) minmax(420px, 540px);
-  max-width: 2040px;
+  grid-template-columns: minmax(248px, 330px) minmax(0, 1fr);
+  max-width: 1840px;
+}
+
+.task-calendar-year-stack {
+  display: grid;
+  gap: 18px;
 }
 
 .task-calendar-sidebar,
@@ -868,12 +873,6 @@
   overflow: auto;
 }
 
-.task-calendar-year-workspace .task-calendar-detail .detail {
-  position: static;
-  max-height: none;
-  overflow: visible;
-}
-
 .task-calendar-date-head {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -1447,7 +1446,16 @@
 }
 
 .task-calendar-year-workspace .task-calendar-month-report-detail {
+  align-items: start;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(0, 1.35fr);
   padding: 22px;
+}
+
+.task-calendar-month-report-overview,
+.task-calendar-month-report-write {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
 }
 
 .task-calendar-month-report-head {
@@ -1485,7 +1493,7 @@
 }
 
 .task-calendar-year-workspace .task-calendar-month-report-metrics {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .task-calendar-month-report-metrics article {
@@ -1523,6 +1531,10 @@
   gap: 12px;
 }
 
+.task-calendar-year-workspace .task-calendar-month-report-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .task-calendar-month-report-field.is-wide,
 .task-calendar-month-report-form .task-calendar-weekly-actions,
 .task-calendar-month-report-form .task-calendar-weekly-hint {
@@ -1555,6 +1567,10 @@
   display: grid;
   gap: 12px;
   margin-top: 12px;
+}
+
+.task-calendar-year-workspace .task-calendar-month-ai-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .task-calendar-month-ai-grid div {
@@ -1714,6 +1730,16 @@
 
   .task-calendar-detail .detail {
     position: static;
+  }
+
+  .task-calendar-year-workspace .task-calendar-month-report-detail,
+  .task-calendar-year-workspace .task-calendar-month-report-form,
+  .task-calendar-year-workspace .task-calendar-month-ai-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .task-calendar-year-workspace .task-calendar-month-report-detail > * {
+    grid-column: 1;
   }
 }
 

@@ -1325,7 +1325,6 @@ export function TaskCalendarEntryPage({
   const editingActionPlan = actionEditorPlanId ? (activeData.actionPlans ?? []).find((plan) => plan.id === actionEditorPlanId) : null
   const actionEditorLocked = Boolean(editingActionPlan && actionEditorPlanDate && actionEditorPlanDate !== selectedDate)
   const showWeeklyReportInDetail = selectedCompany !== allCompaniesLabel && viewMode === 'week'
-  const showMonthlyReportInDetail = viewMode === 'year'
   const selectedMonthWeeklyReports = (activeData.weeklyReports ?? []).filter((report) => targetCompanies.includes(report.company) && reportTouchesMonth(report, visibleMonth))
   const selectedMonthActionPlans = (activeData.actionPlans ?? []).filter((plan) => targetCompanies.includes(plan.company) && monthOf(plan.date) === visibleMonth)
   const toolbarTitle = viewMode === 'business'
@@ -1346,6 +1345,28 @@ export function TaskCalendarEntryPage({
     ? Math.max(allocatedTarget - selectedDateTarget + targetAmountValue, 0)
     : allocatedTarget
   const projectedUnallocatedTarget = Math.max(monthTarget - projectedAllocatedTarget, 0)
+  const monthlyReportPanel = (
+    <MonthReportPanel
+      actionPlans={selectedMonthActionPlans}
+      actual={monthActual}
+      canEdit={canEdit && selectedCompany !== allCompaniesLabel}
+      company={selectedCompany}
+      draft={monthlyReportDraft}
+      error={monthlyAiError}
+      insights={monthlyAiInsights}
+      isSaved={Boolean(selectedMonthlyReport)}
+      loading={monthlyAiLoading}
+      metrics={monthMetrics}
+      month={visibleMonth}
+      onAnalyze={analyzeMonthlyReport}
+      onSave={saveMonthlyReport}
+      onUpdate={updateMonthlyReportDraft}
+      rate={monthRate}
+      saving={monthlyReportSaving}
+      target={monthTarget}
+      weeklyReports={selectedMonthWeeklyReports}
+    />
+  )
 
   return (
     <section className={`task-calendar-shell ${standalone ? 'task-calendar-standalone' : ''}`} id="taskCalendarEntryPage">
@@ -1514,7 +1535,10 @@ export function TaskCalendarEntryPage({
           ) : viewMode === 'week' ? (
             <WeekTrendBoard dates={selectedWeekDates} month={visibleMonth} selectedDate={selectedDate} actionPeriods={actionPeriods} dayActual={dayActual} dayTarget={dayTarget} onSelectDate={changeDate} />
           ) : viewMode === 'year' ? (
-            <YearBoard month={visibleMonth} monthActual={monthActual} monthTarget={monthTarget} company={selectedCompany} onSelectMonth={changeMonth} />
+            <div className="task-calendar-year-stack">
+              <YearBoard month={visibleMonth} monthActual={monthActual} monthTarget={monthTarget} company={selectedCompany} onSelectMonth={changeMonth} />
+              {monthlyReportPanel}
+            </div>
           ) : (
             <>
               <div className="task-calendar-weekdays">{weekdays.map((day) => <span key={day}>{day}</span>)}</div>
@@ -1523,7 +1547,7 @@ export function TaskCalendarEntryPage({
           )}
         </section>
 
-        <aside className="task-calendar-detail">
+        {viewMode === 'year' ? null : <aside className="task-calendar-detail">
           {showWeeklyReportInDetail ? (
             <WeeklyReportEditor
               canEdit={canEdit}
@@ -1538,27 +1562,6 @@ export function TaskCalendarEntryPage({
               onAnalyze={analyzeWeeklyReport}
               onSave={saveWeeklyReport}
               onUpdate={updateWeeklyReportDraft}
-            />
-          ) : showMonthlyReportInDetail ? (
-            <MonthReportPanel
-              actionPlans={selectedMonthActionPlans}
-              actual={monthActual}
-              canEdit={canEdit && selectedCompany !== allCompaniesLabel}
-              company={selectedCompany}
-              draft={monthlyReportDraft}
-              error={monthlyAiError}
-              insights={monthlyAiInsights}
-              isSaved={Boolean(selectedMonthlyReport)}
-              loading={monthlyAiLoading}
-              metrics={monthMetrics}
-              month={visibleMonth}
-              onAnalyze={analyzeMonthlyReport}
-              onSave={saveMonthlyReport}
-              onUpdate={updateMonthlyReportDraft}
-              rate={monthRate}
-              saving={monthlyReportSaving}
-              target={monthTarget}
-              weeklyReports={selectedMonthWeeklyReports}
             />
           ) : (
           <section className="task-calendar-panel detail">
@@ -1608,7 +1611,7 @@ export function TaskCalendarEntryPage({
             ) : null}
           </section>
           )}
-        </aside>
+        </aside>}
       </main>
 
       {targetEditor ? (
@@ -1857,112 +1860,116 @@ function MonthReportPanel({
 
   return (
     <section className="task-calendar-panel detail task-calendar-month-report-detail">
-      <div className="task-calendar-section-title"><FileText size={14} /> 月报</div>
-      <div className="task-calendar-month-report-head">
-        <div>
-          <span>{monthLabel(month)}</span>
-          <strong>{company}</strong>
-        </div>
-        <b>{formatPercent(rate)}</b>
-      </div>
-      <div className="task-calendar-month-report-metrics">
-        <article><span>月目标</span><strong>{formatMoney(target)}</strong></article>
-        <article><span>月完成</span><strong>{formatMoney(actual)}</strong></article>
-        <article><span>填报天数</span><strong>{filledDays}</strong></article>
-        <article><span>周报数</span><strong>{weeklyReports.length}</strong></article>
-      </div>
-      <p className="task-calendar-month-report-summary">{monthSummaryText(company, target, actual, rate)}</p>
-
-      <div className="task-calendar-weekly-report-head">
-        <span>月报填写</span>
-        <b>{isSaved ? '已保存' : '待填写'}</b>
-      </div>
-      <div className="task-calendar-month-report-form">
-        <label className="task-calendar-weekly-field task-calendar-month-report-field is-wide">
-          本月总结
-          <textarea disabled={!canEdit} value={draft.summary} onChange={(event) => onUpdate('summary', event.currentTarget.value)} placeholder="本月主要完成了什么，目标差距和核心原因是什么" />
-        </label>
-        <label className="task-calendar-weekly-field task-calendar-month-report-field">
-          完成亮点
-          <textarea disabled={!canEdit} value={draft.wins} onChange={(event) => onUpdate('wins', event.currentTarget.value)} placeholder="有效动作、增长来源、表现好的主体或渠道" />
-        </label>
-        <label className="task-calendar-weekly-field task-calendar-month-report-field">
-          问题风险
-          <textarea disabled={!canEdit} value={draft.risks} onChange={(event) => onUpdate('risks', event.currentTarget.value)} placeholder="低完成、缺口、未填数据、动作未验证原因" />
-        </label>
-        <label className="task-calendar-weekly-field task-calendar-month-report-field">
-          下月计划
-          <textarea disabled={!canEdit} value={draft.nextPlan} onChange={(event) => onUpdate('nextPlan', event.currentTarget.value)} placeholder="下月三件重点动作、负责人和验证方式" />
-        </label>
-        <label className="task-calendar-weekly-field task-calendar-month-report-field">
-          需要集团支持
-          <textarea disabled={!canEdit} value={draft.supportNeeded} onChange={(event) => onUpdate('supportNeeded', event.currentTarget.value)} placeholder="资源、预算、人手、供应链或拍板事项；没有就填暂无" />
-        </label>
-        <div className="task-calendar-weekly-actions task-calendar-month-report-actions">
-          <button className="task-calendar-primary" type="button" disabled={!canEdit || saving} onClick={onSave}>
-            <Save size={15} /> {saving ? '保存中' : '保存月报'}
-          </button>
-          <button className="task-calendar-light-button" type="button" disabled={loading} onClick={onAnalyze}>
-            <Sparkles size={15} /> {loading ? '分析中' : 'AI分析'}
-          </button>
-        </div>
-        <p className="task-calendar-weekly-hint">
-          年视图显示当前月份月报；AI 会结合月报、周报、月目标、每日经营数据和动作周期判断是否匹配。
-        </p>
-      </div>
-      {error ? <p className="task-calendar-inline-notice">{error}</p> : null}
-      {insights ? (
-        <div className="task-calendar-weekly-ai-result task-calendar-month-ai-result">
-          <strong>{insights.section?.title || 'AI 月报诊断'}</strong>
-          <p>{insights.summary}</p>
-          <div className="task-calendar-month-ai-grid">
-            {[
-              ['经营建议', insights.advice ?? []],
-              ['风险提醒', insights.warnings ?? []],
-              ['下月动作', insights.next ?? []],
-            ].map(([title, items]) => (
-              <div key={title as string}>
-                <span>{title as string}</span>
-                <ul>
-                  {(items as AiInsightItem[]).slice(0, 3).map((item, index) => (
-                    <li key={`${readableInsightText(item)}-${index}`}>{readableInsightText(item)}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+      <div className="task-calendar-month-report-overview">
+        <div className="task-calendar-section-title"><FileText size={14} /> 月报</div>
+        <div className="task-calendar-month-report-head">
+          <div>
+            <span>{monthLabel(month)}</span>
+            <strong>{company}</strong>
           </div>
+          <b>{formatPercent(rate)}</b>
         </div>
-      ) : null}
+        <div className="task-calendar-month-report-metrics">
+          <article><span>月目标</span><strong>{formatMoney(target)}</strong></article>
+          <article><span>月完成</span><strong>{formatMoney(actual)}</strong></article>
+          <article><span>填报天数</span><strong>{filledDays}</strong></article>
+          <article><span>周报数</span><strong>{weeklyReports.length}</strong></article>
+        </div>
+        <p className="task-calendar-month-report-summary">{monthSummaryText(company, target, actual, rate)}</p>
 
-      <div className="task-calendar-month-report-section">
-        <h3>周报汇总</h3>
-        {reportSummary.length ? (
-          <ul>
-            {reportSummary.map((text, index) => <li key={`${text}-${index}`}>{text}</li>)}
-          </ul>
-        ) : <p className="task-calendar-empty">该月份暂无已保存周报。</p>}
+        <div className="task-calendar-month-report-section">
+          <h3>周报汇总</h3>
+          {reportSummary.length ? (
+            <ul>
+              {reportSummary.map((text, index) => <li key={`${text}-${index}`}>{text}</li>)}
+            </ul>
+          ) : <p className="task-calendar-empty">该月份暂无已保存周报。</p>}
+        </div>
+
+        <div className="task-calendar-month-report-section">
+          <h3>重点经营主体</h3>
+          {topMetrics.length ? (
+            <ul>
+              {topMetrics.map((metric) => (
+                <li key={metric.id}>{metric.unitName}：{formatMoney(metricRevenue(metric))}，{metric.date}</li>
+              ))}
+            </ul>
+          ) : <p className="task-calendar-empty">该月份暂无经营数据。</p>}
+        </div>
+
+        <div className="task-calendar-month-report-section">
+          <h3>动作周期</h3>
+          {actionPlans.length ? (
+            <ul>
+              {actionPlans.slice(0, 4).map((plan) => (
+                <li key={plan.id}>{formatDate(plan.date)}：{plan.action || '动作待补'}，验证 {actionPlanValidationDays(plan)} 天</li>
+              ))}
+            </ul>
+          ) : <p className="task-calendar-empty">该月份暂无动作周期。</p>}
+        </div>
       </div>
 
-      <div className="task-calendar-month-report-section">
-        <h3>重点经营主体</h3>
-        {topMetrics.length ? (
-          <ul>
-            {topMetrics.map((metric) => (
-              <li key={metric.id}>{metric.unitName}：{formatMoney(metricRevenue(metric))}，{metric.date}</li>
-            ))}
-          </ul>
-        ) : <p className="task-calendar-empty">该月份暂无经营数据。</p>}
-      </div>
-
-      <div className="task-calendar-month-report-section">
-        <h3>动作周期</h3>
-        {actionPlans.length ? (
-          <ul>
-            {actionPlans.slice(0, 4).map((plan) => (
-              <li key={plan.id}>{formatDate(plan.date)}：{plan.action || '动作待补'}，验证 {actionPlanValidationDays(plan)} 天</li>
-            ))}
-          </ul>
-        ) : <p className="task-calendar-empty">该月份暂无动作周期。</p>}
+      <div className="task-calendar-month-report-write">
+        <div className="task-calendar-weekly-report-head">
+          <span>月报填写</span>
+          <b>{isSaved ? '已保存' : '待填写'}</b>
+        </div>
+        <div className="task-calendar-month-report-form">
+          <label className="task-calendar-weekly-field task-calendar-month-report-field is-wide">
+            本月总结
+            <textarea disabled={!canEdit} value={draft.summary} onChange={(event) => onUpdate('summary', event.currentTarget.value)} placeholder="本月主要完成了什么，目标差距和核心原因是什么" />
+          </label>
+          <label className="task-calendar-weekly-field task-calendar-month-report-field">
+            完成亮点
+            <textarea disabled={!canEdit} value={draft.wins} onChange={(event) => onUpdate('wins', event.currentTarget.value)} placeholder="有效动作、增长来源、表现好的主体或渠道" />
+          </label>
+          <label className="task-calendar-weekly-field task-calendar-month-report-field">
+            问题风险
+            <textarea disabled={!canEdit} value={draft.risks} onChange={(event) => onUpdate('risks', event.currentTarget.value)} placeholder="低完成、缺口、未填数据、动作未验证原因" />
+          </label>
+          <label className="task-calendar-weekly-field task-calendar-month-report-field">
+            下月计划
+            <textarea disabled={!canEdit} value={draft.nextPlan} onChange={(event) => onUpdate('nextPlan', event.currentTarget.value)} placeholder="下月三件重点动作、负责人和验证方式" />
+          </label>
+          <label className="task-calendar-weekly-field task-calendar-month-report-field">
+            需要集团支持
+            <textarea disabled={!canEdit} value={draft.supportNeeded} onChange={(event) => onUpdate('supportNeeded', event.currentTarget.value)} placeholder="资源、预算、人手、供应链或拍板事项；没有就填暂无" />
+          </label>
+          <div className="task-calendar-weekly-actions task-calendar-month-report-actions">
+            <button className="task-calendar-primary" type="button" disabled={!canEdit || saving} onClick={onSave}>
+              <Save size={15} /> {saving ? '保存中' : '保存月报'}
+            </button>
+            <button className="task-calendar-light-button" type="button" disabled={loading} onClick={onAnalyze}>
+              <Sparkles size={15} /> {loading ? '分析中' : 'AI分析'}
+            </button>
+          </div>
+          <p className="task-calendar-weekly-hint">
+            年视图显示当前月份月报；AI 会结合月报、周报、月目标、每日经营数据和动作周期判断是否匹配。
+          </p>
+        </div>
+        {error ? <p className="task-calendar-inline-notice">{error}</p> : null}
+        {insights ? (
+          <div className="task-calendar-weekly-ai-result task-calendar-month-ai-result">
+            <strong>{insights.section?.title || 'AI 月报诊断'}</strong>
+            <p>{insights.summary}</p>
+            <div className="task-calendar-month-ai-grid">
+              {[
+                ['经营建议', insights.advice ?? []],
+                ['风险提醒', insights.warnings ?? []],
+                ['下月动作', insights.next ?? []],
+              ].map(([title, items]) => (
+                <div key={title as string}>
+                  <span>{title as string}</span>
+                  <ul>
+                    {(items as AiInsightItem[]).slice(0, 3).map((item, index) => (
+                      <li key={`${readableInsightText(item)}-${index}`}>{readableInsightText(item)}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </section>
   )
