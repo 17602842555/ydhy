@@ -26,6 +26,7 @@ import {
   upsertTaskCalendarDailyTarget,
   upsertTaskCalendarMetric,
   upsertTaskCalendarMonthlyTarget,
+  upsertTaskCalendarWeeklyReport,
 } from './lib/taskCalendar.mjs';
 import {
   addVillaExpense,
@@ -266,6 +267,15 @@ async function handleRequest(request, env, store) {
     if (url.pathname === '/api/task-calendar/action-plans/delete' && request.method === 'POST') {
       const body = await readBody(request);
       const result = await store.transaction((data) => deleteTaskCalendarActionPlan(data, body, resolveActor(data, request, env)));
+      return json(request, env, 200, {
+        ...result,
+        dashboard: calculateDashboard(await store.read()),
+      });
+    }
+
+    if (url.pathname === '/api/task-calendar/weekly-reports' && request.method === 'POST') {
+      const body = await readBody(request);
+      const result = await store.transaction((data) => upsertTaskCalendarWeeklyReport(data, body, resolveActor(data, request, env)));
       return json(request, env, 200, {
         ...result,
         dashboard: calculateDashboard(await store.read()),

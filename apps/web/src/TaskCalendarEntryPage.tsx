@@ -1,5 +1,6 @@
 import { type CSSProperties, type FormEvent, useEffect, useMemo, useState } from 'react'
-import { Building2, ChevronLeft, ChevronRight, ClipboardCheck, LogOut, Save, Target, Trash2 } from 'lucide-react'
+import { Building2, ChevronLeft, ChevronRight, ClipboardCheck, FileText, LogOut, Save, Sparkles, Target, Trash2 } from 'lucide-react'
+import { type AiInsights, defaultAiSettings, loadAiInsights } from './aiClient'
 
 type BusinessUnit = { id: string; company: string; type: 'store' | 'business'; name: string }
 type BusinessMetric = {
@@ -57,6 +58,19 @@ type DailyActionPlan = {
   owner?: string
   updatedAt?: string
 }
+type WeeklyReport = {
+  id: string
+  company: string
+  weekStart: string
+  weekEnd: string
+  summary: string
+  wins: string
+  risks: string
+  nextPlan: string
+  supportNeeded: string
+  owner?: string
+  updatedAt?: string
+}
 type CompanySummary = {
   company: string
   targetWan: number
@@ -79,6 +93,7 @@ type TaskCalendarData = {
   metrics: BusinessMetric[]
   entries: CalendarEntry[]
   actionPlans?: DailyActionPlan[]
+  weeklyReports?: WeeklyReport[]
   monthlyTargets: MonthlyTarget[]
   summaries: CompanySummary[]
 }
@@ -372,6 +387,7 @@ function mergeTaskCalendarWindow(current: TaskCalendarData, adjacent: TaskCalend
     metrics: mergeById([current, ...adjacent].flatMap((data) => data.metrics)),
     entries: mergeById([current, ...adjacent].flatMap((data) => data.entries)),
     actionPlans: mergeById([current, ...adjacent].flatMap((data) => data.actionPlans ?? [])),
+    weeklyReports: mergeById([current, ...adjacent].flatMap((data) => data.weeklyReports ?? [])),
     monthlyTargets: mergeById([current, ...adjacent].flatMap((data) => data.monthlyTargets)),
   }
 }
@@ -425,10 +441,18 @@ export function TaskCalendarEntryPage({
   const [actionSaving, setActionSaving] = useState(false)
   const [actionDeleting, setActionDeleting] = useState(false)
   const [actionDeleteConfirming, setActionDeleteConfirming] = useState(false)
+  const [weeklyReportDraft, setWeeklyReportDraft] = useState({ summary: '', wins: '', risks: '', nextPlan: '', supportNeeded: '' })
+  const [weeklyReportSaving, setWeeklyReportSaving] = useState(false)
+  const [weeklyAiLoading, setWeeklyAiLoading] = useState(false)
+  const [weeklyAiError, setWeeklyAiError] = useState('')
+  const [weeklyAiInsights, setWeeklyAiInsights] = useState<AiInsights | null>(null)
   const [savingUnitId, setSavingUnitId] = useState('')
   const [clearingMonth, setClearingMonth] = useState(false)
   const [businessDetailOpen, setBusinessDetailOpen] = useState(false)
   const [notice, setNotice] = useState('')
+  const selectedWeekDates = useMemo(() => weekDays(selectedDate), [selectedDate])
+  const selectedWeekStart = selectedWeekDates[0] || selectedDate
+  const selectedWeekEnd = selectedWeekDates[selectedWeekDates.length - 1] || selectedDate
 
   useEffect(() => {
     const controller = new AbortController()
@@ -464,6 +488,10 @@ export function TaskCalendarEntryPage({
     [activeData, selectedCompany],
   )
   const companyUnits = useMemo(() => activeData?.units.filter((unit) => targetCompanies.includes(unit.company)) ?? [], [activeData, targetCompanies])
+  const selectedWeeklyReport = useMemo(
+    () => activeData?.weeklyReports?.find((report) => report.company === selectedCompany && report.weekStart === selectedWeekStart) ?? null,
+    [activeData, selectedCompany, selectedWeekStart],
+  )
   const monthMetrics = useMemo(
     () => activeData?.metrics.filter((metric) => targetCompanies.includes(metric.company) && monthOf(metric.date) === visibleMonth) ?? [],
     [activeData, targetCompanies, visibleMonth],
@@ -499,6 +527,32 @@ export function TaskCalendarEntryPage({
     const timer = window.setTimeout(() => setForms(nextForms), 0)
     return () => window.clearTimeout(timer)
   }, [activeData, companyUnits, selectedDate])
+
+  useEffect(() => {
+    const nextDraft = {
+      summary: selectedWeeklyReport?.summary || '',
+      wins: selectedWeeklyReport?.wins || '',
+      risks: selectedWeeklyReport?.risks || '',
+      nextPlan: selectedWeeklyReport?.nextPlan || '',
+      supportNeeded: selectedWeeklyReport?.supportNeeded || '',
+    }
+    const timer = window.setTimeout(() => {
+      setWeeklyReportDraft(nextDraft)
+      setWeeklyAiInsights(null)
+      setWeeklyAiError('')
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [
+    selectedCompany,
+    selectedWeekStart,
+    selectedWeeklyReport?.id,
+    selectedWeeklyReport?.nextPlan,
+    selectedWeeklyReport?.risks,
+    selectedWeeklyReport?.summary,
+    selectedWeeklyReport?.supportNeeded,
+    selectedWeeklyReport?.updatedAt,
+    selectedWeeklyReport?.wins,
+  ])
 
   function openTargetEditor() {
     setTargetAmount(selectedTarget?.monthlyTarget ? String(selectedTarget.monthlyTarget) : '')
@@ -782,9 +836,104 @@ export function TaskCalendarEntryPage({
     }
   }
 
+  function updateWeeklyReportDraft(key: keyof typeof weeklyReportDraft, value: string) {
+    setWeeklyReportDraft((current) => ({ ...current, [key]: value }))
+  }
+
+  async function saveWeeklyReport() {
+    if (!token || !canEdit || weeklyReportSaving) return
+    const hasContent = Object.values(weeklyReportDraft).some((value) => value.trim())
+    if (!hasContent) {
+      setNotice('请先填写本周周报内容。')
+      return
+    }
+    setWeeklyReportSaving(true)
+    setNotice('')
+    try {
+      const response = await fetch(`${apiBaseUrl}/task-calendar/weekly-reports`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company: selectedCompany,
+          weekStart: selectedWeekStart,
+          weekEnd: selectedWeekEnd,
+          ...weeklyReportDraft,
+        }),
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error.reason || error.error || '保存周报失败')
+      }
+      const result = await response.json() as { taskCalendar: TaskCalendarData }
+      setLoadState((current) => current.status === 'ready'
+        ? { status: 'ready', data: mergeTaskCalendarWindow(current.data, [result.taskCalendar]) }
+        : { status: 'ready', data: result.taskCalendar })
+      setNotice('周报已保存，并可用于 AI 结合经营数据分析。')
+      onSaved?.()
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '保存周报失败')
+    } finally {
+      setWeeklyReportSaving(false)
+    }
+  }
+
+  async function analyzeWeeklyReport() {
+    if (weeklyAiLoading) return
+    const hasContent = Object.values(weeklyReportDraft).some((value) => value.trim())
+    if (!hasContent && !selectedWeeklyReport) {
+      setWeeklyAiError('请先填写并保存周报，再进行 AI 分析。')
+      return
+    }
+    setWeeklyAiLoading(true)
+    setWeeklyAiError('')
+    try {
+      const companySummary = activeData?.summaries.find((item) => item.company === selectedCompany)
+      const weekMetrics = monthMetrics
+        .filter((metric) => metric.company === selectedCompany && metric.date >= selectedWeekStart && metric.date <= selectedWeekEnd)
+        .map((metric) => ({
+          date: metric.date,
+          unitName: metric.unitName,
+          revenue: metricRevenue(metric),
+          gmv: metric.gmv,
+          revenueAmount: metric.revenueAmount,
+          returnRate: metric.returnRate,
+          note: metric.note,
+        }))
+      const weekActions = (activeData?.actionPlans ?? [])
+        .filter((plan) => plan.company === selectedCompany && plan.date <= selectedWeekEnd && actionPlanEndDate(plan) >= selectedWeekStart)
+        .map((plan) => ({
+          date: plan.date,
+          periodEndDate: actionPlanEndDate(plan),
+          action: plan.action,
+          expectedGmvGrowthRate: plan.expectedGmvGrowthRate,
+          validationDays: actionPlanValidationDays(plan),
+          expectation: plan.expectation,
+        }))
+      const insights = await loadAiInsights(apiBaseUrl, defaultAiSettings(), new AbortController().signal, {
+        refresh: true,
+        section: 'task-calendar-weekly-report',
+        context: {
+          label: `${selectedCompany}${shortDateLabel(selectedWeekStart)}-${shortDateLabel(selectedWeekEnd)}周报`,
+          companyName: selectedCompany,
+          weekStart: selectedWeekStart,
+          weekEnd: selectedWeekEnd,
+          report: { ...weeklyReportDraft, savedAt: selectedWeeklyReport?.updatedAt || '' },
+          summary: companySummary,
+          weekMetrics,
+          weekActions,
+        },
+      })
+      setWeeklyAiInsights(insights)
+    } catch (error) {
+      setWeeklyAiError(error instanceof Error ? error.message : 'AI 周报分析失败')
+    } finally {
+      setWeeklyAiLoading(false)
+    }
+  }
+
   async function clearCurrentMonthData() {
     if (!token || !canEdit || clearingMonth) return
-    const confirmed = window.confirm(`确定清空 ${selectedCompany} ${monthLabel(visibleMonth)} 的全部数据和目标吗？这个操作会删除月度目标、当日目标和填报数据。`)
+    const confirmed = window.confirm(`确定清空 ${selectedCompany} ${monthLabel(visibleMonth)} 的全部数据和目标吗？这个操作会删除月度目标、当日目标、填报数据、动作周期和周报。`)
     if (!confirmed) return
     setClearingMonth(true)
     setNotice('')
@@ -798,9 +947,9 @@ export function TaskCalendarEntryPage({
         const error = await response.json().catch(() => ({}))
         throw new Error(error.reason || error.error || '清空当月数据失败')
       }
-      const result = await response.json() as { taskCalendar: TaskCalendarData; cleared?: { monthlyTargets?: number; metrics?: number; entries?: number } }
+      const result = await response.json() as { taskCalendar: TaskCalendarData; cleared?: { monthlyTargets?: number; metrics?: number; entries?: number; actionPlans?: number; weeklyReports?: number } }
       setLoadState({ status: 'ready', data: result.taskCalendar })
-      setNotice(`已清空 ${monthLabel(visibleMonth)}：${result.cleared?.monthlyTargets ?? 0} 个目标、${result.cleared?.metrics ?? 0} 条填报、${result.cleared?.entries ?? 0} 条日历记录。`)
+      setNotice(`已清空 ${monthLabel(visibleMonth)}：${result.cleared?.monthlyTargets ?? 0} 个目标、${result.cleared?.metrics ?? 0} 条填报、${result.cleared?.actionPlans ?? 0} 个动作、${result.cleared?.weeklyReports ?? 0} 份周报。`)
       onSaved?.()
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '清空当月数据失败')
@@ -998,7 +1147,6 @@ export function TaskCalendarEntryPage({
       : `${selectedDate} 暂无动作周期`
   const editingActionPlan = actionEditorPlanId ? (activeData.actionPlans ?? []).find((plan) => plan.id === actionEditorPlanId) : null
   const actionEditorLocked = Boolean(editingActionPlan && actionEditorPlanDate && actionEditorPlanDate !== selectedDate)
-  const selectedWeekDates = weekDays(selectedDate)
   const toolbarTitle = viewMode === 'business'
     ? `${selectedDate} 经营数据`
     : viewMode === 'week'
@@ -1051,7 +1199,7 @@ export function TaskCalendarEntryPage({
             <button className="task-calendar-danger full" type="button" disabled={!canEdit || clearingMonth} onClick={clearCurrentMonthData}>
               {clearingMonth ? '清空中' : '清空当月数据'}
             </button>
-            <p className="task-calendar-clear-note">清除当月月度目标、当日目标、填报与同步数据。</p>
+            <p className="task-calendar-clear-note">清除当月月度目标、当日目标、填报、动作周期与周报。</p>
           </section>
 
           <section className="task-calendar-panel">
@@ -1114,6 +1262,57 @@ export function TaskCalendarEntryPage({
             ) : (
               <p>选择日期后，这里会显示该日期所在动作周期，并用整个周期 GMV 涨幅验证预期。</p>
             )}
+          </section>
+
+          <section className="task-calendar-panel compact task-calendar-weekly-report-panel">
+            <div className="task-calendar-section-title"><FileText size={14} /> 周报填写</div>
+            <div className="task-calendar-weekly-report-head">
+              <span>{shortDateLabel(selectedWeekStart)} - {shortDateLabel(selectedWeekEnd)}</span>
+              <b>{selectedWeeklyReport ? '已保存' : '待填写'}</b>
+            </div>
+            <label className="task-calendar-weekly-field">
+              本周总结
+              <textarea disabled={!canEdit} value={weeklyReportDraft.summary} onChange={(event) => updateWeeklyReportDraft('summary', event.currentTarget.value)} placeholder="本周主要完成了什么，和目标差距在哪里" />
+            </label>
+            <label className="task-calendar-weekly-field">
+              完成亮点
+              <textarea disabled={!canEdit} value={weeklyReportDraft.wins} onChange={(event) => updateWeeklyReportDraft('wins', event.currentTarget.value)} placeholder="有效动作、增长来源、表现好的主体" />
+            </label>
+            <label className="task-calendar-weekly-field">
+              问题风险
+              <textarea disabled={!canEdit} value={weeklyReportDraft.risks} onChange={(event) => updateWeeklyReportDraft('risks', event.currentTarget.value)} placeholder="低完成、缺口、未填数据、动作未验证原因" />
+            </label>
+            <label className="task-calendar-weekly-field">
+              下周计划
+              <textarea disabled={!canEdit} value={weeklyReportDraft.nextPlan} onChange={(event) => updateWeeklyReportDraft('nextPlan', event.currentTarget.value)} placeholder="下周三件重点动作、负责人和验证方式" />
+            </label>
+            <label className="task-calendar-weekly-field">
+              需要集团支持
+              <textarea disabled={!canEdit} value={weeklyReportDraft.supportNeeded} onChange={(event) => updateWeeklyReportDraft('supportNeeded', event.currentTarget.value)} placeholder="资源、预算、人手、供应链或拍板事项；没有就填暂无" />
+            </label>
+            <div className="task-calendar-weekly-actions">
+              <button className="task-calendar-primary" type="button" disabled={!canEdit || weeklyReportSaving} onClick={saveWeeklyReport}>
+                <Save size={15} /> {weeklyReportSaving ? '保存中' : '保存周报'}
+              </button>
+              <button className="task-calendar-light-button" type="button" disabled={weeklyAiLoading} onClick={analyzeWeeklyReport}>
+                <Sparkles size={15} /> {weeklyAiLoading ? '分析中' : 'AI分析'}
+              </button>
+            </div>
+            <p className="task-calendar-weekly-hint">
+              AI 会结合周报、月目标、每日经营数据和动作周期判断是否匹配。
+            </p>
+            {weeklyAiError ? <p className="task-calendar-inline-notice">{weeklyAiError}</p> : null}
+            {weeklyAiInsights ? (
+              <div className="task-calendar-weekly-ai-result">
+                <strong>{weeklyAiInsights.section?.title || 'AI 周报诊断'}</strong>
+                <p>{weeklyAiInsights.summary}</p>
+                <ul>
+                  {[...(weeklyAiInsights.warnings ?? []), ...(weeklyAiInsights.next ?? [])].slice(0, 4).map((item, index) => (
+                    <li key={`${item.text}-${index}`}>{item.text}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </section>
         </aside>
 

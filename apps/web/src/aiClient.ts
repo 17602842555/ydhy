@@ -40,6 +40,7 @@ export type AiSectionKey =
   | 'tax'
   | 'daily'
   | 'decision'
+  | 'task-calendar-weekly-report'
   | 'subcompany-metrics'
   | 'subcompany-rank'
   | 'subcompany-weekly-report'
@@ -107,6 +108,11 @@ export const SECTION_AI_PRESETS: Record<AiSectionKey, { title: string; prompt: s
     title: '决策包生成',
     prompt: '汇总经营建议、异常提醒和下周重点，生成可复制给华哥的决策包草案。',
     source: '全局经营快照',
+  },
+  'task-calendar-weekly-report': {
+    title: '周报数据诊断',
+    prompt: '结合子公司填写的本周周报、月目标、日经营数据和动作周期，判断周报是否真实反映数据，输出经营偏差、风险、下周动作和需集团支持事项。',
+    source: '任务日历周报 / 后端填报数据',
   },
   'subcompany-metrics': {
     title: '子公司总指标诊断',

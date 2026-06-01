@@ -1046,6 +1046,114 @@
   padding: 9px 10px;
 }
 
+.task-calendar-weekly-report-panel {
+  display: grid;
+  gap: 10px;
+}
+
+.task-calendar-weekly-report-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.task-calendar-weekly-report-head span,
+.task-calendar-weekly-field {
+  color: #747983;
+  font-size: 12px;
+  font-weight: 850;
+  line-height: 1.4;
+}
+
+.task-calendar-weekly-report-head b {
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.74);
+  color: #0c9fa7;
+  font-size: 12px;
+  padding: 4px 9px;
+}
+
+.task-calendar-weekly-field {
+  display: grid;
+  gap: 6px;
+}
+
+.task-calendar-weekly-field textarea {
+  width: 100%;
+  min-height: 58px;
+  resize: vertical;
+  border: 1px solid rgba(218, 220, 226, 0.82);
+  border-radius: 8px;
+  background: rgba(250, 250, 251, 0.68);
+  color: #24262d;
+  font: inherit;
+  font-weight: 750;
+  line-height: 1.45;
+  padding: 9px 10px;
+  outline: none;
+}
+
+.task-calendar-weekly-field textarea:focus {
+  border-color: rgba(18, 174, 184, 0.45);
+  box-shadow: 0 0 0 3px rgba(43, 191, 199, 0.13);
+}
+
+.task-calendar-weekly-field textarea:disabled {
+  color: #898d95;
+}
+
+.task-calendar-weekly-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.task-calendar-weekly-actions button {
+  min-height: 38px;
+}
+
+.task-calendar-weekly-hint {
+  margin: 0;
+  color: #7c8089;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.task-calendar-weekly-ai-result {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(43, 191, 199, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.58);
+  padding: 10px;
+}
+
+.task-calendar-weekly-ai-result strong {
+  color: #0c9fa7;
+  font-size: 13px;
+}
+
+.task-calendar-weekly-ai-result p {
+  margin: 0;
+  color: #30333a;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.task-calendar-weekly-ai-result ul {
+  margin: 0;
+  padding-left: 17px;
+}
+
+.task-calendar-weekly-ai-result li {
+  color: #4c515b;
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.5;
+}
+
 .task-calendar-business-toggle {
   width: 100%;
   min-height: 36px;

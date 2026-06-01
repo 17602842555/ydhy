@@ -416,6 +416,36 @@ try {
     body: JSON.stringify({ nextState: 'done', reason: 'owner closes own task work' }),
   });
   assert(ownerTask.status === 200, 'subsidiary owner should update own task state');
+  const weeklyReport = await request('/task-calendar/weekly-reports', {
+    method: 'POST',
+    headers: ownerAuth,
+    body: JSON.stringify({
+      company: '赵宜主',
+      weekStart: '2026-05-25',
+      weekEnd: '2026-05-31',
+      summary: '本周完成主要经营填报和动作复盘。',
+      wins: '抖音主体保持贡献。',
+      risks: '部分渠道仍需补数据。',
+      nextPlan: '下周补齐动作周期和缺口解释。',
+      supportNeeded: '暂无',
+    }),
+  });
+  assert(weeklyReport.status === 200, 'subsidiary owner should save weekly report');
+  assert(weeklyReport.body.weeklyReport.company === '赵宜主', 'weekly report should be scoped to owner company');
+  assert(weeklyReport.body.taskCalendar.weeklyReports.some((report) => report.weekStart === '2026-05-25'), 'task calendar should return saved weekly report');
+  const taskCalendarWeeklyAi = await request('/ai/insights', {
+    method: 'POST',
+    headers: pmoAuth,
+    body: JSON.stringify({
+      refresh: true,
+      section: 'task-calendar-weekly-report',
+      context: { label: '赵宜主周报', companyName: '赵宜主', weekStart: '2026-05-25' },
+    }),
+  });
+  assert(taskCalendarWeeklyAi.status === 200, 'task calendar weekly AI should refresh');
+  assert(taskCalendarWeeklyAi.body.provider.status === 'not_configured', 'task calendar weekly AI should use no-key fallback in contract check');
+  assert(taskCalendarWeeklyAi.body.section.key === 'task-calendar-weekly-report', 'task calendar weekly AI should preserve section key');
+  assert(taskCalendarWeeklyAi.body.decisionPackage.includes('周报 AI 复盘意见'), 'task calendar weekly AI should expose report review text');
   const missingReason = await request('/subsidiaries/zhaoyizhu/workflows/task', {
     method: 'PATCH',
     headers: ownerAuth,
