@@ -390,7 +390,7 @@
 .task-calendar-metrics article,
 .task-calendar-target-card,
 .task-calendar-business-summary article,
-.task-calendar-year-board article {
+.task-calendar-year-board button {
   border: 1px solid rgba(218, 220, 226, 0.78);
   border-radius: 8px;
   background: rgba(250, 250, 251, 0.72);
@@ -1409,15 +1409,114 @@
   padding: 22px;
 }
 
-.task-calendar-year-board article.active {
+.task-calendar-year-board button {
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.task-calendar-year-board button.active {
   border-color: rgba(88, 217, 225, 0.6);
   box-shadow: inset 0 0 0 1px rgba(88, 217, 225, 0.28);
+}
+
+.task-calendar-year-board button:hover {
+  border-color: rgba(43, 191, 199, 0.42);
 }
 
 .task-calendar-year-board strong {
   display: block;
   margin: 8px 0;
   font-size: 24px;
+}
+
+.task-calendar-month-report-detail {
+  display: grid;
+  gap: 14px;
+}
+
+.task-calendar-month-report-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.task-calendar-month-report-head span,
+.task-calendar-month-report-section h3 {
+  color: #7c8089;
+  font-size: 12px;
+  font-weight: 850;
+  margin: 0;
+}
+
+.task-calendar-month-report-head strong,
+.task-calendar-month-report-head b {
+  display: block;
+  color: #24262d;
+  font-size: 22px;
+  letter-spacing: 0;
+  margin-top: 4px;
+}
+
+.task-calendar-month-report-head b {
+  color: #0c9fa7;
+}
+
+.task-calendar-month-report-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.task-calendar-month-report-metrics article {
+  border: 1px solid rgba(218, 220, 226, 0.78);
+  border-radius: 8px;
+  background: rgba(250, 250, 251, 0.72);
+  padding: 12px;
+}
+
+.task-calendar-month-report-metrics span {
+  display: block;
+  color: #7c8089;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.task-calendar-month-report-metrics strong {
+  display: block;
+  color: #24262d;
+  font-size: 20px;
+  margin-top: 6px;
+}
+
+.task-calendar-month-report-summary {
+  margin: 0;
+  color: #50545d;
+  font-size: 13px;
+  font-weight: 780;
+  line-height: 1.55;
+}
+
+.task-calendar-month-report-section {
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid rgba(210, 212, 218, 0.72);
+  padding-top: 12px;
+}
+
+.task-calendar-month-report-section ul {
+  display: grid;
+  gap: 7px;
+  margin: 0;
+  padding-left: 17px;
+}
+
+.task-calendar-month-report-section li {
+  color: #4c515b;
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.5;
 }
 
 .task-calendar-modal {

@@ -150,6 +150,12 @@ function monthOf(date: string) {
   return date.slice(0, 7)
 }
 
+function reportTouchesMonth(report: Pick<WeeklyReport, 'weekStart' | 'weekEnd'>, month: string) {
+  const start = report.weekStart
+  const end = report.weekEnd || start
+  return start.slice(0, 7) === month || end.slice(0, 7) === month || (start < `${month}-01` && end >= `${month}-01`)
+}
+
 function monthLabel(month: string) {
   const [year, monthNumber] = month.split('-')
   return `${year}年${Number(monthNumber)}月`
@@ -454,7 +460,6 @@ export function TaskCalendarEntryPage({
   const selectedWeekDates = useMemo(() => weekDays(selectedDate), [selectedDate])
   const selectedWeekStart = selectedWeekDates[0] || selectedDate
   const selectedWeekEnd = selectedWeekDates[selectedWeekDates.length - 1] || selectedDate
-  const currentWeekStart = useMemo(() => weekDays(today())[0] || today(), [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -1149,10 +1154,10 @@ export function TaskCalendarEntryPage({
       : `${selectedDate} 暂无动作周期`
   const editingActionPlan = actionEditorPlanId ? (activeData.actionPlans ?? []).find((plan) => plan.id === actionEditorPlanId) : null
   const actionEditorLocked = Boolean(editingActionPlan && actionEditorPlanDate && actionEditorPlanDate !== selectedDate)
-  const showWeeklyReportInDetail =
-    selectedCompany !== allCompaniesLabel &&
-    selectedWeekStart === currentWeekStart &&
-    (viewMode === 'month' || viewMode === 'week')
+  const showWeeklyReportInDetail = selectedCompany !== allCompaniesLabel && viewMode === 'week'
+  const showMonthlyReportInDetail = viewMode === 'year'
+  const selectedMonthWeeklyReports = (activeData.weeklyReports ?? []).filter((report) => targetCompanies.includes(report.company) && reportTouchesMonth(report, visibleMonth))
+  const selectedMonthActionPlans = (activeData.actionPlans ?? []).filter((plan) => targetCompanies.includes(plan.company) && monthOf(plan.date) === visibleMonth)
   const toolbarTitle = viewMode === 'business'
     ? `${selectedDate} 经营数据`
     : viewMode === 'week'
@@ -1339,7 +1344,7 @@ export function TaskCalendarEntryPage({
           ) : viewMode === 'week' ? (
             <WeekTrendBoard dates={selectedWeekDates} month={visibleMonth} selectedDate={selectedDate} actionPeriods={actionPeriods} dayActual={dayActual} dayTarget={dayTarget} onSelectDate={changeDate} />
           ) : viewMode === 'year' ? (
-            <YearBoard month={visibleMonth} monthActual={monthActual} monthTarget={monthTarget} company={selectedCompany} />
+            <YearBoard month={visibleMonth} monthActual={monthActual} monthTarget={monthTarget} company={selectedCompany} onSelectMonth={changeMonth} />
           ) : (
             <>
               <div className="task-calendar-weekdays">{weekdays.map((day) => <span key={day}>{day}</span>)}</div>
@@ -1363,6 +1368,17 @@ export function TaskCalendarEntryPage({
               onAnalyze={analyzeWeeklyReport}
               onSave={saveWeeklyReport}
               onUpdate={updateWeeklyReportDraft}
+            />
+          ) : showMonthlyReportInDetail ? (
+            <MonthReportPanel
+              actionPlans={selectedMonthActionPlans}
+              actual={monthActual}
+              company={selectedCompany}
+              metrics={monthMetrics}
+              month={visibleMonth}
+              rate={monthRate}
+              target={monthTarget}
+              weeklyReports={selectedMonthWeeklyReports}
             />
           ) : (
           <section className="task-calendar-panel detail">
@@ -1610,6 +1626,87 @@ function WeeklyReportEditor({
   )
 }
 
+function MonthReportPanel({
+  actionPlans,
+  actual,
+  company,
+  metrics,
+  month,
+  rate,
+  target,
+  weeklyReports,
+}: {
+  actionPlans: DailyActionPlan[]
+  actual: number
+  company: string
+  metrics: BusinessMetric[]
+  month: string
+  rate: number
+  target: number
+  weeklyReports: WeeklyReport[]
+}) {
+  const filledDays = new Set(metrics.map((metric) => metric.date)).size
+  const topMetrics = metrics
+    .slice()
+    .sort((a, b) => metricRevenue(b) - metricRevenue(a))
+    .slice(0, 4)
+  const reportSummary = weeklyReports
+    .map((report) => report.summary || report.wins || report.risks)
+    .filter(Boolean)
+    .slice(0, 3)
+
+  return (
+    <section className="task-calendar-panel detail task-calendar-month-report-detail">
+      <div className="task-calendar-section-title"><FileText size={14} /> 月报</div>
+      <div className="task-calendar-month-report-head">
+        <div>
+          <span>{monthLabel(month)}</span>
+          <strong>{company}</strong>
+        </div>
+        <b>{formatPercent(rate)}</b>
+      </div>
+      <div className="task-calendar-month-report-metrics">
+        <article><span>月目标</span><strong>{formatMoney(target)}</strong></article>
+        <article><span>月完成</span><strong>{formatMoney(actual)}</strong></article>
+        <article><span>填报天数</span><strong>{filledDays}</strong></article>
+        <article><span>周报数</span><strong>{weeklyReports.length}</strong></article>
+      </div>
+      <p className="task-calendar-month-report-summary">{monthSummaryText(company, target, actual, rate)}</p>
+
+      <div className="task-calendar-month-report-section">
+        <h3>周报汇总</h3>
+        {reportSummary.length ? (
+          <ul>
+            {reportSummary.map((text, index) => <li key={`${text}-${index}`}>{text}</li>)}
+          </ul>
+        ) : <p className="task-calendar-empty">该月份暂无已保存周报。</p>}
+      </div>
+
+      <div className="task-calendar-month-report-section">
+        <h3>重点经营主体</h3>
+        {topMetrics.length ? (
+          <ul>
+            {topMetrics.map((metric) => (
+              <li key={metric.id}>{metric.unitName}：{formatMoney(metricRevenue(metric))}，{metric.date}</li>
+            ))}
+          </ul>
+        ) : <p className="task-calendar-empty">该月份暂无经营数据。</p>}
+      </div>
+
+      <div className="task-calendar-month-report-section">
+        <h3>动作周期</h3>
+        {actionPlans.length ? (
+          <ul>
+            {actionPlans.slice(0, 4).map((plan) => (
+              <li key={plan.id}>{formatDate(plan.date)}：{plan.action || '动作待补'}，验证 {actionPlanValidationDays(plan)} 天</li>
+            ))}
+          </ul>
+        ) : <p className="task-calendar-empty">该月份暂无动作周期。</p>}
+      </div>
+    </section>
+  )
+}
+
 function WeekTrendBoard({
   dates,
   month,
@@ -1767,20 +1864,34 @@ function CalendarGrid({
   )
 }
 
-function YearBoard({ month, company, monthActual, monthTarget }: { month: string; company: string; monthActual: number; monthTarget: number }) {
+function YearBoard({
+  company,
+  month,
+  monthActual,
+  monthTarget,
+  onSelectMonth,
+}: {
+  company: string
+  month: string
+  monthActual: number
+  monthTarget: number
+  onSelectMonth: (month: string) => void
+}) {
+  const year = month.slice(0, 4)
   const currentMonthNumber = Number(month.slice(5, 7))
   return (
     <div className="task-calendar-year-board">
       {Array.from({ length: 12 }, (_, index) => {
         const monthNumber = index + 1
+        const monthKey = `${year}-${String(monthNumber).padStart(2, '0')}`
         const active = monthNumber === currentMonthNumber
         const rate = active && monthTarget > 0 ? (monthActual / monthTarget) * 100 : 0
         return (
-          <article className={active ? 'active' : ''} key={monthNumber}>
+          <button className={active ? 'active' : ''} key={monthNumber} type="button" onClick={() => onSelectMonth(monthKey)}>
             <span>{monthNumber}月</span>
-            <strong>{active ? formatPercent(rate) : '待接入'}</strong>
-            <p>{active ? `${company} ${formatMoney(monthActual)} / ${formatMoney(monthTarget)}` : '切换月份后读取数据'}</p>
-          </article>
+            <strong>{active ? formatPercent(rate) : '查看月报'}</strong>
+            <p>{active ? `${company} ${formatMoney(monthActual)} / ${formatMoney(monthTarget)}` : '点击查看对应月报'}</p>
+          </button>
         )
       })}
     </div>
