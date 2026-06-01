@@ -72,6 +72,19 @@ type WeeklyReport = {
   updatedAt?: string
 }
 type WeeklyReportDraft = Pick<WeeklyReport, 'summary' | 'wins' | 'risks' | 'nextPlan' | 'supportNeeded'>
+type MonthlyReport = {
+  id: string
+  company: string
+  month: string
+  summary: string
+  wins: string
+  risks: string
+  nextPlan: string
+  supportNeeded: string
+  owner?: string
+  updatedAt?: string
+}
+type MonthlyReportDraft = Pick<MonthlyReport, 'summary' | 'wins' | 'risks' | 'nextPlan' | 'supportNeeded'>
 type CompanySummary = {
   company: string
   targetWan: number
@@ -95,6 +108,7 @@ type TaskCalendarData = {
   entries: CalendarEntry[]
   actionPlans?: DailyActionPlan[]
   weeklyReports?: WeeklyReport[]
+  monthlyReports?: MonthlyReport[]
   monthlyTargets: MonthlyTarget[]
   summaries: CompanySummary[]
 }
@@ -395,6 +409,7 @@ function mergeTaskCalendarWindow(current: TaskCalendarData, adjacent: TaskCalend
     entries: mergeById([current, ...adjacent].flatMap((data) => data.entries)),
     actionPlans: mergeById([current, ...adjacent].flatMap((data) => data.actionPlans ?? [])),
     weeklyReports: mergeById([current, ...adjacent].flatMap((data) => data.weeklyReports ?? [])),
+    monthlyReports: mergeById([current, ...adjacent].flatMap((data) => data.monthlyReports ?? [])),
     monthlyTargets: mergeById([current, ...adjacent].flatMap((data) => data.monthlyTargets)),
   }
 }
@@ -453,6 +468,11 @@ export function TaskCalendarEntryPage({
   const [weeklyAiLoading, setWeeklyAiLoading] = useState(false)
   const [weeklyAiError, setWeeklyAiError] = useState('')
   const [weeklyAiInsights, setWeeklyAiInsights] = useState<AiInsights | null>(null)
+  const [monthlyReportDraft, setMonthlyReportDraft] = useState<MonthlyReportDraft>({ summary: '', wins: '', risks: '', nextPlan: '', supportNeeded: '' })
+  const [monthlyReportSaving, setMonthlyReportSaving] = useState(false)
+  const [monthlyAiLoading, setMonthlyAiLoading] = useState(false)
+  const [monthlyAiError, setMonthlyAiError] = useState('')
+  const [monthlyAiInsights, setMonthlyAiInsights] = useState<AiInsights | null>(null)
   const [savingUnitId, setSavingUnitId] = useState('')
   const [clearingMonth, setClearingMonth] = useState(false)
   const [businessDetailOpen, setBusinessDetailOpen] = useState(false)
@@ -498,6 +518,10 @@ export function TaskCalendarEntryPage({
   const selectedWeeklyReport = useMemo(
     () => activeData?.weeklyReports?.find((report) => report.company === selectedCompany && report.weekStart === selectedWeekStart) ?? null,
     [activeData, selectedCompany, selectedWeekStart],
+  )
+  const selectedMonthlyReport = useMemo(
+    () => activeData?.monthlyReports?.find((report) => report.company === selectedCompany && report.month === visibleMonth) ?? null,
+    [activeData, selectedCompany, visibleMonth],
   )
   const monthMetrics = useMemo(
     () => activeData?.metrics.filter((metric) => targetCompanies.includes(metric.company) && monthOf(metric.date) === visibleMonth) ?? [],
@@ -559,6 +583,32 @@ export function TaskCalendarEntryPage({
     selectedWeeklyReport?.supportNeeded,
     selectedWeeklyReport?.updatedAt,
     selectedWeeklyReport?.wins,
+  ])
+
+  useEffect(() => {
+    const nextDraft = {
+      summary: selectedMonthlyReport?.summary || '',
+      wins: selectedMonthlyReport?.wins || '',
+      risks: selectedMonthlyReport?.risks || '',
+      nextPlan: selectedMonthlyReport?.nextPlan || '',
+      supportNeeded: selectedMonthlyReport?.supportNeeded || '',
+    }
+    const timer = window.setTimeout(() => {
+      setMonthlyReportDraft(nextDraft)
+      setMonthlyAiInsights(null)
+      setMonthlyAiError('')
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [
+    selectedCompany,
+    selectedMonthlyReport?.id,
+    selectedMonthlyReport?.nextPlan,
+    selectedMonthlyReport?.risks,
+    selectedMonthlyReport?.summary,
+    selectedMonthlyReport?.supportNeeded,
+    selectedMonthlyReport?.updatedAt,
+    selectedMonthlyReport?.wins,
+    visibleMonth,
   ])
 
   function openTargetEditor() {
@@ -938,9 +988,114 @@ export function TaskCalendarEntryPage({
     }
   }
 
+  function updateMonthlyReportDraft(key: keyof MonthlyReportDraft, value: string) {
+    setMonthlyReportDraft((current) => ({ ...current, [key]: value }))
+  }
+
+  async function saveMonthlyReport() {
+    if (!token || !canEdit || monthlyReportSaving) return
+    const hasContent = Object.values(monthlyReportDraft).some((value) => value.trim())
+    if (!hasContent) {
+      setNotice('请先填写本月月报内容。')
+      return
+    }
+    setMonthlyReportSaving(true)
+    setNotice('')
+    try {
+      const response = await fetch(`${apiBaseUrl}/task-calendar/monthly-reports`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company: selectedCompany,
+          month: visibleMonth,
+          ...monthlyReportDraft,
+        }),
+      })
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}))
+        throw new Error(error.reason || error.error || '保存月报失败')
+      }
+      const result = await response.json() as { taskCalendar: TaskCalendarData }
+      setLoadState((current) => current.status === 'ready'
+        ? { status: 'ready', data: mergeTaskCalendarWindow(current.data, [result.taskCalendar]) }
+        : { status: 'ready', data: result.taskCalendar })
+      setNotice('月报已保存，并可用于 AI 结合月度经营数据分析。')
+      onSaved?.()
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '保存月报失败')
+    } finally {
+      setMonthlyReportSaving(false)
+    }
+  }
+
+  async function analyzeMonthlyReport() {
+    if (monthlyAiLoading) return
+    const hasContent = Object.values(monthlyReportDraft).some((value) => value.trim())
+    if (!hasContent && !selectedMonthlyReport) {
+      setMonthlyAiError('请先填写并保存月报，再进行 AI 分析。')
+      return
+    }
+    setMonthlyAiLoading(true)
+    setMonthlyAiError('')
+    try {
+      const companySummary = activeData?.summaries.find((item) => item.company === selectedCompany)
+      const monthMetricRows = monthMetrics
+        .filter((metric) => metric.company === selectedCompany && monthOf(metric.date) === visibleMonth)
+        .map((metric) => ({
+          date: metric.date,
+          unitName: metric.unitName,
+          revenue: metricRevenue(metric),
+          gmv: metric.gmv,
+          revenueAmount: metric.revenueAmount,
+          returnRate: metric.returnRate,
+          note: metric.note,
+        }))
+      const monthActions = (activeData?.actionPlans ?? [])
+        .filter((plan) => plan.company === selectedCompany && monthOf(plan.date) === visibleMonth)
+        .map((plan) => ({
+          date: plan.date,
+          periodEndDate: actionPlanEndDate(plan),
+          action: plan.action,
+          expectedGmvGrowthRate: plan.expectedGmvGrowthRate,
+          validationDays: actionPlanValidationDays(plan),
+          expectation: plan.expectation,
+        }))
+      const monthWeeklyReports = (activeData?.weeklyReports ?? [])
+        .filter((report) => report.company === selectedCompany && reportTouchesMonth(report, visibleMonth))
+        .map((report) => ({
+          weekStart: report.weekStart,
+          weekEnd: report.weekEnd,
+          summary: report.summary,
+          wins: report.wins,
+          risks: report.risks,
+          nextPlan: report.nextPlan,
+          supportNeeded: report.supportNeeded,
+        }))
+      const insights = await loadAiInsights(apiBaseUrl, defaultAiSettings(), new AbortController().signal, {
+        refresh: true,
+        section: 'task-calendar-monthly-report',
+        context: {
+          label: `${selectedCompany}${monthLabel(visibleMonth)}月报`,
+          companyName: selectedCompany,
+          month: visibleMonth,
+          report: { ...monthlyReportDraft, savedAt: selectedMonthlyReport?.updatedAt || '' },
+          summary: companySummary,
+          monthMetrics: monthMetricRows,
+          monthActions,
+          weeklyReports: monthWeeklyReports,
+        },
+      })
+      setMonthlyAiInsights(insights)
+    } catch (error) {
+      setMonthlyAiError(error instanceof Error ? error.message : 'AI 月报分析失败')
+    } finally {
+      setMonthlyAiLoading(false)
+    }
+  }
+
   async function clearCurrentMonthData() {
     if (!token || !canEdit || clearingMonth) return
-    const confirmed = window.confirm(`确定清空 ${selectedCompany} ${monthLabel(visibleMonth)} 的全部数据和目标吗？这个操作会删除月度目标、当日目标、填报数据、动作周期和周报。`)
+    const confirmed = window.confirm(`确定清空 ${selectedCompany} ${monthLabel(visibleMonth)} 的全部数据和目标吗？这个操作会删除月度目标、当日目标、填报数据、动作周期、周报和月报。`)
     if (!confirmed) return
     setClearingMonth(true)
     setNotice('')
@@ -954,9 +1109,9 @@ export function TaskCalendarEntryPage({
         const error = await response.json().catch(() => ({}))
         throw new Error(error.reason || error.error || '清空当月数据失败')
       }
-      const result = await response.json() as { taskCalendar: TaskCalendarData; cleared?: { monthlyTargets?: number; metrics?: number; entries?: number; actionPlans?: number; weeklyReports?: number } }
+      const result = await response.json() as { taskCalendar: TaskCalendarData; cleared?: { monthlyTargets?: number; metrics?: number; entries?: number; actionPlans?: number; weeklyReports?: number; monthlyReports?: number } }
       setLoadState({ status: 'ready', data: result.taskCalendar })
-      setNotice(`已清空 ${monthLabel(visibleMonth)}：${result.cleared?.monthlyTargets ?? 0} 个目标、${result.cleared?.metrics ?? 0} 条填报、${result.cleared?.actionPlans ?? 0} 个动作、${result.cleared?.weeklyReports ?? 0} 份周报。`)
+      setNotice(`已清空 ${monthLabel(visibleMonth)}：${result.cleared?.monthlyTargets ?? 0} 个目标、${result.cleared?.metrics ?? 0} 条填报、${result.cleared?.actionPlans ?? 0} 个动作、${result.cleared?.weeklyReports ?? 0} 份周报、${result.cleared?.monthlyReports ?? 0} 份月报。`)
       onSaved?.()
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '清空当月数据失败')
@@ -1210,7 +1365,7 @@ export function TaskCalendarEntryPage({
             <button className="task-calendar-danger full" type="button" disabled={!canEdit || clearingMonth} onClick={clearCurrentMonthData}>
               {clearingMonth ? '清空中' : '清空当月数据'}
             </button>
-            <p className="task-calendar-clear-note">清除当月月度目标、当日目标、填报、动作周期与周报。</p>
+            <p className="task-calendar-clear-note">清除当月月度目标、当日目标、填报、动作周期、周报与月报。</p>
           </section>
 
           <section className="task-calendar-panel">
@@ -1373,10 +1528,20 @@ export function TaskCalendarEntryPage({
             <MonthReportPanel
               actionPlans={selectedMonthActionPlans}
               actual={monthActual}
+              canEdit={canEdit && selectedCompany !== allCompaniesLabel}
               company={selectedCompany}
+              draft={monthlyReportDraft}
+              error={monthlyAiError}
+              insights={monthlyAiInsights}
+              isSaved={Boolean(selectedMonthlyReport)}
+              loading={monthlyAiLoading}
               metrics={monthMetrics}
               month={visibleMonth}
+              onAnalyze={analyzeMonthlyReport}
+              onSave={saveMonthlyReport}
+              onUpdate={updateMonthlyReportDraft}
               rate={monthRate}
+              saving={monthlyReportSaving}
               target={monthTarget}
               weeklyReports={selectedMonthWeeklyReports}
             />
@@ -1629,19 +1794,39 @@ function WeeklyReportEditor({
 function MonthReportPanel({
   actionPlans,
   actual,
+  canEdit,
   company,
+  draft,
+  error,
+  insights,
+  isSaved,
+  loading,
   metrics,
   month,
+  onAnalyze,
+  onSave,
+  onUpdate,
   rate,
+  saving,
   target,
   weeklyReports,
 }: {
   actionPlans: DailyActionPlan[]
   actual: number
+  canEdit: boolean
   company: string
+  draft: MonthlyReportDraft
+  error: string
+  insights: AiInsights | null
+  isSaved: boolean
+  loading: boolean
   metrics: BusinessMetric[]
   month: string
+  onAnalyze: () => void
+  onSave: () => void
+  onUpdate: (key: keyof MonthlyReportDraft, value: string) => void
   rate: number
+  saving: boolean
   target: number
   weeklyReports: WeeklyReport[]
 }) {
@@ -1672,6 +1857,54 @@ function MonthReportPanel({
         <article><span>周报数</span><strong>{weeklyReports.length}</strong></article>
       </div>
       <p className="task-calendar-month-report-summary">{monthSummaryText(company, target, actual, rate)}</p>
+
+      <div className="task-calendar-weekly-report-head">
+        <span>月报填写</span>
+        <b>{isSaved ? '已保存' : '待填写'}</b>
+      </div>
+      <label className="task-calendar-weekly-field">
+        本月总结
+        <textarea disabled={!canEdit} value={draft.summary} onChange={(event) => onUpdate('summary', event.currentTarget.value)} placeholder="本月主要完成了什么，目标差距和核心原因是什么" />
+      </label>
+      <label className="task-calendar-weekly-field">
+        完成亮点
+        <textarea disabled={!canEdit} value={draft.wins} onChange={(event) => onUpdate('wins', event.currentTarget.value)} placeholder="有效动作、增长来源、表现好的主体或渠道" />
+      </label>
+      <label className="task-calendar-weekly-field">
+        问题风险
+        <textarea disabled={!canEdit} value={draft.risks} onChange={(event) => onUpdate('risks', event.currentTarget.value)} placeholder="低完成、缺口、未填数据、动作未验证原因" />
+      </label>
+      <label className="task-calendar-weekly-field">
+        下月计划
+        <textarea disabled={!canEdit} value={draft.nextPlan} onChange={(event) => onUpdate('nextPlan', event.currentTarget.value)} placeholder="下月三件重点动作、负责人和验证方式" />
+      </label>
+      <label className="task-calendar-weekly-field">
+        需要集团支持
+        <textarea disabled={!canEdit} value={draft.supportNeeded} onChange={(event) => onUpdate('supportNeeded', event.currentTarget.value)} placeholder="资源、预算、人手、供应链或拍板事项；没有就填暂无" />
+      </label>
+      <div className="task-calendar-weekly-actions">
+        <button className="task-calendar-primary" type="button" disabled={!canEdit || saving} onClick={onSave}>
+          <Save size={15} /> {saving ? '保存中' : '保存月报'}
+        </button>
+        <button className="task-calendar-light-button" type="button" disabled={loading} onClick={onAnalyze}>
+          <Sparkles size={15} /> {loading ? '分析中' : 'AI分析'}
+        </button>
+      </div>
+      <p className="task-calendar-weekly-hint">
+        年视图显示当前月份月报；AI 会结合月报、周报、月目标、每日经营数据和动作周期判断是否匹配。
+      </p>
+      {error ? <p className="task-calendar-inline-notice">{error}</p> : null}
+      {insights ? (
+        <div className="task-calendar-weekly-ai-result">
+          <strong>{insights.section?.title || 'AI 月报诊断'}</strong>
+          <p>{insights.summary}</p>
+          <ul>
+            {[...(insights.warnings ?? []), ...(insights.next ?? [])].slice(0, 4).map((item, index) => (
+              <li key={`${item.text}-${index}`}>{item.text}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       <div className="task-calendar-month-report-section">
         <h3>周报汇总</h3>

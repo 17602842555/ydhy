@@ -12,6 +12,7 @@ export function getTaskCalendar(data, actor, options = {}) {
   const entries = state.entries.filter((entry) => scopedCompanies.includes(entry.company) && String(entry.date || '').startsWith(`${month}-`));
   const actionPlans = state.actionPlans.filter((plan) => scopedCompanies.includes(plan.company) && String(plan.date || '').startsWith(`${month}-`));
   const weeklyReports = state.weeklyReports.filter((report) => scopedCompanies.includes(report.company) && weeklyReportTouchesMonth(report, month));
+  const monthlyReports = state.monthlyReports.filter((report) => scopedCompanies.includes(report.company) && report.month === month);
   const units = state.units.filter((unit) => scopedCompanies.includes(unit.company));
   const monthlyTargets = state.monthlyTargets.filter((target) => scopedCompanies.includes(target.company) && target.month === month);
   const summaries = buildCompanySummaries(data, state, month, scopedCompanies);
@@ -28,6 +29,7 @@ export function getTaskCalendar(data, actor, options = {}) {
     entries,
     actionPlans,
     weeklyReports,
+    monthlyReports,
     monthlyTargets,
     summaries,
     supervisionDashboard: buildSupervisionDashboard(data, summaries, month),
@@ -283,6 +285,56 @@ export function upsertTaskCalendarWeeklyReport(data, body, actor) {
   };
 }
 
+export function upsertTaskCalendarMonthlyReport(data, body, actor) {
+  requireTaskCalendarWrite(data, actor);
+  const state = taskCalendarState(data);
+  const company = normalizeCompanyForActor(data, actor, body?.company);
+  const month = normalizeMonth(body?.month);
+  const summary = String(body?.summary || '').trim();
+  const wins = String(body?.wins || '').trim();
+  const risks = String(body?.risks || '').trim();
+  const nextPlan = String(body?.nextPlan || '').trim();
+  const supportNeeded = String(body?.supportNeeded || '').trim();
+  if (!month) fail(400, 'invalid_month', 'month must be YYYY-MM');
+  if (!summary && !wins && !risks && !nextPlan && !supportNeeded) fail(400, 'empty_monthly_report', '月报内容不能为空');
+  if (!state.companies.includes(company)) state.companies = [...state.companies, company];
+
+  const id = `monthly-report-${slug(company)}-${month}`;
+  const existing = state.monthlyReports.find((report) => report.id === id);
+  const beforeText = existing ? JSON.stringify(existing) : '-';
+  const report = {
+    id,
+    company,
+    month,
+    summary,
+    wins,
+    risks,
+    nextPlan,
+    supportNeeded,
+    owner: actor.name,
+    updatedAt: new Date().toISOString(),
+  };
+  if (existing) Object.assign(existing, report);
+  else state.monthlyReports = [report, ...state.monthlyReports];
+  data.taskCalendar = state;
+
+  const auditLog = addAudit(
+    data,
+    actor,
+    existing ? 'task_calendar.monthly_report.update' : 'task_calendar.monthly_report.create',
+    'task_calendar_monthly_report',
+    report.id,
+    beforeText,
+    JSON.stringify(report),
+    `${actor.name} 填写 ${company} ${month} 月报`,
+  );
+  return {
+    monthlyReport: report,
+    auditLog,
+    taskCalendar: getTaskCalendar(data, actor, { month }),
+  };
+}
+
 export function clearTaskCalendarFutureTargets(data, body, actor) {
   requireTaskCalendarWrite(data, actor);
   const state = taskCalendarState(data);
@@ -339,12 +391,14 @@ export function clearTaskCalendarMonthData(data, body, actor) {
     entries: state.entries.length,
     actionPlans: state.actionPlans.length,
     weeklyReports: state.weeklyReports.length,
+    monthlyReports: state.monthlyReports.length,
   };
   state.monthlyTargets = state.monthlyTargets.filter((target) => !companies.includes(target.company) || target.month !== month);
   state.metrics = state.metrics.filter((metric) => !companies.includes(metric.company) || !String(metric.date || '').startsWith(`${month}-`));
   state.entries = state.entries.filter((entry) => !companies.includes(entry.company) || !String(entry.date || '').startsWith(`${month}-`));
   state.actionPlans = state.actionPlans.filter((plan) => !companies.includes(plan.company) || !String(plan.date || '').startsWith(`${month}-`));
   state.weeklyReports = state.weeklyReports.filter((report) => !companies.includes(report.company) || !weeklyReportTouchesMonth(report, month));
+  state.monthlyReports = state.monthlyReports.filter((report) => !companies.includes(report.company) || report.month !== month);
   for (const company of companies) {
     const subsidiary = data.subsidiaries?.find((item) => item.name === company);
     if (subsidiary) {
@@ -360,6 +414,7 @@ export function clearTaskCalendarMonthData(data, body, actor) {
     entries: before.entries - state.entries.length,
     actionPlans: before.actionPlans - state.actionPlans.length,
     weeklyReports: before.weeklyReports - state.weeklyReports.length,
+    monthlyReports: before.monthlyReports - state.monthlyReports.length,
   };
   const auditLog = addAudit(
     data,
@@ -464,7 +519,7 @@ export function addTaskCalendarUnit(data, body, actor) {
 
 export function syncTaskCalendarFromSeed(data, seed, actor) {
   requirePermission(data, actor, 'system.manage');
-  data.taskCalendar = clone(seed.taskCalendar ?? { companies: [], units: [], metrics: [], entries: [], actionPlans: [], weeklyReports: [], monthlyTargets: [] });
+  data.taskCalendar = clone(seed.taskCalendar ?? { companies: [], units: [], metrics: [], entries: [], actionPlans: [], weeklyReports: [], monthlyReports: [], monthlyTargets: [] });
   const seedSubsidiaries = new Map((seed.subsidiaries ?? []).map((item) => [item.id, item]));
   data.subsidiaries = (data.subsidiaries ?? []).map((item) => {
     const seeded = seedSubsidiaries.get(item.id);
@@ -496,6 +551,7 @@ export function syncTaskCalendarFromSeed(data, seed, actor) {
       entries: data.taskCalendar.entries?.length ?? 0,
       actionPlans: data.taskCalendar.actionPlans?.length ?? 0,
       weeklyReports: data.taskCalendar.weeklyReports?.length ?? 0,
+      monthlyReports: data.taskCalendar.monthlyReports?.length ?? 0,
       monthlyTargets: data.taskCalendar.monthlyTargets?.length ?? 0,
     }),
     `${actor.name} 从内置数据源同步任务日历`,
@@ -514,8 +570,9 @@ function taskCalendarState(data) {
   const entries = Array.isArray(taskCalendar.entries) ? taskCalendar.entries : [];
   const actionPlans = Array.isArray(taskCalendar.actionPlans) ? taskCalendar.actionPlans : [];
   const weeklyReports = Array.isArray(taskCalendar.weeklyReports) ? taskCalendar.weeklyReports : [];
+  const monthlyReports = Array.isArray(taskCalendar.monthlyReports) ? taskCalendar.monthlyReports : [];
   const monthlyTargets = Array.isArray(taskCalendar.monthlyTargets) ? taskCalendar.monthlyTargets : [];
-  data.taskCalendar = { companies, units, metrics, entries, actionPlans, weeklyReports, monthlyTargets };
+  data.taskCalendar = { companies, units, metrics, entries, actionPlans, weeklyReports, monthlyReports, monthlyTargets };
   return data.taskCalendar;
 }
 

@@ -452,6 +452,35 @@ try {
   assert(taskCalendarWeeklyAi.body.provider.status === 'not_configured', 'task calendar weekly AI should use no-key fallback in contract check');
   assert(taskCalendarWeeklyAi.body.section.key === 'task-calendar-weekly-report', 'task calendar weekly AI should preserve section key');
   assert(taskCalendarWeeklyAi.body.decisionPackage.includes('周报 AI 复盘意见'), 'task calendar weekly AI should expose report review text');
+  const monthlyReport = await request('/task-calendar/monthly-reports', {
+    method: 'POST',
+    headers: ownerAuth,
+    body: JSON.stringify({
+      company: '赵宜主',
+      month: '2026-05',
+      summary: '本月完成主要经营目标复盘。',
+      wins: '核心渠道保持增长。',
+      risks: '部分经营主体仍需补明细。',
+      nextPlan: '下月按动作周期追踪缺口。',
+      supportNeeded: '暂无',
+    }),
+  });
+  assert(monthlyReport.status === 200, 'subsidiary owner should save monthly report');
+  assert(monthlyReport.body.monthlyReport.company === '赵宜主', 'monthly report should be scoped to owner company');
+  assert(monthlyReport.body.taskCalendar.monthlyReports.some((report) => report.month === '2026-05'), 'task calendar should return saved monthly report');
+  const taskCalendarMonthlyAi = await request('/ai/insights', {
+    method: 'POST',
+    headers: pmoAuth,
+    body: JSON.stringify({
+      refresh: true,
+      section: 'task-calendar-monthly-report',
+      context: { label: '赵宜主月报', companyName: '赵宜主', month: '2026-05' },
+    }),
+  });
+  assert(taskCalendarMonthlyAi.status === 200, 'task calendar monthly AI should refresh');
+  assert(taskCalendarMonthlyAi.body.provider.status === 'not_configured', 'task calendar monthly AI should use no-key fallback in contract check');
+  assert(taskCalendarMonthlyAi.body.section.key === 'task-calendar-monthly-report', 'task calendar monthly AI should preserve section key');
+  assert(taskCalendarMonthlyAi.body.decisionPackage.includes('月报 AI 复盘意见'), 'task calendar monthly AI should expose report review text');
   const missingReason = await request('/subsidiaries/zhaoyizhu/workflows/task', {
     method: 'PATCH',
     headers: ownerAuth,

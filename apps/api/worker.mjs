@@ -25,6 +25,7 @@ import {
   upsertTaskCalendarActionPlan,
   upsertTaskCalendarDailyTarget,
   upsertTaskCalendarMetric,
+  upsertTaskCalendarMonthlyReport,
   upsertTaskCalendarMonthlyTarget,
   upsertTaskCalendarWeeklyReport,
 } from './lib/taskCalendar.mjs';
@@ -276,6 +277,15 @@ async function handleRequest(request, env, store) {
     if (url.pathname === '/api/task-calendar/weekly-reports' && request.method === 'POST') {
       const body = await readBody(request);
       const result = await store.transaction((data) => upsertTaskCalendarWeeklyReport(data, body, resolveActor(data, request, env)));
+      return json(request, env, 200, {
+        ...result,
+        dashboard: calculateDashboard(await store.read()),
+      });
+    }
+
+    if (url.pathname === '/api/task-calendar/monthly-reports' && request.method === 'POST') {
+      const body = await readBody(request);
+      const result = await store.transaction((data) => upsertTaskCalendarMonthlyReport(data, body, resolveActor(data, request, env)));
       return json(request, env, 200, {
         ...result,
         dashboard: calculateDashboard(await store.read()),

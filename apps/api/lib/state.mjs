@@ -36,6 +36,7 @@ export function prepareInitialData(seed, defaults = {}) {
   data.taskCalendar.entries = Array.isArray(data.taskCalendar.entries) ? data.taskCalendar.entries : clone(defaults.taskCalendar?.entries ?? []);
   data.taskCalendar.actionPlans = Array.isArray(data.taskCalendar.actionPlans) ? data.taskCalendar.actionPlans : clone(defaults.taskCalendar?.actionPlans ?? []);
   data.taskCalendar.weeklyReports = Array.isArray(data.taskCalendar.weeklyReports) ? data.taskCalendar.weeklyReports : clone(defaults.taskCalendar?.weeklyReports ?? []);
+  data.taskCalendar.monthlyReports = Array.isArray(data.taskCalendar.monthlyReports) ? data.taskCalendar.monthlyReports : clone(defaults.taskCalendar?.monthlyReports ?? []);
   data.taskCalendar.monthlyTargets = Array.isArray(data.taskCalendar.monthlyTargets) ? data.taskCalendar.monthlyTargets : clone(defaults.taskCalendar?.monthlyTargets ?? []);
   data.operatingSystem.people = Array.isArray(data.operatingSystem.people) ? data.operatingSystem.people : clone(defaults.operatingSystem?.people ?? []);
   data.operatingSystem.moduleResponsibilities = Array.isArray(data.operatingSystem.moduleResponsibilities)

@@ -87,6 +87,11 @@ const SECTION_PRESETS = {
     sourceId: 'taskCalendar.weeklyReports',
     prompt: '结合子公司填写的本周周报、月目标、日经营数据和动作周期，判断周报是否真实反映数据，输出经营偏差、风险、下周动作和需集团支持事项。',
   },
+  'task-calendar-monthly-report': {
+    title: '子公司填报月报诊断',
+    sourceId: 'taskCalendar.monthlyReports',
+    prompt: '结合子公司填写的本月月报、月目标、每日经营数据、周报和动作周期，判断月报是否真实反映经营结果，输出目标偏差、风险缺口、下月动作和需集团支持事项。',
+  },
   'subcompany-company': {
     title: '单家公司诊断',
     sourceId: 'taskCalendar.supervision',
@@ -283,6 +288,7 @@ export function buildAnalysisSnapshot(data, actor) {
       { id: 'operatingSystem.taxCards', label: '财税合规卡片', recordCount: operatingSystem.taxCards?.length ?? 0 },
       { id: 'taskCalendar.supervision', label: '任务日历子公司经营填报', recordCount: taskCalendar?.summaries?.length ?? 0 },
       { id: 'taskCalendar.weeklyReports', label: '子公司周报填报', recordCount: taskCalendar?.weeklyReports?.length ?? 0 },
+      { id: 'taskCalendar.monthlyReports', label: '子公司月报填报', recordCount: taskCalendar?.monthlyReports?.length ?? 0 },
       { id: 'commercialSystem.workOrders', label: '商业系统建设工单', recordCount: commercialSystem.workOrders?.length ?? 0 },
       { id: 'villaProject.summary', label: '别墅专项项目进度与预算', recordCount: villaProject?.phases?.length ?? 0 },
     ],
@@ -364,6 +370,18 @@ export function buildAnalysisSnapshot(data, actor) {
         'company',
         'weekStart',
         'weekEnd',
+        'summary',
+        'wins',
+        'risks',
+        'nextPlan',
+        'supportNeeded',
+        'owner',
+        'updatedAt',
+      ])),
+      monthlyReports: (taskCalendar.monthlyReports ?? []).slice(0, 20).map((item) => pickFields(item, [
+        'id',
+        'company',
+        'month',
         'summary',
         'wins',
         'risks',
@@ -661,6 +679,60 @@ function applySectionFallback(generic, snapshot, section, sectionContext) {
     };
   }
 
+  if (section.key === 'task-calendar-monthly-report') {
+    const companyName = sectionContext?.companyName || label;
+    const month = sectionContext?.month || sectionContext?.data?.month || '';
+    const contextData = sectionContext?.data && typeof sectionContext.data === 'object' ? sectionContext.data : {};
+    const contextReport = contextData.report && typeof contextData.report === 'object'
+      ? {
+          company: companyName,
+          month,
+          ...contextData.report,
+        }
+      : null;
+    const reports = snapshot.taskCalendar?.monthlyReports ?? [];
+    const report =
+      reports.find((entry) => (!companyName || entry.company === companyName) && (!month || entry.month === month))
+      ?? reports.find((entry) => !companyName || entry.company === companyName)
+      ?? contextReport
+      ?? reports[0];
+    const summary = summaries.find((entry) => entry.company === companyName) ?? contextData.summary;
+    const contextActions = Array.isArray(contextData.monthActions) ? contextData.monthActions : [];
+    const actionPlans = (snapshot.taskCalendar?.actionPlans ?? []).filter((entry) => {
+      if (companyName && entry.company !== companyName) return false;
+      return !month || String(entry.date || '').startsWith(`${month}-`);
+    });
+    const scopedActionPlans = actionPlans.length ? actionPlans : contextActions;
+    const weeklyReports = Array.isArray(contextData.weeklyReports)
+      ? contextData.weeklyReports
+      : (snapshot.taskCalendar?.weeklyReports ?? []).filter((entry) => {
+          if (companyName && entry.company !== companyName) return false;
+          return !month || weeklyReportTouchesMonth(entry, month);
+        });
+    const monthMetrics = Array.isArray(contextData.monthMetrics) ? contextData.monthMetrics : [];
+    const weakRate = Number(summary?.completionRate ?? summary?.forecastRate ?? 0);
+    return {
+      ...generic,
+      summary: `【子公司填报月报诊断】${companyName} 已结合月报、周报、月完成率和动作周期进行交叉检查。`,
+      advice: [
+        source(report ? '先核对月报是否覆盖月目标、完成额、重点增长来源、风险原因和下月动作。' : '当前月尚未保存月报，需先由子公司补齐本月文字填报。'),
+        source(summary ? `${companyName} 本月完成率 ${formatPercent(summary.completionRate)}，月报必须解释完成率、缺口和达成路径。` : `${companyName} 缺少月度汇总数据，月报结论只能作为待核对信息。`, ['taskCalendar.supervision']),
+        source(weeklyReports.length ? `本月已有 ${weeklyReports.length} 份周报，月报要说明周报风险是否闭环。` : '本月没有周报沉淀，月报必须补齐关键周的经营过程。', ['taskCalendar.weeklyReports']),
+      ],
+      warnings: [
+        source(!report ? '月报未保存，AI 无法判断文字与月度数据是否一致。' : '若月报只写现象没有金额、完成率、负责人或下月验证周期，不能作为月会依据。'),
+        source(weakRate > 0 && weakRate < 90 ? `${companyName} 月完成率低于 90%，月报必须写清缺口原因、补救动作和预计拉升幅度。` : `${companyName} 月完成率未触发明显低完成预警，但仍要保留未填数据和风险项。`, ['taskCalendar.supervision']),
+        source(monthMetrics.length ? `本月填报明细 ${monthMetrics.length} 条，需核对是否覆盖所有经营主体。` : '本月经营明细为空或未传入，月报中的金额判断需要待补数据。'),
+      ],
+      next: [
+        source('下月动作必须拆到负责人、开始日期、验证周期和预期 GMV/营收影响。'),
+        source('把月报里的未闭环风险同步回动作周期，避免下月继续只写总结。', ['taskCalendar.supervision']),
+        source('月会前刷新一次 AI 分析，成功结果会写入后端缓存，供其他用户读取。'),
+      ],
+      decisionPackage: buildTaskCalendarMonthlyReportReviewText(companyName, month, report, summary, weeklyReports, scopedActionPlans),
+    };
+  }
+
   if (section.key === 'subcompany-metrics' || section.key === 'subcompany-rank') {
     return {
       ...generic,
@@ -771,6 +843,7 @@ function buildUserPrompt(snapshot, section = resolveSectionPreset(), sectionCont
   const scopedSnapshot = buildScopedPromptSnapshot(snapshot, section, sectionContext);
   const isWeeklyReport = section.key === 'subcompany-weekly-report';
   const isTaskCalendarWeeklyReport = section.key === 'task-calendar-weekly-report';
+  const isTaskCalendarMonthlyReport = section.key === 'task-calendar-monthly-report';
   return JSON.stringify({
     task: '按指定板块分析集团经营看板，输出结构化中文洞察。',
     section: sectionMeta(section, sectionContext),
@@ -784,6 +857,8 @@ function buildUserPrompt(snapshot, section = resolveSectionPreset(), sectionCont
         ? '可直接复制给华哥的周报正文，按【本周总览】【重点风险】【动作验证】【下周安排】【需拍板事项】分段'
         : isTaskCalendarWeeklyReport
           ? '给子公司负责人的周报复盘意见，按【数据是否匹配】【风险缺口】【下周动作】【需集团支持】分段'
+          : isTaskCalendarMonthlyReport
+            ? '给子公司负责人的月报复盘意见，按【月度结果是否匹配】【关键风险】【下月动作】【需集团支持】分段'
         : '可复制给华哥的简短决策包草案，分一二三四段',
     },
     constraints: [
@@ -792,6 +867,7 @@ function buildUserPrompt(snapshot, section = resolveSectionPreset(), sectionCont
       '优先使用 sectionContext 与 snapshot 中当前板块相关数据，不要扩展分析未提供的全局明细。',
       ...(isWeeklyReport ? ['周报正文必须用可直接发送的经营汇报口吻，不要写成解释说明；缺失数据必须写“待补数据”。'] : []),
       ...(isTaskCalendarWeeklyReport ? ['必须比对子公司周报文字和经营数据，指出不一致、缺漏和下周需要补填的字段。'] : []),
+      ...(isTaskCalendarMonthlyReport ? ['必须比对子公司月报文字、月目标、每日经营数据、周报和动作周期，指出不一致、缺漏和下月需要补填的字段。'] : []),
       '所有金额单位沿用输入中的万元口径。',
       '如果数据缺失，请明确写“待补数据”，不要猜。',
       '必须返回可被 JSON.parse 直接解析的 JSON；字符串内如需换行请使用 \\n。',
@@ -972,6 +1048,21 @@ function buildScopedPromptSnapshot(snapshot, section, sectionContext) {
     };
   }
 
+  if (section.key === 'task-calendar-monthly-report') {
+    return {
+      ...base,
+      taskCalendar: compactTaskCalendar(snapshot.taskCalendar, {
+        companyName,
+        summaryLimit: 3,
+        actionLimit: 14,
+        includeMonthlyTargets: true,
+        includeWeeklyReports: true,
+        includeMonthlyReports: true,
+        month: sectionContext?.month,
+      }),
+    };
+  }
+
   if (section.key === 'subcompany-company') {
     return {
       ...base,
@@ -1029,6 +1120,11 @@ function compactTaskCalendar(taskCalendar, options = {}) {
   const weeklyReports = options.includeWeeklyReports
     ? prioritizedCompanyRows(taskCalendar.weeklyReports ?? [], options.companyName, 8)
       .filter((item) => !options.weekStart || item.weekStart === options.weekStart)
+      .filter((item) => !options.month || weeklyReportTouchesMonth(item, options.month))
+    : [];
+  const monthlyReports = options.includeMonthlyReports
+    ? prioritizedCompanyRows(taskCalendar.monthlyReports ?? [], options.companyName, 6)
+      .filter((item) => !options.month || item.month === options.month)
     : [];
   return {
     period: taskCalendar.period,
@@ -1069,6 +1165,18 @@ function compactTaskCalendar(taskCalendar, options = {}) {
       'company',
       'weekStart',
       'weekEnd',
+      'summary',
+      'wins',
+      'risks',
+      'nextPlan',
+      'supportNeeded',
+      'owner',
+      'updatedAt',
+    ])),
+    monthlyReports: monthlyReports.map((item) => pickFields(item, [
+      'id',
+      'company',
+      'month',
       'summary',
       'wins',
       'risks',
@@ -1274,6 +1382,13 @@ function textMatches(value, keyword) {
   return Boolean(text && query && (text === query || text.includes(query) || query.includes(text)));
 }
 
+function weeklyReportTouchesMonth(report, month) {
+  const start = cleanText(report?.weekStart);
+  const end = cleanText(report?.weekEnd || start);
+  if (!start || !month) return false;
+  return start.slice(0, 7) === month || end.slice(0, 7) === month || (start < `${month}-01` && end >= `${month}-01`);
+}
+
 function truncateText(value, limit = 120) {
   const text = cleanText(value);
   return text.length > limit ? `${text.slice(0, limit)}...` : text;
@@ -1284,6 +1399,7 @@ function promptSectionContext(sectionContext) {
   return {
     label: sectionContext.label,
     companyName: sectionContext.companyName,
+    month: sectionContext.month,
     weekStart: sectionContext.weekStart,
     weekEnd: sectionContext.weekEnd,
     data: sectionContext.data,
@@ -1350,6 +1466,9 @@ function aiInsightCacheKey(data, section, sectionContext) {
   if (section.key === 'task-calendar-weekly-report') {
     parts.push(normalizeCacheKeyPart(sectionContext?.weekStart || sectionContext?.data?.weekStart || 'week'));
   }
+  if (section.key === 'task-calendar-monthly-report') {
+    parts.push(normalizeCacheKeyPart(sectionContext?.month || sectionContext?.data?.month || 'month'));
+  }
   return parts.join('::');
 }
 
@@ -1377,6 +1496,7 @@ function normalizeSectionContext(value) {
   return {
     label,
     companyName: cleanText(value.companyName),
+    month: cleanText(value.month),
     weekStart: cleanText(value.weekStart),
     weekEnd: cleanText(value.weekEnd),
     data,
@@ -1443,6 +1563,22 @@ function buildTaskCalendarWeeklyReportReviewText(companyName, report, summary, a
     : '本周周报尚未保存。';
   const actions = actionPlans.map((entry) => `- ${entry.date}：${entry.action || '动作待补'}｜预期涨幅 ${formatPercent(entry.expectedGmvGrowthRate)}｜验证周期 ${entry.validationDays || '待补'}天`).join('\n') || '- 本周暂无动作周期';
   return `《${companyName || '子公司'}周报 AI 复盘意见》\n\n【数据是否匹配】\n${completion}\n${reportText}\n\n【风险缺口】\n周报必须解释低完成率、未填数据、动作未验证和需要集团支持的原因；没有风险也要写“暂无”。\n\n【下周动作】\n${actions}\n\n【需集团支持】\n${report?.supportNeeded || '暂无/待确认'}`;
+}
+
+function buildTaskCalendarMonthlyReportReviewText(companyName, month, report, summary, weeklyReports, actionPlans) {
+  const completion = summary ? `月目标 ${formatWan(summary.targetWan)}万，已完成 ${formatWan(summary.actualWan)}万，完成率 ${formatPercent(summary.completionRate)}，月缺口 ${formatWan(summary.gapWan)}万。` : '月度目标、完成额和缺口待补数据。';
+  const reportText = report
+    ? [
+        `本月总结：${report.summary || '待补数据'}`,
+        `完成亮点：${report.wins || '待补数据'}`,
+        `问题风险：${report.risks || '待补数据'}`,
+        `下月计划：${report.nextPlan || '待补数据'}`,
+        `集团支持：${report.supportNeeded || '暂无/待确认'}`,
+      ].join('\n')
+    : '本月月报尚未保存。';
+  const weeklyText = weeklyReports.map((entry) => `- ${entry.weekStart || '周起始待补'}：${entry.summary || entry.wins || entry.risks || '周报内容待补'}`).join('\n') || '- 本月暂无周报沉淀';
+  const actions = actionPlans.map((entry) => `- ${entry.date}：${entry.action || '动作待补'}｜预期涨幅 ${formatPercent(entry.expectedGmvGrowthRate)}｜验证周期 ${entry.validationDays || '待补'}天`).join('\n') || '- 本月暂无动作周期';
+  return `《${companyName || '子公司'}${month || ''}月报 AI 复盘意见》\n\n【月度结果是否匹配】\n${completion}\n${reportText}\n\n【关键风险】\n月报必须解释未达成、未填报、动作未验证和需要集团支持的原因；没有风险也要写“暂无”。\n\n【周报与过程依据】\n${weeklyText}\n\n【下月动作】\n${actions}\n\n【需集团支持】\n${report?.supportNeeded || '暂无/待确认'}`;
 }
 
 function parseJsonText(text) {

@@ -41,6 +41,7 @@ export type AiSectionKey =
   | 'daily'
   | 'decision'
   | 'task-calendar-weekly-report'
+  | 'task-calendar-monthly-report'
   | 'subcompany-metrics'
   | 'subcompany-rank'
   | 'subcompany-weekly-report'
@@ -113,6 +114,11 @@ export const SECTION_AI_PRESETS: Record<AiSectionKey, { title: string; prompt: s
     title: '周报数据诊断',
     prompt: '结合子公司填写的本周周报、月目标、日经营数据和动作周期，判断周报是否真实反映数据，输出经营偏差、风险、下周动作和需集团支持事项。',
     source: '任务日历周报 / 后端填报数据',
+  },
+  'task-calendar-monthly-report': {
+    title: '月报数据诊断',
+    prompt: '结合子公司填写的本月月报、月目标、每日经营数据、周报和动作周期，判断月报是否真实反映经营结果，输出目标偏差、风险缺口、下月动作和需集团支持事项。',
+    source: '任务日历月报 / 后端填报数据',
   },
   'subcompany-metrics': {
     title: '子公司总指标诊断',
