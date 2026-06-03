@@ -1483,16 +1483,7 @@ function normalizeCacheKeyPart(value) {
 function normalizeSectionContext(value) {
   if (!value || typeof value !== 'object') return null;
   const label = cleanText(value.label || value.companyName);
-  const data = compactContextValue(value);
-  let rawJson = '';
-  let truncated = false;
-  try {
-    const serialized = JSON.stringify(data);
-    rawJson = serialized.length > MAX_CONTEXT_CHARS ? serialized.slice(0, MAX_CONTEXT_CHARS) : serialized;
-    truncated = serialized.length > MAX_CONTEXT_CHARS;
-  } catch {
-    rawJson = '';
-  }
+  const { data, truncated } = compactContextWithinBudget(value, MAX_CONTEXT_CHARS);
   return {
     label,
     companyName: cleanText(value.companyName),
@@ -1500,23 +1491,51 @@ function normalizeSectionContext(value) {
     weekStart: cleanText(value.weekStart),
     weekEnd: cleanText(value.weekEnd),
     data,
-    rawJson,
     truncated,
   };
 }
 
-function compactContextValue(value, depth = 0) {
+// Progressive structural compaction tiers. Tier 0 is the historical default;
+// tighter tiers only kick in when the serialized context exceeds the budget,
+// so the prompt payload stays bounded while always remaining valid JSON.
+const CONTEXT_COMPACTION_TIERS = [
+  { arr0: 12, arrN: 8, str0: 240, strN: 160, entries0: 24, entriesN: 16, maxDepth: 4 },
+  { arr0: 8, arrN: 5, str0: 180, strN: 120, entries0: 20, entriesN: 12, maxDepth: 4 },
+  { arr0: 5, arrN: 3, str0: 140, strN: 90, entries0: 16, entriesN: 10, maxDepth: 3 },
+  { arr0: 3, arrN: 2, str0: 100, strN: 60, entries0: 12, entriesN: 8, maxDepth: 3 },
+];
+
+function compactContextWithinBudget(value, budget) {
+  let data = null;
+  for (let tier = 0; tier < CONTEXT_COMPACTION_TIERS.length; tier += 1) {
+    data = compactContextValue(value, 0, CONTEXT_COMPACTION_TIERS[tier]);
+    if (safeJsonLength(data) <= budget) {
+      return { data, truncated: tier > 0 };
+    }
+  }
+  return { data, truncated: true };
+}
+
+function safeJsonLength(value) {
+  try {
+    return JSON.stringify(value).length;
+  } catch {
+    return Number.POSITIVE_INFINITY;
+  }
+}
+
+function compactContextValue(value, depth = 0, limits = CONTEXT_COMPACTION_TIERS[0]) {
   if (value === null || value === undefined) return value;
-  if (typeof value === 'string') return truncateText(value, depth === 0 ? 240 : 160);
+  if (typeof value === 'string') return truncateText(value, depth === 0 ? limits.str0 : limits.strN);
   if (typeof value === 'number' || typeof value === 'boolean') return value;
   if (Array.isArray(value)) {
-    const limit = depth === 0 ? 12 : 8;
-    return value.slice(0, limit).map((item) => compactContextValue(item, depth + 1));
+    const limit = depth === 0 ? limits.arr0 : limits.arrN;
+    return value.slice(0, limit).map((item) => compactContextValue(item, depth + 1, limits));
   }
   if (typeof value === 'object') {
-    if (depth >= 4) return '[truncated]';
-    const entries = Object.entries(value).slice(0, depth === 0 ? 24 : 16);
-    return Object.fromEntries(entries.map(([key, item]) => [key, compactContextValue(item, depth + 1)]));
+    if (depth >= limits.maxDepth) return '[truncated]';
+    const entries = Object.entries(value).slice(0, depth === 0 ? limits.entries0 : limits.entriesN);
+    return Object.fromEntries(entries.map(([key, item]) => [key, compactContextValue(item, depth + 1, limits)]));
   }
   return cleanText(value);
 }
