@@ -490,7 +490,7 @@ function shouldRefreshAiInsights(method, body = {}) {
   return method === 'POST' && body.refresh === true;
 }
 
-function json(request, env, status, body) {
+function json(request, env, status, body, extraHeaders = {}) {
   const payload = status === 204 ? '' : JSON.stringify(body);
   return new Response(payload, {
     status,
@@ -499,22 +499,43 @@ function json(request, env, status, body) {
       'Access-Control-Allow-Origin': allowedOrigin(request, env),
       'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
       'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Role, X-Actor, X-Subsidiary-Id, X-Ark-Api-Key, X-Ark-Model, X-Ark-Base-Url',
-      'Access-Control-Expose-Headers': 'Content-Disposition, X-Object-Key',
+      'Access-Control-Expose-Headers': 'Content-Disposition, X-Object-Key, X-Request-Id',
       Vary: 'Origin',
+      ...extraHeaders,
     },
   });
 }
 
+function newRequestId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
 function errorResponse(request, env, error) {
+  const requestId = newRequestId();
+  const headers = { 'X-Request-Id': requestId };
   if (error instanceof ApiError) {
-    return json(request, env, error.status, { error: error.error, reason: error.reason });
+    return json(request, env, error.status, { error: error.error, reason: error.reason, requestId }, headers);
   }
-  if (error.message === 'invalid_json') return json(request, env, 400, { error: error.message });
+  if (error.message === 'invalid_json') return json(request, env, 400, { error: error.message, requestId }, headers);
   if (error.message === 'body_too_large') {
-    return json(request, env, 413, { error: error.message, reason: `request body exceeds ${maxBodyBytes} bytes` });
+    return json(request, env, 413, { error: error.message, reason: `request body exceeds ${maxBodyBytes} bytes`, requestId }, headers);
   }
-  console.error(error);
-  return json(request, env, 500, { error: 'internal_server_error' });
+  let pathname = '';
+  try {
+    pathname = new URL(request.url).pathname;
+  } catch {
+    pathname = request.url;
+  }
+  console.error(JSON.stringify({
+    level: 'error',
+    requestId,
+    method: request.method,
+    path: pathname,
+    message: error?.message || String(error),
+    stack: error?.stack || null,
+  }));
+  return json(request, env, 500, { error: 'internal_server_error', requestId }, headers);
 }
 
 async function readBody(request) {

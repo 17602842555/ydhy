@@ -1,6 +1,14 @@
 name: Deploy backend to Cloudflare
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - 'wrangler.jsonc'
+      - 'scripts/prepare-cloudflare-config.mjs'
+      - 'scripts/export-d1-seed.mjs'
+      - '.github/workflows/cloudflare-api.yml'
   workflow_dispatch:
 
 permissions:

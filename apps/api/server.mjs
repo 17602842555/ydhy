@@ -61,7 +61,7 @@ const sourceFileStore = new LocalSourceFileStore({
 const MAX_BODY_BYTES = runtimeConfig.limits.maxBodyBytes;
 const MAX_SOURCE_FILE_BYTES = runtimeConfig.limits.maxSourceFileBytes;
 
-function json(res, status, body) {
+function json(res, status, body, extraHeaders = {}) {
   const payload = status === 204 ? '' : JSON.stringify(body);
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
@@ -69,26 +69,41 @@ function json(res, status, body) {
     'Access-Control-Allow-Origin': runtimeConfig.api.corsOrigin,
     'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
     'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Role, X-Actor, X-Subsidiary-Id, X-Ark-Api-Key, X-Ark-Model, X-Ark-Base-Url',
-    'Access-Control-Expose-Headers': 'Content-Disposition, X-Object-Key',
+    'Access-Control-Expose-Headers': 'Content-Disposition, X-Object-Key, X-Request-Id',
+    ...extraHeaders,
   });
   res.end(payload);
 }
 
-function handleError(res, error) {
+function newRequestId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return `req_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function handleError(res, error, req) {
+  const requestId = newRequestId();
+  const headers = { 'X-Request-Id': requestId };
   if (error instanceof ApiError) {
-    json(res, error.status, { error: error.error, reason: error.reason });
+    json(res, error.status, { error: error.error, reason: error.reason, requestId }, headers);
     return;
   }
   if (error.message === 'invalid_json') {
-    json(res, 400, { error: error.message });
+    json(res, 400, { error: error.message, requestId }, headers);
     return;
   }
   if (error.message === 'body_too_large') {
-    json(res, 413, { error: error.message, reason: `request body exceeds ${MAX_BODY_BYTES} bytes` });
+    json(res, 413, { error: error.message, reason: `request body exceeds ${MAX_BODY_BYTES} bytes`, requestId }, headers);
     return;
   }
-  console.error(error);
-  json(res, 500, { error: 'internal_server_error' });
+  console.error(JSON.stringify({
+    level: 'error',
+    requestId,
+    method: req?.method || null,
+    path: req?.url || null,
+    message: error?.message || String(error),
+    stack: error?.stack || null,
+  }));
+  json(res, 500, { error: 'internal_server_error', requestId }, headers);
 }
 
 function notFound(res) {
@@ -578,7 +593,7 @@ const server = createServer(async (req, res) => {
 
     notFound(res);
   } catch (error) {
-    handleError(res, error);
+    handleError(res, error, req);
   }
 });
 
