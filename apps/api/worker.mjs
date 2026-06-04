@@ -491,7 +491,9 @@ function shouldRefreshAiInsights(method, body = {}) {
 }
 
 function json(request, env, status, body, extraHeaders = {}) {
-  const payload = status === 204 ? '' : JSON.stringify(body);
+  // 204 is a null-body status: spec-compliant runtimes (and Node's undici
+  // Response) reject a non-null body here, so pass null rather than ''.
+  const payload = status === 204 ? null : JSON.stringify(body);
   return new Response(payload, {
     status,
     headers: {

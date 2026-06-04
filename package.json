@@ -27,7 +27,8 @@
     "cf:d1:seed:remote": "npx wrangler d1 execute DB --remote --file apps/api/d1/seed.sql",
     "cf:deploy": "npm run cf:seed:generate && npx wrangler deploy",
     "api:contract:check": "node scripts/api-contract-check.mjs",
-    "check": "npm run db:schema:check && npm run db:seed:check && npm run cf:seed:check && npm run db:migrate:dry-run && npm run api:contract:check && npm run build && node apps/api/server.mjs --check"
+    "test:api": "node --test \"apps/api/test/**/*.test.mjs\"",
+    "check": "npm run db:schema:check && npm run db:seed:check && npm run cf:seed:check && npm run db:migrate:dry-run && npm run api:contract:check && npm run test:api && npm run build && node apps/api/server.mjs --check"
   },
   "devDependencies": {
     "playwright": "^1.60.0"
