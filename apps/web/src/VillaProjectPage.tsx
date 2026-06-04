@@ -1,4 +1,4 @@
-import { type CSSProperties, type ChangeEvent, type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useMemo, useState } from 'react'
+import { type CSSProperties, type ChangeEvent, type FormEvent, type KeyboardEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity,
   ArrowLeft,
@@ -903,6 +903,29 @@ function VoucherCard({ expense }: { expense: VillaExpense }) {
 
 function ExpenseRow({ expense, onAmountChange, onAmountCommit, onDelete }: { expense: VillaExpense; onAmountChange: (amount: number) => void; onAmountCommit: (amount: number) => void; onDelete: () => void }) {
   const commit = (target: HTMLInputElement) => onAmountCommit(Number(target.value) || 0)
+  const [confirming, setConfirming] = useState(false)
+  const confirmTimer = useRef<number | undefined>(undefined)
+
+  useEffect(() => () => {
+    if (confirmTimer.current) window.clearTimeout(confirmTimer.current)
+  }, [])
+
+  function resetConfirm() {
+    if (confirmTimer.current) window.clearTimeout(confirmTimer.current)
+    confirmTimer.current = undefined
+    setConfirming(false)
+  }
+
+  function handleDeleteClick() {
+    if (!confirming) {
+      setConfirming(true)
+      confirmTimer.current = window.setTimeout(() => setConfirming(false), 4000)
+      return
+    }
+    resetConfirm()
+    onDelete()
+  }
+
   return (
     <tr>
       <td>{formatShortDate(expense.date)}</td>
@@ -927,8 +950,14 @@ function ExpenseRow({ expense, onAmountChange, onAmountCommit, onDelete }: { exp
       <td><Badge label={expense.status} tone={statusTone[expense.status]} /></td>
       <td>{expense.voucherType || '-'}{expense.voucherNo ? <><br /><small>{expense.voucherNo}</small></> : null}</td>
       <td>
-        <button className="row-action" type="button" onClick={onDelete}>
-          <Trash2 /><span>删除</span>
+        <button
+          className={`row-action ${confirming ? 'row-action-confirm' : ''}`}
+          type="button"
+          onClick={handleDeleteClick}
+          onBlur={resetConfirm}
+          title={confirming ? '再次点击确认删除这条支出' : '删除这条支出'}
+        >
+          <Trash2 /><span>{confirming ? '确认删除' : '删除'}</span>
         </button>
       </td>
     </tr>
