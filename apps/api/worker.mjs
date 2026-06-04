@@ -1,47 +1,9 @@
 import seed from './data/seed.json' with { type: 'json' };
-import { getAiInsights, getCachedAiInsights, isPersistableAiInsights, saveAiInsightCache, testAiConnection } from './lib/aiInsights.mjs';
-import { listLoginUsers, login, logout, authenticate } from './lib/auth.mjs';
-import { getCommercialSystem, updateCommercialWorkOrder } from './lib/commercialSystem.mjs';
+import { authenticate } from './lib/auth.mjs';
 import { D1StateStore } from './lib/d1Store.mjs';
-import { ApiError, canReadSubsidiary, dataStates, getActor, permissionsFor, requirePermission, transitions } from './lib/domain.mjs';
-import {
-  calculateDashboard,
-  createImportBatch,
-  getImportBatchDetail,
-  publishImportBatch,
-  revalidateImportBatch,
-  validateImportRows,
-} from './lib/imports.mjs';
-import { getOperatingSystem, updateOperatingTask } from './lib/operatingSystem.mjs';
-import { getPeopleGraph, updatePrimaryContact } from './lib/people.mjs';
-import { updateRiskItem } from './lib/risks.mjs';
-import {
-  addTaskCalendarUnit,
-  clearTaskCalendarFutureTargets,
-  clearTaskCalendarMonthData,
-  deleteTaskCalendarActionPlan,
-  getTaskCalendar,
-  syncTaskCalendarFromSeed,
-  upsertTaskCalendarActionPlan,
-  upsertTaskCalendarDailyTarget,
-  upsertTaskCalendarMetric,
-  upsertTaskCalendarMonthlyReport,
-  upsertTaskCalendarMonthlyTarget,
-  upsertTaskCalendarWeeklyReport,
-} from './lib/taskCalendar.mjs';
-import {
-  addVillaExpense,
-  addVillaIssue,
-  addVillaPhase,
-  deleteVillaExpense,
-  getVillaProject,
-  syncVillaProjectFromSeed,
-  updateVillaBudget,
-  updateVillaExpense,
-  updateVillaIssue,
-  updateVillaPhase,
-} from './lib/villaProject.mjs';
-import { updateWorkflowState, workflowConfigs } from './lib/workflows.mjs';
+import { ApiError, dataStates, getActor, requirePermission } from './lib/domain.mjs';
+import { getImportBatchDetail } from './lib/imports.mjs';
+import { handleApiRoute } from './lib/routes.mjs';
 
 const maxBodyBytes = 15_000_000;
 
@@ -100,300 +62,9 @@ async function handleRequest(request, env, store) {
       });
     }
 
-    if (url.pathname === '/api/auth/users' && request.method === 'GET') {
-      return json(request, env, 200, { users: listLoginUsers(await store.read()) });
-    }
-
-    if (url.pathname === '/api/auth/login' && request.method === 'POST') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => login(data, body));
-      return json(request, env, 201, result);
-    }
-
-    if (url.pathname === '/api/auth/me' && request.method === 'GET') {
-      const data = await store.read();
-      const actor = resolveActor(data, request, env);
-      return json(request, env, 200, {
-        actor,
-        permissions: [...permissionsFor(data, actor.role)],
-      });
-    }
-
-    if (url.pathname === '/api/auth/logout' && request.method === 'POST') {
-      const result = await store.transaction((data) => logout(data, toNodeRequest(request)));
-      return json(request, env, 200, result);
-    }
-
-    if (url.pathname === '/api/dashboard' && request.method === 'GET') {
-      const data = await store.read();
-      const actor = resolveActor(data, request, env);
-      requirePermission(data, actor, 'dashboard.read');
-      return json(request, env, 200, calculateDashboard(data));
-    }
-
-    if (url.pathname === '/api/operating-system' && request.method === 'GET') {
-      const data = await store.read();
-      const actor = resolveActor(data, request, env);
-      requirePermission(data, actor, 'dashboard.read');
-      return json(request, env, 200, getOperatingSystem(data));
-    }
-
-    if (url.pathname === '/api/people' && request.method === 'GET') {
-      const data = await store.read();
-      const actor = resolveActor(data, request, env);
-      requirePermission(data, actor, 'dashboard.read');
-      return json(request, env, 200, getPeopleGraph(data));
-    }
-
-    if (url.pathname === '/api/commercial-system' && request.method === 'GET') {
-      const data = await store.read();
-      const actor = resolveActor(data, request, env);
-      requirePermission(data, actor, 'dashboard.read');
-      return json(request, env, 200, getCommercialSystem(data));
-    }
-
-    if (url.pathname === '/api/ai/insights' && ['GET', 'POST'].includes(request.method)) {
-      const body = request.method === 'POST' ? await readBody(request) : {};
-      const data = await store.read();
-      const actor = resolveActor(data, request, env);
-      const config = aiConfig(env, body);
-      if (!shouldRefreshAiInsights(request.method, body)) {
-        const cached = getCachedAiInsights(data, actor, config);
-        if (!cached) return json(request, env, 404, { error: 'ai_insight_cache_miss', reason: 'no saved AI analysis for this section/context' });
-        return json(request, env, 200, cached);
-      }
-      const result = await getAiInsights(data, actor, config);
-      if (!isPersistableAiInsights(result)) {
-        return json(request, env, 200, { ...result, cache: { status: 'not_saved', reason: 'only_successful_ark_results_are_saved' } });
-      }
-      const saved = await store.transaction((latest) => saveAiInsightCache(latest, actor, config, result));
-      return json(request, env, 200, saved);
-    }
-
-    if (url.pathname === '/api/ai/test-connection' && request.method === 'POST') {
-      const body = await readBody(request);
-      const data = await store.read();
-      const actor = resolveActor(data, request, env);
-      requirePermission(data, actor, 'dashboard.read');
-      return json(request, env, 200, await testAiConnection(aiConfig(env, body)));
-    }
-
-    if (url.pathname === '/api/task-calendar' && request.method === 'GET') {
-      const data = await store.read();
-      return json(request, env, 200, getTaskCalendar(data, resolveActor(data, request, env), { month: url.searchParams.get('month') }));
-    }
-
-    if (url.pathname === '/api/task-calendar/supervision' && request.method === 'GET') {
-      const data = await store.read();
-      return json(request, env, 200, getTaskCalendar(data, resolveActor(data, request, env), { month: url.searchParams.get('month') }).supervisionDashboard);
-    }
-
-    if (url.pathname === '/api/villa-project' && request.method === 'GET') {
-      const data = await store.read();
-      return json(request, env, 200, getVillaProject(data, resolveActor(data, request, env)));
-    }
-
-    const peopleContactMatch = url.pathname.match(/^\/api\/people\/contacts\/([^/]+)$/);
-    if (peopleContactMatch && request.method === 'PATCH') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => updatePrimaryContact(data, peopleContactMatch[1], body, resolveActor(data, request, env)));
-      return json(request, env, 200, result);
-    }
-
-    const operatingTaskMatch = url.pathname.match(/^\/api\/operating-system\/tasks\/([^/]+)$/);
-    if (operatingTaskMatch && request.method === 'PATCH') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => updateOperatingTask(data, operatingTaskMatch[1], body, resolveActor(data, request, env)));
-      return json(request, env, 200, result);
-    }
-
-    const riskMatch = url.pathname.match(/^\/api\/risks\/([^/]+)$/);
-    if (riskMatch && request.method === 'PATCH') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => updateRiskItem(data, riskMatch[1], body, resolveActor(data, request, env)));
-      return json(request, env, 200, result);
-    }
-
-    const commercialWorkOrderMatch = url.pathname.match(/^\/api\/commercial-system\/work-orders\/([^/]+)$/);
-    if (commercialWorkOrderMatch && request.method === 'PATCH') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) =>
-        updateCommercialWorkOrder(data, commercialWorkOrderMatch[1], body, resolveActor(data, request, env)),
-      );
-      return json(request, env, 200, result);
-    }
-
-    if (url.pathname === '/api/task-calendar/units' && request.method === 'POST') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => addTaskCalendarUnit(data, body, resolveActor(data, request, env)));
-      return json(request, env, 201, result);
-    }
-
-    if (url.pathname === '/api/task-calendar/metrics' && request.method === 'POST') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => upsertTaskCalendarMetric(data, body, resolveActor(data, request, env)));
-      return json(request, env, 200, {
-        ...result,
-        dashboard: calculateDashboard(await store.read()),
-      });
-    }
-
-    if (url.pathname === '/api/task-calendar/monthly-targets' && request.method === 'POST') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => upsertTaskCalendarMonthlyTarget(data, body, resolveActor(data, request, env)));
-      return json(request, env, 200, {
-        ...result,
-        dashboard: calculateDashboard(await store.read()),
-      });
-    }
-
-    if (url.pathname === '/api/task-calendar/daily-targets' && request.method === 'POST') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => upsertTaskCalendarDailyTarget(data, body, resolveActor(data, request, env)));
-      return json(request, env, 200, {
-        ...result,
-        dashboard: calculateDashboard(await store.read()),
-      });
-    }
-
-    if (url.pathname === '/api/task-calendar/action-plans' && request.method === 'POST') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => upsertTaskCalendarActionPlan(data, body, resolveActor(data, request, env)));
-      return json(request, env, 200, {
-        ...result,
-        dashboard: calculateDashboard(await store.read()),
-      });
-    }
-
-    if (url.pathname === '/api/task-calendar/action-plans/delete' && request.method === 'POST') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => deleteTaskCalendarActionPlan(data, body, resolveActor(data, request, env)));
-      return json(request, env, 200, {
-        ...result,
-        dashboard: calculateDashboard(await store.read()),
-      });
-    }
-
-    if (url.pathname === '/api/task-calendar/weekly-reports' && request.method === 'POST') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => upsertTaskCalendarWeeklyReport(data, body, resolveActor(data, request, env)));
-      return json(request, env, 200, {
-        ...result,
-        dashboard: calculateDashboard(await store.read()),
-      });
-    }
-
-    if (url.pathname === '/api/task-calendar/monthly-reports' && request.method === 'POST') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => upsertTaskCalendarMonthlyReport(data, body, resolveActor(data, request, env)));
-      return json(request, env, 200, {
-        ...result,
-        dashboard: calculateDashboard(await store.read()),
-      });
-    }
-
-    if (url.pathname === '/api/task-calendar/future-targets/clear' && request.method === 'POST') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => clearTaskCalendarFutureTargets(data, body, resolveActor(data, request, env)));
-      return json(request, env, 200, {
-        ...result,
-        dashboard: calculateDashboard(await store.read()),
-      });
-    }
-
-    if (url.pathname === '/api/task-calendar/month-data/clear' && request.method === 'POST') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => clearTaskCalendarMonthData(data, body, resolveActor(data, request, env)));
-      return json(request, env, 200, {
-        ...result,
-        dashboard: calculateDashboard(await store.read()),
-      });
-    }
-
-    if (url.pathname === '/api/task-calendar/sync-source' && request.method === 'POST') {
-      const result = await store.transaction((data) => syncTaskCalendarFromSeed(data, seed, resolveActor(data, request, env)));
-      return json(request, env, 200, {
-        ...result,
-        dashboard: calculateDashboard(await store.read()),
-      });
-    }
-
-    if (url.pathname === '/api/villa-project/phases' && request.method === 'POST') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => addVillaPhase(data, body, resolveActor(data, request, env)));
-      return json(request, env, 201, result);
-    }
-
-    const villaPhaseMatch = url.pathname.match(/^\/api\/villa-project\/phases\/([^/]+)$/);
-    if (villaPhaseMatch && request.method === 'PATCH') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => updateVillaPhase(data, villaPhaseMatch[1], body, resolveActor(data, request, env)));
-      return json(request, env, 200, result);
-    }
-
-    if (url.pathname === '/api/villa-project/issues' && request.method === 'POST') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => addVillaIssue(data, body, resolveActor(data, request, env)));
-      return json(request, env, 201, result);
-    }
-
-    const villaIssueMatch = url.pathname.match(/^\/api\/villa-project\/issues\/([^/]+)$/);
-    if (villaIssueMatch && request.method === 'PATCH') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => updateVillaIssue(data, villaIssueMatch[1], body, resolveActor(data, request, env)));
-      return json(request, env, 200, result);
-    }
-
-    if (url.pathname === '/api/villa-project/expenses' && request.method === 'POST') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => addVillaExpense(data, body, resolveActor(data, request, env)));
-      return json(request, env, 201, result);
-    }
-
-    const villaExpenseMatch = url.pathname.match(/^\/api\/villa-project\/expenses\/([^/]+)$/);
-    if (villaExpenseMatch && request.method === 'PATCH') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => updateVillaExpense(data, villaExpenseMatch[1], body, resolveActor(data, request, env)));
-      return json(request, env, 200, result);
-    }
-
-    if (villaExpenseMatch && request.method === 'DELETE') {
-      const result = await store.transaction((data) => deleteVillaExpense(data, villaExpenseMatch[1], resolveActor(data, request, env)));
-      return json(request, env, 200, result);
-    }
-
-    const villaBudgetMatch = url.pathname.match(/^\/api\/villa-project\/budgets\/([^/]+)$/);
-    if (villaBudgetMatch && request.method === 'PATCH') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => updateVillaBudget(data, decodeURIComponent(villaBudgetMatch[1]), body, resolveActor(data, request, env)));
-      return json(request, env, 200, result);
-    }
-
-    if (url.pathname === '/api/villa-project/sync-source' && request.method === 'POST') {
-      const result = await store.transaction((data) => syncVillaProjectFromSeed(data, seed, resolveActor(data, request, env)));
-      return json(request, env, 200, result);
-    }
-
-    if (url.pathname === '/api/imports/validate-preview' && request.method === 'POST') {
-      const body = await readBody(request);
-      const data = await store.read();
-      const actor = resolveActor(data, request, env);
-      requirePermission(data, actor, 'import.validate');
-      const rows = Array.isArray(body.rows) ? body.rows : [];
-      const { issues } = validateImportRows(data, rows);
-      return json(request, env, 200, {
-        state: issues.some((issue) => issue.severity === 'error') ? 'raw' : 'validated',
-        rowCount: rows.length,
-        issues,
-      });
-    }
-
-    if (url.pathname === '/api/imports' && request.method === 'POST') {
-      const body = await readBody(request);
-      const result = await store.transaction((data) => createImportBatch(data, body, resolveActor(data, request, env)));
-      return json(request, env, 201, result);
-    }
-
+    // Source-file download is genuinely runtime-specific: this Worker keeps
+    // structured state in D1 only and never serves source bytes, so it is
+    // handled here rather than through the shared JSON route table.
     const sourceFileMatch = url.pathname.match(/^\/api\/imports\/([^/]+)\/source-file$/);
     if (sourceFileMatch && request.method === 'GET') {
       const data = await store.read();
@@ -404,68 +75,25 @@ async function handleRequest(request, env, store) {
       return json(request, env, 501, { error: 'source_file_store_not_configured', reason: 'Cloudflare Worker deployment currently stores structured state in D1 only.' });
     }
 
-    const importActionMatch = url.pathname.match(/^\/api\/imports\/([^/]+)\/(validate|publish)$/);
-    if (importActionMatch && request.method === 'POST') {
-      const [, batchId, action] = importActionMatch;
-      const body = await readBody(request);
-      const result = await store.transaction((data) =>
-        action === 'validate'
-          ? revalidateImportBatch(data, batchId, resolveActor(data, request, env))
-          : publishImportBatch(data, batchId, resolveActor(data, request, env), body.reason),
-      );
-      return json(request, env, 200, {
-        ...result,
-        dashboard: calculateDashboard(await store.read()),
-      });
-    }
-
-    const importMatch = url.pathname.match(/^\/api\/imports\/([^/]+)$/);
-    if (importMatch && request.method === 'GET') {
-      const data = await store.read();
-      const actor = resolveActor(data, request, env);
-      requirePermission(data, actor, 'source.read');
-      return json(request, env, 200, getImportBatchDetail(data, importMatch[1]));
-    }
-
-    const workflowActionMatch = url.pathname.match(/^\/api\/subsidiaries\/([^/]+)\/workflows\/([^/]+)$/);
-    if (workflowActionMatch && request.method === 'PATCH') {
-      const [, subsidiaryId, workflowType] = workflowActionMatch;
-      const body = await readBody(request);
-      const result = await store.transaction((data) => updateWorkflowState(data, subsidiaryId, workflowType, body, resolveActor(data, request, env)));
-      return json(request, env, 200, {
-        ...result,
-        dashboard: calculateDashboard(await store.read()),
-      });
-    }
-
-    const subsidiaryMatch = url.pathname.match(/^\/api\/subsidiaries\/([^/]+)$/);
-    if (subsidiaryMatch && request.method === 'GET') {
-      const data = await store.read();
-      const actor = resolveActor(data, request, env);
-      const item = data.subsidiaries.find((entry) => entry.id === subsidiaryMatch[1]);
-      if (!item) return json(request, env, 404, { error: 'not_found' });
-      if (!canReadSubsidiary(data, actor, item.id)) {
-        return json(request, env, 403, {
-          error: 'forbidden',
-          reason: 'role scope does not allow cross-subsidiary access',
-        });
-      }
-      const batch = data.importBatches.find((entry) => entry.id === item.sourceBatchId);
-      const sourceRow = data.sourceRows.find((entry) => entry.batchId === item.sourceBatchId && entry.rowNumber === item.sourceRow);
-      const workflowTargets = Object.keys(workflowConfigs).map((type) => `${item.id}:${type}`);
-      return json(request, env, 200, {
-        subsidiary: item,
-        source: batch,
-        sourceRow,
-        auditLogs: data.auditLogs.filter((entry) => entry.target === item.sourceBatchId || workflowTargets.includes(entry.target)),
-      });
-    }
-
-    if (url.pathname === '/api/admin/reset' && request.method === 'POST' && env.ENVIRONMENT !== 'production') {
-      return json(request, env, 200, { ok: true, dashboard: calculateDashboard(await store.resetFromSeed()) });
-    }
-
-    return json(request, env, 404, { error: 'not_found' });
+    const body = request.method === 'POST' || request.method === 'PATCH' ? await readBody(request) : {};
+    const result = await handleApiRoute({
+      method: request.method,
+      pathname: url.pathname,
+      searchParams: url.searchParams,
+      body,
+      seed,
+      store,
+      readActor: (data) => resolveActor(data, request, env),
+      makeAiConfig: (input) => aiConfig(env, input),
+      nodeReq: toNodeRequest(request),
+      capabilities: {
+        sourceFileStore: null,
+        maxSourceFileBytes: null,
+        isProduction: env.ENVIRONMENT === 'production',
+      },
+    });
+    if (!result) return json(request, env, 404, { error: 'not_found' });
+    return json(request, env, result.status, result.body);
   } catch (error) {
     return errorResponse(request, env, error);
   }
@@ -484,10 +112,6 @@ function aiConfig(env, body = {}) {
     section: String(body.section || '').trim(),
     context: body.context && typeof body.context === 'object' ? body.context : null,
   };
-}
-
-function shouldRefreshAiInsights(method, body = {}) {
-  return method === 'POST' && body.refresh === true;
 }
 
 function json(request, env, status, body, extraHeaders = {}) {

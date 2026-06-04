@@ -2,51 +2,20 @@ import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getAiInsights, getCachedAiInsights, isPersistableAiInsights, saveAiInsightCache, testAiConnection } from './lib/aiInsights.mjs';
-import { authenticate, listLoginUsers, login, logout } from './lib/auth.mjs';
+import { getAiInsights } from './lib/aiInsights.mjs';
+import { authenticate, login } from './lib/auth.mjs';
 import { getCommercialSystem, updateCommercialWorkOrder } from './lib/commercialSystem.mjs';
 import { healthFromConfig, loadRuntimeConfig } from './lib/config.mjs';
-import { ApiError, canReadSubsidiary, dataStates, getActor, permissionsFor, requirePermission, transitions } from './lib/domain.mjs';
-import {
-  calculateDashboard,
-  createImportBatch,
-  getImportBatchDetail,
-  publishImportBatch,
-  revalidateImportBatch,
-  validateImportRows,
-} from './lib/imports.mjs';
+import { ApiError, canReadSubsidiary, dataStates, getActor, requirePermission, transitions } from './lib/domain.mjs';
+import { calculateDashboard, createImportBatch, getImportBatchDetail, publishImportBatch, validateImportRows } from './lib/imports.mjs';
 import { getOperatingSystem, updateOperatingTask } from './lib/operatingSystem.mjs';
 import { getPeopleGraph, updatePrimaryContact } from './lib/people.mjs';
 import { updateRiskItem } from './lib/risks.mjs';
+import { handleApiRoute } from './lib/routes.mjs';
 import { LocalSourceFileStore } from './lib/sourceFiles.mjs';
 import { JsonFileStore, prepareInitialData } from './lib/store.mjs';
-import {
-  addTaskCalendarUnit,
-  clearTaskCalendarFutureTargets,
-  clearTaskCalendarMonthData,
-  deleteTaskCalendarActionPlan,
-  getTaskCalendar,
-  syncTaskCalendarFromSeed,
-  upsertTaskCalendarActionPlan,
-  upsertTaskCalendarDailyTarget,
-  upsertTaskCalendarMetric,
-  upsertTaskCalendarMonthlyReport,
-  upsertTaskCalendarMonthlyTarget,
-  upsertTaskCalendarWeeklyReport,
-} from './lib/taskCalendar.mjs';
-import {
-  addVillaExpense,
-  addVillaIssue,
-  addVillaPhase,
-  deleteVillaExpense,
-  getVillaProject,
-  syncVillaProjectFromSeed,
-  updateVillaBudget,
-  updateVillaExpense,
-  updateVillaIssue,
-  updateVillaPhase,
-} from './lib/villaProject.mjs';
-import { updateWorkflowState, workflowConfigs } from './lib/workflows.mjs';
+import { getVillaProject } from './lib/villaProject.mjs';
+import { updateWorkflowState } from './lib/workflows.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const runtimeConfig = loadRuntimeConfig({ apiDir: __dirname });
@@ -153,347 +122,9 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    if (url.pathname === '/api/auth/users' && req.method === 'GET') {
-      json(res, 200, { users: listLoginUsers(store.read()) });
-      return;
-    }
-
-    if (url.pathname === '/api/auth/login' && req.method === 'POST') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => login(data, body));
-      json(res, 201, result);
-      return;
-    }
-
-    if (url.pathname === '/api/auth/me' && req.method === 'GET') {
-      const data = store.read();
-      const actor = resolveActor(data, req);
-      json(res, 200, {
-        actor,
-        permissions: [...permissionsFor(data, actor.role)],
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/auth/logout' && req.method === 'POST') {
-      const result = store.transaction((data) => logout(data, req));
-      json(res, 200, result);
-      return;
-    }
-
-    if (url.pathname === '/api/dashboard' && req.method === 'GET') {
-      const data = store.read();
-      const actor = resolveActor(data, req);
-      requirePermission(data, actor, 'dashboard.read');
-      json(res, 200, calculateDashboard(data));
-      return;
-    }
-
-    if (url.pathname === '/api/operating-system' && req.method === 'GET') {
-      const data = store.read();
-      const actor = resolveActor(data, req);
-      requirePermission(data, actor, 'dashboard.read');
-      json(res, 200, getOperatingSystem(data));
-      return;
-    }
-
-    if (url.pathname === '/api/people' && req.method === 'GET') {
-      const data = store.read();
-      const actor = resolveActor(data, req);
-      requirePermission(data, actor, 'dashboard.read');
-      json(res, 200, getPeopleGraph(data));
-      return;
-    }
-
-    if (url.pathname === '/api/commercial-system' && req.method === 'GET') {
-      const data = store.read();
-      const actor = resolveActor(data, req);
-      requirePermission(data, actor, 'dashboard.read');
-      json(res, 200, getCommercialSystem(data));
-      return;
-    }
-
-    if (url.pathname === '/api/ai/insights' && ['GET', 'POST'].includes(req.method)) {
-      const body = req.method === 'POST' ? await readBody(req) : {};
-      const data = store.read();
-      const actor = resolveActor(data, req);
-      const config = aiConfigFromBody(runtimeConfig.ai, body);
-      if (!shouldRefreshAiInsights(req.method, body)) {
-        const cached = getCachedAiInsights(data, actor, config);
-        if (!cached) {
-          json(res, 404, { error: 'ai_insight_cache_miss', reason: 'no saved AI analysis for this section/context' });
-          return;
-        }
-        json(res, 200, cached);
-        return;
-      }
-      const result = await getAiInsights(data, actor, config);
-      const saved = isPersistableAiInsights(result)
-        ? store.transaction((latest) => saveAiInsightCache(latest, actor, config, result))
-        : { ...result, cache: { status: 'not_saved', reason: 'only_successful_ark_results_are_saved' } };
-      json(res, 200, saved);
-      return;
-    }
-
-    if (url.pathname === '/api/ai/test-connection' && req.method === 'POST') {
-      const body = await readBody(req);
-      const data = store.read();
-      const actor = resolveActor(data, req);
-      requirePermission(data, actor, 'dashboard.read');
-      json(res, 200, await testAiConnection(aiConfigFromBody(runtimeConfig.ai, body)));
-      return;
-    }
-
-    if (url.pathname === '/api/task-calendar' && req.method === 'GET') {
-      const data = store.read();
-      json(res, 200, getTaskCalendar(data, resolveActor(data, req), { month: url.searchParams.get('month') }));
-      return;
-    }
-
-    if (url.pathname === '/api/task-calendar/supervision' && req.method === 'GET') {
-      const data = store.read();
-      json(res, 200, getTaskCalendar(data, resolveActor(data, req), { month: url.searchParams.get('month') }).supervisionDashboard);
-      return;
-    }
-
-    if (url.pathname === '/api/villa-project' && req.method === 'GET') {
-      const data = store.read();
-      json(res, 200, getVillaProject(data, resolveActor(data, req)));
-      return;
-    }
-
-    const peopleContactMatch = url.pathname.match(/^\/api\/people\/contacts\/([^/]+)$/);
-    if (peopleContactMatch && req.method === 'PATCH') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => updatePrimaryContact(data, peopleContactMatch[1], body, resolveActor(data, req)));
-      json(res, 200, result);
-      return;
-    }
-
-    const operatingTaskMatch = url.pathname.match(/^\/api\/operating-system\/tasks\/([^/]+)$/);
-    if (operatingTaskMatch && req.method === 'PATCH') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => updateOperatingTask(data, operatingTaskMatch[1], body, resolveActor(data, req)));
-      json(res, 200, result);
-      return;
-    }
-
-    const riskMatch = url.pathname.match(/^\/api\/risks\/([^/]+)$/);
-    if (riskMatch && req.method === 'PATCH') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => updateRiskItem(data, riskMatch[1], body, resolveActor(data, req)));
-      json(res, 200, result);
-      return;
-    }
-
-    const commercialWorkOrderMatch = url.pathname.match(/^\/api\/commercial-system\/work-orders\/([^/]+)$/);
-    if (commercialWorkOrderMatch && req.method === 'PATCH') {
-      const body = await readBody(req);
-      const result = store.transaction((data) =>
-        updateCommercialWorkOrder(data, commercialWorkOrderMatch[1], body, resolveActor(data, req)),
-      );
-      json(res, 200, result);
-      return;
-    }
-
-    if (url.pathname === '/api/task-calendar/units' && req.method === 'POST') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => addTaskCalendarUnit(data, body, resolveActor(data, req)));
-      json(res, 201, result);
-      return;
-    }
-
-    if (url.pathname === '/api/task-calendar/metrics' && req.method === 'POST') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => upsertTaskCalendarMetric(data, body, resolveActor(data, req)));
-      json(res, 200, {
-        ...result,
-        dashboard: calculateDashboard(store.read()),
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/task-calendar/monthly-targets' && req.method === 'POST') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => upsertTaskCalendarMonthlyTarget(data, body, resolveActor(data, req)));
-      json(res, 200, {
-        ...result,
-        dashboard: calculateDashboard(store.read()),
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/task-calendar/daily-targets' && req.method === 'POST') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => upsertTaskCalendarDailyTarget(data, body, resolveActor(data, req)));
-      json(res, 200, {
-        ...result,
-        dashboard: calculateDashboard(store.read()),
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/task-calendar/action-plans' && req.method === 'POST') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => upsertTaskCalendarActionPlan(data, body, resolveActor(data, req)));
-      json(res, 200, {
-        ...result,
-        dashboard: calculateDashboard(store.read()),
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/task-calendar/action-plans/delete' && req.method === 'POST') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => deleteTaskCalendarActionPlan(data, body, resolveActor(data, req)));
-      json(res, 200, {
-        ...result,
-        dashboard: calculateDashboard(store.read()),
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/task-calendar/weekly-reports' && req.method === 'POST') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => upsertTaskCalendarWeeklyReport(data, body, resolveActor(data, req)));
-      json(res, 200, {
-        ...result,
-        dashboard: calculateDashboard(store.read()),
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/task-calendar/monthly-reports' && req.method === 'POST') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => upsertTaskCalendarMonthlyReport(data, body, resolveActor(data, req)));
-      json(res, 200, {
-        ...result,
-        dashboard: calculateDashboard(store.read()),
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/task-calendar/future-targets/clear' && req.method === 'POST') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => clearTaskCalendarFutureTargets(data, body, resolveActor(data, req)));
-      json(res, 200, {
-        ...result,
-        dashboard: calculateDashboard(store.read()),
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/task-calendar/month-data/clear' && req.method === 'POST') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => clearTaskCalendarMonthData(data, body, resolveActor(data, req)));
-      json(res, 200, {
-        ...result,
-        dashboard: calculateDashboard(store.read()),
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/task-calendar/sync-source' && req.method === 'POST') {
-      const result = store.transaction((data) => syncTaskCalendarFromSeed(data, seed, resolveActor(data, req)));
-      json(res, 200, {
-        ...result,
-        dashboard: calculateDashboard(store.read()),
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/villa-project/phases' && req.method === 'POST') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => addVillaPhase(data, body, resolveActor(data, req)));
-      json(res, 201, result);
-      return;
-    }
-
-    const villaPhaseMatch = url.pathname.match(/^\/api\/villa-project\/phases\/([^/]+)$/);
-    if (villaPhaseMatch && req.method === 'PATCH') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => updateVillaPhase(data, villaPhaseMatch[1], body, resolveActor(data, req)));
-      json(res, 200, result);
-      return;
-    }
-
-    if (url.pathname === '/api/villa-project/issues' && req.method === 'POST') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => addVillaIssue(data, body, resolveActor(data, req)));
-      json(res, 201, result);
-      return;
-    }
-
-    const villaIssueMatch = url.pathname.match(/^\/api\/villa-project\/issues\/([^/]+)$/);
-    if (villaIssueMatch && req.method === 'PATCH') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => updateVillaIssue(data, villaIssueMatch[1], body, resolveActor(data, req)));
-      json(res, 200, result);
-      return;
-    }
-
-    if (url.pathname === '/api/villa-project/expenses' && req.method === 'POST') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => addVillaExpense(data, body, resolveActor(data, req)));
-      json(res, 201, result);
-      return;
-    }
-
-    const villaExpenseMatch = url.pathname.match(/^\/api\/villa-project\/expenses\/([^/]+)$/);
-    if (villaExpenseMatch && req.method === 'PATCH') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => updateVillaExpense(data, villaExpenseMatch[1], body, resolveActor(data, req)));
-      json(res, 200, result);
-      return;
-    }
-
-    if (villaExpenseMatch && req.method === 'DELETE') {
-      const result = store.transaction((data) => deleteVillaExpense(data, villaExpenseMatch[1], resolveActor(data, req)));
-      json(res, 200, result);
-      return;
-    }
-
-    const villaBudgetMatch = url.pathname.match(/^\/api\/villa-project\/budgets\/([^/]+)$/);
-    if (villaBudgetMatch && req.method === 'PATCH') {
-      const body = await readBody(req);
-      const result = store.transaction((data) => updateVillaBudget(data, decodeURIComponent(villaBudgetMatch[1]), body, resolveActor(data, req)));
-      json(res, 200, result);
-      return;
-    }
-
-    if (url.pathname === '/api/villa-project/sync-source' && req.method === 'POST') {
-      const result = store.transaction((data) => syncVillaProjectFromSeed(data, seed, resolveActor(data, req)));
-      json(res, 200, result);
-      return;
-    }
-
-    if (url.pathname === '/api/imports/validate-preview' && req.method === 'POST') {
-      const body = await readBody(req);
-      const data = store.read();
-      const actor = resolveActor(data, req);
-      requirePermission(data, actor, 'import.validate');
-      const rows = Array.isArray(body.rows) ? body.rows : [];
-      const { issues } = validateImportRows(data, rows);
-      json(res, 200, {
-        state: issues.some((issue) => issue.severity === 'error') ? 'raw' : 'validated',
-        rowCount: rows.length,
-        issues,
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/imports' && req.method === 'POST') {
-      const body = await readBody(req);
-      const result = store.transaction((data) =>
-        createImportBatch(data, body, resolveActor(data, req), {
-          sourceFileStore,
-          maxSourceFileBytes: MAX_SOURCE_FILE_BYTES,
-        }),
-      );
-      json(res, 201, result);
-      return;
-    }
-
+    // Source-file download streams original bytes from local object storage, a
+    // non-JSON response specific to this Node runtime, so it is handled here
+    // rather than through the shared JSON route table.
     const sourceFileMatch = url.pathname.match(/^\/api\/imports\/([^/]+)\/source-file$/);
     if (sourceFileMatch && req.method === 'GET') {
       const data = store.read();
@@ -521,77 +152,28 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    const importActionMatch = url.pathname.match(/^\/api\/imports\/([^/]+)\/(validate|publish)$/);
-    if (importActionMatch && req.method === 'POST') {
-      const [, batchId, action] = importActionMatch;
-      const body = await readBody(req);
-      const result = store.transaction((data) =>
-        action === 'validate'
-          ? revalidateImportBatch(data, batchId, resolveActor(data, req))
-          : publishImportBatch(data, batchId, resolveActor(data, req), body.reason),
-      );
-      json(res, 200, {
-        ...result,
-        dashboard: calculateDashboard(store.read()),
-      });
+    const body = req.method === 'POST' || req.method === 'PATCH' ? await readBody(req) : {};
+    const result = await handleApiRoute({
+      method: req.method,
+      pathname: url.pathname,
+      searchParams: url.searchParams,
+      body,
+      seed,
+      store,
+      readActor: (data) => resolveActor(data, req),
+      makeAiConfig: (input) => aiConfigFromBody(runtimeConfig.ai, input),
+      nodeReq: req,
+      capabilities: {
+        sourceFileStore,
+        maxSourceFileBytes: MAX_SOURCE_FILE_BYTES,
+        isProduction: process.env.NODE_ENV === 'production',
+      },
+    });
+    if (!result) {
+      notFound(res);
       return;
     }
-
-    const importMatch = url.pathname.match(/^\/api\/imports\/([^/]+)$/);
-    if (importMatch && req.method === 'GET') {
-      const data = store.read();
-      const actor = resolveActor(data, req);
-      requirePermission(data, actor, 'source.read');
-      json(res, 200, getImportBatchDetail(data, importMatch[1]));
-      return;
-    }
-
-    const workflowActionMatch = url.pathname.match(/^\/api\/subsidiaries\/([^/]+)\/workflows\/([^/]+)$/);
-    if (workflowActionMatch && req.method === 'PATCH') {
-      const [, subsidiaryId, workflowType] = workflowActionMatch;
-      const body = await readBody(req);
-      const result = store.transaction((data) => updateWorkflowState(data, subsidiaryId, workflowType, body, resolveActor(data, req)));
-      json(res, 200, {
-        ...result,
-        dashboard: calculateDashboard(store.read()),
-      });
-      return;
-    }
-
-    const subsidiaryMatch = url.pathname.match(/^\/api\/subsidiaries\/([^/]+)$/);
-    if (subsidiaryMatch && req.method === 'GET') {
-      const data = store.read();
-      const actor = resolveActor(data, req);
-      const item = data.subsidiaries.find((entry) => entry.id === subsidiaryMatch[1]);
-      if (!item) {
-        notFound(res);
-        return;
-      }
-      if (!canReadSubsidiary(data, actor, item.id)) {
-        json(res, 403, {
-          error: 'forbidden',
-          reason: 'role scope does not allow cross-subsidiary access',
-        });
-        return;
-      }
-      const batch = data.importBatches.find((entry) => entry.id === item.sourceBatchId);
-      const sourceRow = data.sourceRows.find((entry) => entry.batchId === item.sourceBatchId && entry.rowNumber === item.sourceRow);
-      const workflowTargets = Object.keys(workflowConfigs).map((type) => `${item.id}:${type}`);
-      json(res, 200, {
-        subsidiary: item,
-        source: batch,
-        sourceRow,
-        auditLogs: data.auditLogs.filter((entry) => entry.target === item.sourceBatchId || workflowTargets.includes(entry.target)),
-      });
-      return;
-    }
-
-    if (url.pathname === '/api/admin/reset' && req.method === 'POST' && process.env.NODE_ENV !== 'production') {
-      json(res, 200, { ok: true, dashboard: calculateDashboard(store.resetFromSeed()) });
-      return;
-    }
-
-    notFound(res);
+    json(res, result.status, result.body);
   } catch (error) {
     handleError(res, error, req);
   }
@@ -788,10 +370,6 @@ function aiConfigFromBody(config, body = {}) {
     section: String(body.section || '').trim(),
     context: body.context && typeof body.context === 'object' ? body.context : null,
   };
-}
-
-function shouldRefreshAiInsights(method, body = {}) {
-  return method === 'POST' && body.refresh === true;
 }
 
 if (process.argv.includes('--check')) {
