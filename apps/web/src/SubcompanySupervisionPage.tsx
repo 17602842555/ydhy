@@ -184,6 +184,17 @@ function companyAnchor(name: string) {
   return `subcompany-${encodeURIComponent(name)}`
 }
 
+function currentMonth() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
+function monthLabel(month: string) {
+  const [year, monthNumber] = month.split('-')
+  if (!year || !monthNumber) return month
+  return `${year}年${String(Number(monthNumber)).padStart(2, '0')}月`
+}
+
 function TableView({ headers, rows, compact = false }: { headers: readonly string[]; rows: readonly RankRow[]; compact?: boolean }) {
   return (
     <div className={`subcompany-table-wrap ${compact ? 'compact' : ''}`}>
@@ -350,7 +361,7 @@ export function SubcompanySupervisionPage({
   onOpenEntry: () => void
 }) {
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' })
-  const [query, setQuery] = useState('')
+  const [month, setMonth] = useState(currentMonth())
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
@@ -358,57 +369,69 @@ export function SubcompanySupervisionPage({
 
   useEffect(() => {
     const controller = new AbortController()
-    loadDashboard({ apiBaseUrl, sourceUrl, signal: controller.signal })
-      .then((data) => setLoadState({ status: 'ready', data }))
+    loadDashboard({ apiBaseUrl, sourceUrl, month, signal: controller.signal })
+      .then((data) => {
+        if (controller.signal.aborted) return
+        setLoadState({ status: 'ready', data })
+      })
       .catch((error: Error) => {
         if (controller.signal.aborted) return
         setLoadState({ status: 'error', message: error.message })
       })
     return () => controller.abort()
-  }, [apiBaseUrl, sourceUrl])
-
-  const filteredCompanies = useMemo(() => {
-    if (loadState.status !== 'ready') return []
-    const value = query.trim().toLowerCase()
-    if (!value) return loadState.data.companies
-    return loadState.data.companies.filter((company) => [company.name, company.summary, company.score].join(' ').toLowerCase().includes(value))
-  }, [loadState, query])
-
-  if (loadState.status === 'loading') {
-    return (
-      <section className="subcompany-page">
-        <button className="btn secondary" type="button" onClick={onBack}>返回子公司监管分支</button>
-        <div className="panel subcompany-loading">正在读取子公司监管下级页面...</div>
-      </section>
-    )
-  }
-
-  if (loadState.status === 'error') {
-    return (
-      <section className="subcompany-page">
-        <button className="btn secondary" type="button" onClick={onBack}>返回子公司监管分支</button>
-        <div className="panel subcompany-loading">{loadState.message}</div>
-      </section>
-    )
-  }
-
-  const { data } = loadState
+  }, [apiBaseUrl, sourceUrl, month])
 
   return (
     <section className="subcompany-page" id="subcompanySupervisionPage">
       <header className="subcompany-hero">
         <div>
           <p>JOSMAN目标金字塔 / 子公司监管分支 / 子公司监管目标</p>
-          <h2>{data.title}</h2>
-          <span>{data.subtitle}</span>
+          <h2>{loadState.status === 'ready' ? loadState.data.title : `${monthLabel(month)}子公司目标完成看板`}</h2>
+          <span>{loadState.status === 'ready' ? loadState.data.subtitle : '后端数据库联动 / 数据来源：涌动花鱼任务管理经营填报 / 保存后自动重算'}</span>
         </div>
         <div className="subcompany-actions">
+          <label className="subcompany-month-picker">
+            <span>月份</span>
+            <input
+              type="month"
+              value={month}
+              max={currentMonth()}
+              onChange={(event) => {
+                const value = event.currentTarget.value
+                if (!value || value === month) return
+                setMonth(value)
+                setLoadState({ status: 'loading' })
+              }}
+            />
+          </label>
           <button className="btn secondary" type="button" onClick={onOpenEntry}>打开填报页</button>
           <a className="btn secondary subcompany-open-link" href={sourceUrl} target="_blank" rel="noreferrer">原始页面</a>
           <button className="btn secondary" type="button" onClick={onBack}>返回上级</button>
         </div>
       </header>
 
+      {loadState.status === 'loading' ? (
+        <div className="panel subcompany-loading">正在读取 {monthLabel(month)} 子公司监管数据...</div>
+      ) : loadState.status === 'error' ? (
+        <div className="panel subcompany-loading">{loadState.message}</div>
+      ) : (
+        <SupervisionBody data={loadState.data} apiBaseUrl={apiBaseUrl} aiSettings={aiSettings} />
+      )}
+    </section>
+  )
+}
+
+function SupervisionBody({ data, apiBaseUrl, aiSettings }: { data: SubcompanyDashboard; apiBaseUrl: string; aiSettings: AiSettings }) {
+  const [query, setQuery] = useState('')
+
+  const filteredCompanies = useMemo(() => {
+    const value = query.trim().toLowerCase()
+    if (!value) return data.companies
+    return data.companies.filter((company) => [company.name, company.summary, company.score].join(' ').toLowerCase().includes(value))
+  }, [data, query])
+
+  return (
+    <>
       <section className="subcompany-metric-grid">
         {data.metrics.map((metric) => (
           <article key={metric.label}>
@@ -487,17 +510,19 @@ export function SubcompanySupervisionPage({
           <CompanySection company={company} apiBaseUrl={apiBaseUrl} aiSettings={aiSettings} key={company.name} />
         ))}
       </div>
-    </section>
+    </>
   )
 }
 
 async function loadDashboard({
   apiBaseUrl,
   sourceUrl,
+  month,
   signal,
 }: {
   apiBaseUrl: string
   sourceUrl: string
+  month: string
   signal: AbortSignal
 }) {
   try {
@@ -510,7 +535,7 @@ async function loadDashboard({
     if (!loginResponse.ok) throw new Error(`登录后端失败：${loginResponse.status}`)
     const login = (await loginResponse.json()) as { token?: string }
     if (!login.token) throw new Error('后端没有返回登录 token')
-    const response = await fetch(`${apiBaseUrl}/task-calendar/supervision?month=2026-05`, {
+    const response = await fetch(`${apiBaseUrl}/task-calendar/supervision?month=${encodeURIComponent(month)}`, {
       headers: { Authorization: `Bearer ${login.token}` },
       signal,
     })

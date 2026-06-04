@@ -3072,8 +3072,33 @@ p {
 .subcompany-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
   gap: 10px;
+}
+
+.subcompany-month-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--raised);
+  box-shadow: var(--shadow-in);
+  color: var(--muted);
+  font-weight: 900;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.subcompany-month-picker input {
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font-weight: 900;
+  font-size: 14px;
+  font-family: inherit;
 }
 
 .subcompany-loading {
