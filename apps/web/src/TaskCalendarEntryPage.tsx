@@ -1,6 +1,7 @@
 import { type CSSProperties, type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Building2, ChevronLeft, ChevronRight, ClipboardCheck, FileText, LogOut, Save, Sparkles, Target, Trash2 } from 'lucide-react'
 import { type AiInsightItem, type AiInsights, defaultAiSettings, loadAiInsights } from './aiClient'
+import { readSelectedMonth, writeSelectedMonth } from './selectedMonth'
 
 type BusinessUnit = { id: string; company: string; type: 'store' | 'business'; name: string }
 type BusinessMetric = {
@@ -458,8 +459,11 @@ export function TaskCalendarEntryPage({
   const [loginBusy, setLoginBusy] = useState(false)
   const [activeUser, setActiveUser] = useState<AuthUser | null>(null)
   const [token, setToken] = useState('')
-  const [visibleMonth, setVisibleMonth] = useState(monthOf(today()))
-  const [selectedDate, setSelectedDate] = useState(today())
+  const [visibleMonth, setVisibleMonth] = useState(readSelectedMonth)
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const month = readSelectedMonth()
+    return month === monthOf(today()) ? today() : `${month}-01`
+  })
   const [selectedCompany, setSelectedCompany] = useState('')
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'year' | 'business'>('month')
   const [forms, setForms] = useState<Record<string, Record<string, string>>>({})
@@ -495,6 +499,12 @@ export function TaskCalendarEntryPage({
   const selectedWeekDates = useMemo(() => weekDays(selectedDate), [selectedDate])
   const selectedWeekStart = selectedWeekDates[0] || selectedDate
   const selectedWeekEnd = selectedWeekDates[selectedWeekDates.length - 1] || selectedDate
+
+  // Publish the month being filled so the subcompany supervision board can
+  // follow it (shared via localStorage, including across tabs).
+  useEffect(() => {
+    writeSelectedMonth(visibleMonth)
+  }, [visibleMonth])
 
   useEffect(() => {
     const controller = new AbortController()

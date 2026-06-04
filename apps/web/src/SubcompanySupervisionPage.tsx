@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AiSectionPanel } from './AiSectionPanel'
 import type { AiSettings } from './aiClient'
+import { SELECTED_MONTH_STORAGE_KEY, currentMonth, isMonth, readSelectedMonth, writeSelectedMonth } from './selectedMonth'
 
 type Metric = { label: string; value: string; note?: string }
 type RankRow = { status: string; cells: string[] }
@@ -184,11 +185,6 @@ function companyAnchor(name: string) {
   return `subcompany-${encodeURIComponent(name)}`
 }
 
-function currentMonth() {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-}
-
 function monthLabel(month: string) {
   const [year, monthNumber] = month.split('-')
   if (!year || !monthNumber) return month
@@ -361,10 +357,23 @@ export function SubcompanySupervisionPage({
   onOpenEntry: () => void
 }) {
   const [loadState, setLoadState] = useState<LoadState>({ status: 'loading' })
-  const [month, setMonth] = useState(currentMonth())
+  const [month, setMonth] = useState(readSelectedMonth)
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [])
+
+  // Stay in sync with the month selected on the fill page (possibly in another
+  // tab): pick up changes written to the shared localStorage key. The load
+  // effect below refetches automatically when month changes.
+  useEffect(() => {
+    function onStorage(event: StorageEvent) {
+      if (event.key !== SELECTED_MONTH_STORAGE_KEY || !isMonth(event.newValue)) return
+      const next = event.newValue
+      setMonth((current) => (current === next ? current : next))
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
   }, [])
 
   useEffect(() => {
@@ -400,6 +409,7 @@ export function SubcompanySupervisionPage({
                 const value = event.currentTarget.value
                 if (!value || value === month) return
                 setMonth(value)
+                writeSelectedMonth(value)
                 setLoadState({ status: 'loading' })
               }}
             />
