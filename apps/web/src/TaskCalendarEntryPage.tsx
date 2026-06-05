@@ -467,6 +467,7 @@ export function TaskCalendarEntryPage({
   const [selectedCompany, setSelectedCompany] = useState('')
   const [viewMode, setViewMode] = useState<'month' | 'week' | 'year' | 'business'>('month')
   const [forms, setForms] = useState<Record<string, Record<string, string>>>({})
+  const [formsDirty, setFormsDirty] = useState(false)
   const [unitDraft, setUnitDraft] = useState('')
   const [unitType, setUnitType] = useState<'store' | 'business'>('store')
   const [targetEditor, setTargetEditor] = useState<'monthly' | 'daily' | null>(null)
@@ -505,6 +506,17 @@ export function TaskCalendarEntryPage({
   useEffect(() => {
     writeSelectedMonth(visibleMonth)
   }, [visibleMonth])
+
+  // Warn before a browser refresh/close discards unsaved daily-fill drafts.
+  useEffect(() => {
+    if (!formsDirty) return
+    function onBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [formsDirty])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -580,7 +592,10 @@ export function TaskCalendarEntryPage({
       const existing = activeData.metrics.find((metric) => metric.unitId === unit.id && metric.date === selectedDate)
       nextForms[unit.id] = metricForm(existing)
     }
-    const timer = window.setTimeout(() => setForms(nextForms), 0)
+    const timer = window.setTimeout(() => {
+      setForms(nextForms)
+      setFormsDirty(false)
+    }, 0)
     return () => window.clearTimeout(timer)
   }, [activeData, companyUnits, selectedDate])
 
@@ -1146,6 +1161,7 @@ export function TaskCalendarEntryPage({
   }
 
   function updateForm(unitId: string, key: string, value: string) {
+    setFormsDirty(true)
     setForms((current) => ({
       ...current,
       [unitId]: {
@@ -1155,13 +1171,22 @@ export function TaskCalendarEntryPage({
     }))
   }
 
+  // Guard against silently discarding unsaved daily-fill drafts when the user
+  // switches date / company / month or leaves the page.
+  function confirmDiscardDraft() {
+    if (!formsDirty) return true
+    return window.confirm('当前填报数据尚未保存，切换后未保存的内容会丢失。确定继续吗？')
+  }
+
   function changeMonth(nextMonth: string) {
+    if (!confirmDiscardDraft()) return
     setVisibleMonth(nextMonth)
     setSelectedDate(`${nextMonth}-01`)
     if (token && activeUser) void refreshCalendar(nextMonth)
   }
 
   function changeDate(nextDate: string) {
+    if (!confirmDiscardDraft()) return
     const nextMonth = monthOf(nextDate)
     setSelectedDate(nextDate)
     if (nextMonth !== visibleMonth) {
@@ -1394,7 +1419,7 @@ export function TaskCalendarEntryPage({
             <em>{activeUser.roleCode === 'subsidiary_owner' ? `${activeUser.companyName || accountCompany(activeUser)} · 独立填报` : '全部子公司 · 只读汇总'}</em>
           </div>
           <button className="task-calendar-light-button" type="button" onClick={logoutFromEntry}><LogOut size={16} /> 退出登录</button>
-          {onBack ? <button className="task-calendar-light-button" type="button" onClick={onBack}>返回监管看板</button> : null}
+          {onBack ? <button className="task-calendar-light-button" type="button" onClick={() => { if (confirmDiscardDraft()) onBack() }}>返回监管看板</button> : null}
         </div>
       </header>
 
@@ -1421,7 +1446,7 @@ export function TaskCalendarEntryPage({
                 const summary = activeData?.summaries.find((item) => item.company === company)
                 const target = company === allCompaniesLabel ? monthTarget : Number(summary?.targetWan || 0) * 10000
                 return (
-                  <button className={company === selectedCompany ? 'active' : ''} type="button" key={company} onClick={() => setSelectedCompany(company)}>
+                  <button className={company === selectedCompany ? 'active' : ''} type="button" key={company} onClick={() => { if (company !== selectedCompany && confirmDiscardDraft()) setSelectedCompany(company) }}>
                     <span>{company}</span>
                     <em>{company === allCompaniesLabel ? formatMoney(target) : formatWan(summary?.targetWan)}</em>
                   </button>
