@@ -4899,6 +4899,32 @@ tbody td:last-child {
   transform: translateY(0);
 }
 
+.toast-action {
+  bottom: 72px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toast-action.show {
+  pointer-events: auto;
+}
+
+.toast-action button {
+  border: none;
+  border-radius: 10px;
+  padding: 5px 12px;
+  background: var(--cyan);
+  color: var(--screen);
+  font-weight: 900;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.toast-action button:hover {
+  filter: brightness(1.08);
+}
+
 /* Minimal UI pass: keep the HUAGE data structure, remove heavy display bases. */
 .panel,
 .view-heading,

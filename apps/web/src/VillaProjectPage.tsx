@@ -156,6 +156,7 @@ export function VillaProjectPage({ apiBaseUrl, onBack }: { apiBaseUrl: string; o
   const [issueSeverityFilter, setIssueSeverityFilter] = useState('all')
   const [expenseCategoryFilter, setExpenseCategoryFilter] = useState('all')
   const [notice, setNotice] = useState('')
+  const [undoExpense, setUndoExpense] = useState<VillaExpense | null>(null)
   const [resetArmed, setResetArmed] = useState(false)
 
   useEffect(() => {
@@ -181,6 +182,13 @@ export function VillaProjectPage({ apiBaseUrl, onBack }: { apiBaseUrl: string; o
     const timer = window.setTimeout(() => setNotice(''), 1800)
     return () => window.clearTimeout(timer)
   }, [notice])
+
+  // Keep the undo affordance for a deleted expense around long enough to click.
+  useEffect(() => {
+    if (!undoExpense) return
+    const timer = window.setTimeout(() => setUndoExpense(null), 6000)
+    return () => window.clearTimeout(timer)
+  }, [undoExpense])
 
   useEffect(() => {
     if (!resetArmed) return
@@ -363,9 +371,31 @@ export function VillaProjectPage({ apiBaseUrl, onBack }: { apiBaseUrl: string; o
   async function deleteExpense(expense: VillaExpense) {
     try {
       await mutateProject(`/villa-project/expenses/${encodeURIComponent(expense.id)}`, 'DELETE')
-      setNotice('支出已删除')
+      setUndoExpense(expense)
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '删除失败')
+    }
+  }
+
+  async function undoDeleteExpense() {
+    const expense = undoExpense
+    if (!expense) return
+    setUndoExpense(null)
+    try {
+      await mutateProject('/villa-project/expenses', 'POST', {
+        date: expense.date,
+        category: expense.category,
+        item: expense.item,
+        vendor: expense.vendor,
+        amount: expense.amount,
+        status: expense.status,
+        voucherType: expense.voucherType,
+        voucherNo: expense.voucherNo,
+        note: expense.note,
+      })
+      setNotice('已恢复该支出')
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '恢复失败')
     }
   }
 
@@ -717,6 +747,10 @@ export function VillaProjectPage({ apiBaseUrl, onBack }: { apiBaseUrl: string; o
       </div>
 
       <div className={`toast ${notice ? 'show' : ''}`} role="status" aria-live="polite">{notice}</div>
+      <div className={`toast toast-action ${undoExpense ? 'show' : ''}`} role="status" aria-live="polite">
+        <span>已删除「{undoExpense?.item || '支出'}」</span>
+        <button type="button" onClick={undoDeleteExpense}>撤销</button>
+      </div>
     </section>
   )
 }
