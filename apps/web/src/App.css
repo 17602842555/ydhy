@@ -260,6 +260,20 @@
   resize: vertical;
 }
 
+.task-calendar-field input.task-calendar-input-error {
+  border-color: var(--red);
+  box-shadow:
+    inset 5px 6px 12px rgba(200, 39, 51, 0.16),
+    inset -5px -6px 12px rgba(255, 255, 255, 0.7);
+}
+
+.task-calendar-field-error {
+  margin-top: 6px;
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .task-calendar-workspace {
   display: grid;
   grid-template-columns: minmax(248px, 330px) minmax(700px, 1fr) minmax(300px, 360px);

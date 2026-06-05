@@ -1376,6 +1376,8 @@ export function TaskCalendarEntryPage({
     .reduce((sum, entry) => sum + Number(entry.revenueTarget || 0), 0)
   const unallocatedTarget = Math.max(monthTarget - allocatedTarget, 0)
   const targetAmountValue = Number.isFinite(Number(targetAmount)) && Number(targetAmount) > 0 ? Number(targetAmount) : 0
+  const targetAmountValid = targetAmount.trim() !== '' && Number.isFinite(Number(targetAmount)) && Number(targetAmount) > 0
+  const targetAmountError = targetAmount.trim() !== '' && !targetAmountValid
   const projectedAllocatedTarget = targetEditor === 'daily'
     ? Math.max(allocatedTarget - selectedDateTarget + targetAmountValue, 0)
     : allocatedTarget
@@ -1661,7 +1663,17 @@ export function TaskCalendarEntryPage({
             </div>
             <label className="task-calendar-field">
               {targetEditor === 'daily' ? '当日目标营业额（元）' : '月度目标营业额（元）'}
-              <input type="number" min="1" step="1" value={targetAmount} onChange={(event) => setTargetAmount(event.currentTarget.value)} placeholder={targetEditor === 'daily' ? '例如：40000' : '例如：1000000'} />
+              <input
+                type="number"
+                min="1"
+                step="1"
+                className={targetAmountError ? 'task-calendar-input-error' : ''}
+                aria-invalid={targetAmountError}
+                value={targetAmount}
+                onChange={(event) => setTargetAmount(event.currentTarget.value)}
+                placeholder={targetEditor === 'daily' ? '例如：40000' : '例如：1000000'}
+              />
+              {targetAmountError ? <small className="task-calendar-field-error">请输入大于 0 的金额（元）</small> : null}
             </label>
             {targetEditor === 'monthly' ? (
               <label className="task-calendar-field">
@@ -1701,7 +1713,7 @@ export function TaskCalendarEntryPage({
             </p>
             <div className="task-calendar-modal-actions">
               <button className="task-calendar-light-button" type="button" onClick={() => setTargetEditor(null)}>取消</button>
-              <button className="task-calendar-primary" type="button" onClick={targetEditor === 'daily' ? saveDailyTarget : saveMonthlyTarget}><Save size={16} /> 保存目标</button>
+              <button className="task-calendar-primary" type="button" disabled={!targetAmountValid} onClick={targetEditor === 'daily' ? saveDailyTarget : saveMonthlyTarget}><Save size={16} /> 保存目标</button>
             </div>
           </div>
         </div>
@@ -2272,7 +2284,7 @@ function BusinessDataBoard({
                 {fields.map((field) => (
                   <label key={field.key}>
                     {field.label}
-                    <input type="number" step="0.01" disabled={!canEdit} value={forms[unit.id]?.[field.key] ?? ''} onChange={(event) => onUpdateForm(unit.id, field.key, event.currentTarget.value)} />
+                    <input type="number" min="0" step="0.01" disabled={!canEdit} value={forms[unit.id]?.[field.key] ?? ''} onChange={(event) => onUpdateForm(unit.id, field.key, event.currentTarget.value)} />
                   </label>
                 ))}
                 <label className="note">
