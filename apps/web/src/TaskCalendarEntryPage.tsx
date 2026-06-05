@@ -1,6 +1,7 @@
 import { type CSSProperties, type FormEvent, useEffect, useMemo, useState } from 'react'
 import { Building2, ChevronLeft, ChevronRight, ClipboardCheck, FileText, LogOut, Save, Sparkles, Target, Trash2 } from 'lucide-react'
 import { type AiInsightItem, type AiInsights, defaultAiSettings, loadAiInsights } from './aiClient'
+import { describeApiError, describeError } from './apiError'
 import { readSelectedMonth, writeSelectedMonth } from './selectedMonth'
 
 type BusinessUnit = { id: string; company: string; type: 'store' | 'business'; name: string }
@@ -770,14 +771,14 @@ export function TaskCalendarEntryPage({
       })
       if (!response.ok) {
         const error = await response.json().catch(() => ({}))
-        throw new Error(error.reason || error.error || `保存失败：${response.status}`)
+        throw new Error(describeApiError(response.status, error, '保存失败'))
       }
       const result = await response.json() as { taskCalendar: TaskCalendarData; rollup?: { linked?: boolean } }
       setLoadState({ status: 'ready', data: result.taskCalendar })
       setNotice(result.rollup?.linked ? '已保存，并同步到子公司监管看板。' : '已保存，当前公司未绑定监管档案。')
       onSaved?.()
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : '保存失败')
+      setNotice(describeError(error, '保存失败'))
     } finally {
       setSavingUnitId('')
     }
@@ -792,7 +793,8 @@ export function TaskCalendarEntryPage({
       body: JSON.stringify({ company: selectedCompany, name, type: unitType, month: visibleMonth }),
     })
     if (!response.ok) {
-      setNotice('新增经营主体失败')
+      const error = await response.json().catch(() => ({}))
+      setNotice(describeApiError(response.status, error, '新增经营主体失败'))
       return
     }
     const result = await response.json() as { taskCalendar: TaskCalendarData }
@@ -815,7 +817,7 @@ export function TaskCalendarEntryPage({
     })
     if (!response.ok) {
       const error = await response.json().catch(() => ({}))
-      setNotice(error.reason || error.error || '保存月度目标失败')
+      setNotice(describeApiError(response.status, error, '保存月度目标失败'))
       return
     }
     const result = await response.json() as { taskCalendar: TaskCalendarData }
@@ -839,7 +841,7 @@ export function TaskCalendarEntryPage({
     })
     if (!response.ok) {
       const error = await response.json().catch(() => ({}))
-      setNotice(error.reason || error.error || '保存当日目标失败')
+      setNotice(describeApiError(response.status, error, '保存当日目标失败'))
       return
     }
     const result = await response.json() as { taskCalendar: TaskCalendarData }
@@ -881,7 +883,7 @@ export function TaskCalendarEntryPage({
       })
       if (!response.ok) {
         const error = await response.json().catch(() => ({}))
-        setNotice(error.reason || error.error || '保存当日动作失败')
+        setNotice(describeApiError(response.status, error, '保存当日动作失败'))
         return
       }
       const result = await response.json() as { taskCalendar: TaskCalendarData }
@@ -918,7 +920,7 @@ export function TaskCalendarEntryPage({
       })
       if (!response.ok) {
         const error = await response.json().catch(() => ({}))
-        setNotice(error.reason || error.error || '删除动作失败')
+        setNotice(describeApiError(response.status, error, '删除动作失败'))
         return
       }
       const result = await response.json() as { taskCalendar: TaskCalendarData }
@@ -959,7 +961,7 @@ export function TaskCalendarEntryPage({
       })
       if (!response.ok) {
         const error = await response.json().catch(() => ({}))
-        throw new Error(error.reason || error.error || '保存周报失败')
+        throw new Error(describeApiError(response.status, error, '保存周报失败'))
       }
       const result = await response.json() as { taskCalendar: TaskCalendarData }
       setLoadState((current) => current.status === 'ready'
@@ -968,7 +970,7 @@ export function TaskCalendarEntryPage({
       setNotice('周报已保存，并可用于 AI 结合经营数据分析。')
       onSaved?.()
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : '保存周报失败')
+      setNotice(describeError(error, '保存周报失败'))
     } finally {
       setWeeklyReportSaving(false)
     }
@@ -1022,7 +1024,7 @@ export function TaskCalendarEntryPage({
       })
       setWeeklyAiInsights(insights)
     } catch (error) {
-      setWeeklyAiError(error instanceof Error ? error.message : 'AI 周报分析失败')
+      setWeeklyAiError(describeError(error, 'AI 周报分析失败'))
     } finally {
       setWeeklyAiLoading(false)
     }
@@ -1053,7 +1055,7 @@ export function TaskCalendarEntryPage({
       })
       if (!response.ok) {
         const error = await response.json().catch(() => ({}))
-        throw new Error(error.reason || error.error || '保存月报失败')
+        throw new Error(describeApiError(response.status, error, '保存月报失败'))
       }
       const result = await response.json() as { taskCalendar: TaskCalendarData }
       setLoadState((current) => current.status === 'ready'
@@ -1062,7 +1064,7 @@ export function TaskCalendarEntryPage({
       setNotice('月报已保存，并可用于 AI 结合月度经营数据分析。')
       onSaved?.()
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : '保存月报失败')
+      setNotice(describeError(error, '保存月报失败'))
     } finally {
       setMonthlyReportSaving(false)
     }
@@ -1127,7 +1129,7 @@ export function TaskCalendarEntryPage({
       })
       setMonthlyAiInsights(insights)
     } catch (error) {
-      setMonthlyAiError(error instanceof Error ? error.message : 'AI 月报分析失败')
+      setMonthlyAiError(describeError(error, 'AI 月报分析失败'))
     } finally {
       setMonthlyAiLoading(false)
     }
@@ -1147,14 +1149,14 @@ export function TaskCalendarEntryPage({
       })
       if (!response.ok) {
         const error = await response.json().catch(() => ({}))
-        throw new Error(error.reason || error.error || '清空当月数据失败')
+        throw new Error(describeApiError(response.status, error, '清空当月数据失败'))
       }
       const result = await response.json() as { taskCalendar: TaskCalendarData; cleared?: { monthlyTargets?: number; metrics?: number; entries?: number; actionPlans?: number; weeklyReports?: number; monthlyReports?: number } }
       setLoadState({ status: 'ready', data: result.taskCalendar })
       setNotice(`已清空 ${monthLabel(visibleMonth)}：${result.cleared?.monthlyTargets ?? 0} 个目标、${result.cleared?.metrics ?? 0} 条填报、${result.cleared?.actionPlans ?? 0} 个动作、${result.cleared?.weeklyReports ?? 0} 份周报、${result.cleared?.monthlyReports ?? 0} 份月报。`)
       onSaved?.()
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : '清空当月数据失败')
+      setNotice(describeError(error, '清空当月数据失败'))
     } finally {
       setClearingMonth(false)
     }
@@ -1226,7 +1228,7 @@ export function TaskCalendarEntryPage({
       const data = await fetchTaskCalendarWindow(apiBaseUrl, sessionToken, month)
       applyCalendarData(data, sessionUser)
     } catch (error) {
-      setLoadState({ status: 'error', message: error instanceof Error ? error.message : '读取填报数据失败' })
+      setLoadState({ status: 'error', message: describeError(error, '读取填报数据失败') })
     }
   }
 
@@ -1247,7 +1249,7 @@ export function TaskCalendarEntryPage({
     } catch (error) {
       setToken('')
       setActiveUser(null)
-      setLoginError(error instanceof Error ? error.message : '登录失败')
+      setLoginError(describeError(error, '登录失败'))
     } finally {
       setLoginBusy(false)
     }

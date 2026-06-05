@@ -15,6 +15,7 @@ import {
   WalletCards,
 } from 'lucide-react'
 import './villa-original.css'
+import { describeApiError, describeError } from './apiError'
 
 type VillaPhase = {
   id: string
@@ -252,15 +253,23 @@ export function VillaProjectPage({ apiBaseUrl, onBack }: { apiBaseUrl: string; o
 
   async function mutateProject(path: string, method: 'POST' | 'PATCH' | 'DELETE', body?: Record<string, unknown>) {
     if (!token) return null
-    const response = await fetch(`${apiBaseUrl}${path}`, {
-      method,
-      headers: {
-        Authorization: `Bearer ${token}`,
-        ...(body ? { 'Content-Type': 'application/json' } : {}),
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    })
-    if (!response.ok) throw new Error(await response.text())
+    let response: Response
+    try {
+      response = await fetch(`${apiBaseUrl}${path}`, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(body ? { 'Content-Type': 'application/json' } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      })
+    } catch (error) {
+      throw new Error(describeError(error, '操作失败'), { cause: error })
+    }
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => ({}))
+      throw new Error(describeApiError(response.status, errorBody, '操作失败'))
+    }
     const result = await response.json() as { villaProject?: VillaProject }
     if (result.villaProject) setLoadState({ status: 'ready', data: result.villaProject })
     return result
