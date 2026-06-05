@@ -1,5 +1,5 @@
-import { RotateCw, Sparkles } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { RotateCw, Sparkles, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   loadCachedAiInsights,
   loadAiInsights,
@@ -37,7 +37,18 @@ export function AiSectionPanel({
   const requestContext = useMemo(() => parseStableContext(contextKey), [contextKey])
   const stateKey = `${section}:${contextKey}`
   const [loadState, setLoadState] = useState<AiLoadState>({ status: 'idle', key: '' })
+  const [elapsed, setElapsed] = useState(0)
+  const analysisAbortRef = useRef<AbortController | null>(null)
   const currentState: AiLoadState = loadState.key === stateKey ? loadState : { status: 'idle', key: stateKey }
+
+  // Tick an elapsed-seconds counter while an analysis is running so the long
+  // (up to ~75s) Ark call shows visible progress instead of a frozen button.
+  useEffect(() => {
+    if (currentState.status !== 'loading') return
+    const start = Date.now()
+    const timer = window.setInterval(() => setElapsed(Math.round((Date.now() - start) / 1000)), 500)
+    return () => window.clearInterval(timer)
+  }, [currentState.status, stateKey])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -57,18 +68,33 @@ export function AiSectionPanel({
   async function runAnalysis() {
     const previous = currentState.status === 'ready' ? currentState.insights : undefined
     const controller = new AbortController()
+    analysisAbortRef.current = controller
+    setElapsed(0)
     setLoadState({ status: 'loading', key: stateKey, insights: previous })
     try {
       const insights = await loadAiInsights(apiBaseUrl, aiSettings, controller.signal, { section, context: requestContext, refresh: true })
       setLoadState({ status: 'ready', key: stateKey, insights })
     } catch (error) {
+      // A user-initiated cancel just reverts to the previous state.
+      if (controller.signal.aborted) {
+        setLoadState(previous
+          ? { status: 'ready', key: stateKey, insights: previous }
+          : { status: 'idle', key: stateKey })
+        return
+      }
       setLoadState({
         status: 'error',
         key: stateKey,
         insights: previous,
         message: error instanceof Error ? error.message : String(error),
       })
+    } finally {
+      if (analysisAbortRef.current === controller) analysisAbortRef.current = null
     }
+  }
+
+  function cancelAnalysis() {
+    analysisAbortRef.current?.abort()
   }
 
   const insights = 'insights' in currentState ? currentState.insights : undefined
@@ -92,10 +118,23 @@ export function AiSectionPanel({
         </div>
         <div className="section-ai-actions">
           <span className={`ai-status ai-status-${providerStatus}`}>{providerLabel(providerStatus, insights)}</span>
-          <button className="btn secondary" type="button" disabled={currentState.status === 'loading'} onClick={runAnalysis}>
-            {currentState.status === 'ready' ? <RotateCw size={14} /> : <Sparkles size={14} />}
-            <span>{currentState.status === 'ready' ? '刷新AI' : currentState.status === 'loading' ? '分析中' : 'AI分析'}</span>
-          </button>
+          {currentState.status === 'loading' ? (
+            <>
+              <button className="btn secondary" type="button" disabled>
+                <Sparkles size={14} />
+                <span>分析中 {elapsed}s</span>
+              </button>
+              <button className="btn secondary" type="button" onClick={cancelAnalysis}>
+                <X size={14} />
+                <span>取消</span>
+              </button>
+            </>
+          ) : (
+            <button className="btn secondary" type="button" onClick={runAnalysis}>
+              {currentState.status === 'ready' ? <RotateCw size={14} /> : <Sparkles size={14} />}
+              <span>{currentState.status === 'ready' ? '刷新AI' : 'AI分析'}</span>
+            </button>
+          )}
         </div>
       </header>
       <p className="section-ai-prompt">{preset.prompt}</p>
